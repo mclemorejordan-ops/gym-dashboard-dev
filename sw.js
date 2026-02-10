@@ -30,9 +30,10 @@ self.addEventListener("install", (event) => {
       } catch (e) {
         // Fail-open: don't block install if any single file fails
         console.warn("SW install cache failed:", e);
-      } finally {
-        self.skipWaiting();
-      }
+} finally {
+  // do not skipWaiting here
+  // we will activate only when the page tells us to
+}
     })()
   );
 });
