@@ -1,0 +1,773 @@
+<!doctype html>
+
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+<meta name="viewport" content="
+  width=device-width,
+  initial-scale=1,
+  maximum-scale=1
+">
+  <title>Gym Dashboard</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+
+<body>
+<header>
+  <h1>Gym Dashboard</h1>
+  <div class="sub" id="headerSub">—</div>
+</header>
+
+<main>
+
+  <!-- ONBOARDING: PROFILE -->
+<section id="screen-profile" class="screen">
+  <div class="screenTop">
+    <h2 style="margin:0;">Create Profile</h2>
+  </div>
+
+  <section class="card">
+    <div class="notice" style="margin-bottom:10px;">
+      Let’s set up your basics. You can change this later.
+    </div>
+
+    <div class="row">
+      <label>Name
+        <input id="obName" placeholder="e.g., Jordan" />
+      </label>
+
+      <label>Units
+        <select id="obUnits">
+          <option value="lbs" selected>lbs</option>
+        </select>
+      </label>
+
+      <label>Protein Goal (g)
+        <input id="obProteinGoal" type="number" min="0" placeholder="240" />
+      </label>
+
+      <label>Week Starts On
+        <select id="obWeekStart">
+          <option value="mon" selected>Monday</option>
+          <option value="sun">Sunday</option>
+        </select>
+      </label>
+
+      <label>Hide Rest Days
+        <select id="obHideRest">
+          <option value="1" selected>ON</option>
+          <option value="0">OFF</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="btnRow">
+      <button id="obProfileNextBtn">Next → Routine</button>
+    </div>
+  </section>
+</section>
+
+<!-- ONBOARDING: ROUTINE -->
+<section id="screen-onboard-routine" class="screen">
+  <div class="screenTop">
+    <button class="ghost" type="button" id="obRoutineBackBtn">← Back</button>
+    <h2 style="margin:0;">Create Routine</h2>
+  </div>
+
+  <section class="card">
+    <div class="notice" style="margin-bottom:10px;">
+      Create your routine. You can edit it anytime later.
+    </div>
+
+    <div class="row">
+  <label>Routine Name
+    <input id="obRoutineName" placeholder="e.g., PPL, Upper/Lower, 3-day split" />
+  </label>
+
+  <label style="min-width:220px; flex:0 0 auto;">
+    Start From Template
+    <select id="obRoutineTemplate">
+      <option value="blank" selected>Blank (build my own)</option>
+      <option value="ppl">PPL (6-day)</option>
+      <option value="upperlower">Upper / Lower (7-day)</option>
+      <option value="fullbody3">Full Body (3-day)</option>
+      <option value="bodypart">Body Part Split (7-day)</option>
+    </select>
+  </label>
+
+  <button id="obRoutineCreateBtn">Create & Edit</button>
+</div>
+
+    <div class="notice small muted" style="margin-top:10px;">
+      This will open the Routine Editor so you can add exercises.
+    </div>
+  </section>
+</section>
+
+  <!-- HOME SCREEN -->
+  <section id="screen-home" class="screen">
+
+  <!-- Quick View -->
+  <section class="card">
+    <div class="homeHeaderCard">
+      <div class="homeTitle">
+        <div class="bigTime" id="homeTime">—</div>
+        <div class="smallDate" id="homeDate">—</div>
+      </div>
+      <div class="pill">
+        <span class="muted">Welcome</span> <strong id="homeName">—</strong>
+      </div>
+    </div>
+  </section>
+
+  <div class="homeStack">
+
+    <!-- Today workout -->
+    <section class="card">
+      <div class="topRight">
+        <h2 id="homeTodayTitle">TODAY — —</h2>
+        <button class="ghost miniBtn" type="button" data-go="routine">Go to Routine →</button>
+      </div>
+      <ul class="bullets" id="homeTodayList"></ul>
+      <div class="notice" id="homeRestNotice" style="margin-top:10px; display:none;">
+        Today is marked as a Rest Day.
+      </div>
+    </section>
+
+    <!-- This week -->
+    <section class="card">
+      <h2>This Week</h2>
+
+      <div class="weekRow">
+        <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+      </div>
+
+      <div class="weekDots" id="homeWeekDots"></div>
+
+     <div class="kpiLine">
+  <span class="muted" id="homeWeekCount">—</span>
+
+  <div style="display:flex; gap:8px; align-items:center;">
+    <button class="miniBtn" type="button" id="homeCheckInBtn">✅ Check In</button>
+    <button class="ghost miniBtn" type="button" data-go="attendance">Attendance →</button>
+  </div>
+</div>
+    </section>
+
+    <!-- Focus -->
+    <section class="card">
+  <h2>Focus This Week</h2>
+
+  <div class="proCircleWrap" style="margin-top:10px;">
+    <div class="proCircle tap" id="homeProteinCircle" data-go="protein" role="button" tabindex="0" aria-label="Open Protein screen">
+      <div class="proCircleInner">
+        <div class="big" id="homeProteinLeft">—</div>
+        <div class="small">g left</div>
+      </div>
+    </div>
+
+    <div class="notice" id="homeFocus" style="flex:1;">—</div>
+  </div>
+</section>
+
+    <!-- Navigation tiles -->
+    <section class="card">
+      <div class="homeGrid">
+        <button class="card tap" data-go="weight">📉 Weight</button>
+        <button class="card tap" data-go="attendance">📅 Attendance</button>
+        <button class="card tap" data-go="protein">🍗 Protein</button>
+        <button class="card tap" data-go="routine">🗓️ Routine</button>
+        <button class="card tap" data-go="lifts">📈 Progress</button>
+        <button class="card tap" data-go="settings">⚙️ Settings</button>
+      </div>
+    </section>
+
+  </div>
+</section>
+
+
+  <!-- WEIGHT SCREEN -->
+  <section id="screen-weight" class="screen">
+    <div class="screenTop">
+      <button class="ghost" type="button" data-home>← Back</button>
+      <h2 style="margin:0;">Weight</h2>
+    </div>
+
+    <!-- WEIGHT CARD (your original card restored) -->
+    <section class="card">
+      <div class="topRight">
+  <h2>Weekly Weight Tracker</h2>
+  <div class="row" style="gap:6px;">
+    <button id="bwViewTableBtn" class="miniBtn">Table</button>
+    <button id="bwViewGraphBtn" class="miniBtn ghost">Graph</button>
+  </div>
+</div>
+
+
+      <div class="row">
+        <label>Date
+          <input type="date" id="bwDate" />
+        </label>
+        <label>Bodyweight (lbs)
+          <input type="number" id="bwVal" placeholder="e.g., 198.6" step="0.1" />
+        </label>
+      <button id="bwAddBtn" class="tap">Add</button>
+      </div>
+
+      <div class="btnRow">
+        <span class="pill"><span class="muted">Latest:</span> <strong class="mono" id="bwLatest">—</strong></span>
+        <span class="pill"><span class="muted">Last Δ:</span> <strong class="mono" id="bwDelta">—</strong></span>
+        <span class="pill"><span class="muted">7-day avg:</span> <strong class="mono" id="bwAvg">—</strong></span>
+      </div>
+
+  <div id="bwChartWrap" style="margin-top:10px; display:none;">
+  <canvas id="bwChart" height="120"></canvas>
+</div>
+
+<div id="bwTableWrap" style="margin-top:10px; overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>BW (lbs)</th>
+              <th>Prev</th>
+              <th>Δ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="bwTable"></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+
+  <!-- ATTENDANCE SCREEN -->
+  <section id="screen-attendance" class="screen">
+    <div class="screenTop">
+      <button class="ghost" type="button" data-home>← Back</button>
+      <h2 style="margin:0;">Attendance</h2>
+    </div>
+
+    <section class="card">
+      <div class="topRight">
+        <h2>Attendance (Tap days you went)</h2>
+        <div class="row" style="gap:6px;">
+          <button id="prevMonthBtn">◀</button>
+          <span class="pill"><strong id="calTitle">—</strong></span>
+          <button id="nextMonthBtn">▶</button>
+        </div>
+      </div>
+
+      <div class="calendar" id="calGrid"></div>
+
+      <div class="btnRow">
+        <span class="pill"><span class="muted">This month:</span> <strong class="mono" id="calCount">0</strong></span>
+        <button id="clearMonthBtn">Clear This Month</button>
+      </div>
+
+      <div class="notice" style="margin-top:10px;">
+        Tap days you trained. This calendar only tracks workout attendance.
+      </div>
+    </section>
+  </section>
+
+  <!-- PROTEIN SCREEN -->
+  <section id="screen-protein" class="screen">
+    <div class="screenTop">
+      <button class="ghost" type="button" data-home>← Back</button>
+      <h2 style="margin:0;">Protein</h2>
+    </div>
+
+    <section class="card">
+      <h2 id="proteinTitle">Protein Intake</h2>
+      <div class="row">
+        <label>Date
+          <input type="date" id="pDate" />
+        </label>
+        <label>Morning (g)
+          <input type="number" id="pMorning" placeholder="0" />
+        </label>
+        <label>Lunch (g)
+          <input type="number" id="pLunch" placeholder="0" />
+        </label>
+        <label>Pre-Gym (g)
+          <input type="number" id="pPre" placeholder="0" />
+        </label>
+        <label>Dinner (g)
+          <input type="number" id="pDinner" placeholder="0" />
+        </label>
+        <label>Bedtime (g)
+          <input type="number" id="pBed" placeholder="0" />
+        </label>
+<button id="pSaveBtn" class="primary tap" type="button">Save</button>
+      </div>
+
+      <div class="btnRow">
+        <span class="pill"><span class="muted">Total:</span> <strong class="mono" id="pTotal">0</strong>g</span>
+        <span class="pill"><span class="muted">Remaining:</span> <strong class="mono" id="pRemain">0</strong>g</span>
+        <span class="pill"><span class="muted">Status:</span> <strong id="pStatus">—</strong></span>
+      </div>
+    </section>
+  </section>
+
+  <!-- ROUTINE SCREEN -->
+  <section id="screen-routine" class="screen">
+    <div class="screenTop">
+      <button class="ghost" type="button" data-home>← Back</button>
+      <h2 style="margin:0;">Routine</h2>
+    </div>
+
+    <section class="card">
+      <div class="topRight">
+        <div>
+          <h2 style="margin-bottom:6px;">Routine (Mon–Sun)</h2>
+          <div class="small muted" id="activeRoutineMeta">—</div>
+        </div>
+
+        <div class="row" style="gap:6px;">
+          <label style="min-width:220px; flex:0 0 auto;">
+            Active Routine
+            <select id="routineSelect"></select>
+          </label>
+
+          <button id="newRoutineBtn" class="miniBtn">New</button>
+          <button id="editRoutineBtn" class="miniBtn">Edit</button>
+          <button id="dupRoutineBtn" class="miniBtn">Duplicate</button>
+          <button id="delRoutineBtn" class="miniBtn danger">Delete</button>
+
+          <button id="startTodayBtn" class="miniBtn">Start Today</button>
+        </div>
+      </div>
+
+      <div class="splitTabs" id="pplTabs"></div>
+      <div class="exerciseList" id="pplList"></div>
+
+      <div class="notice" style="margin-top:10px;">
+        Tip: Tap “Log Sets” on an exercise to record sets/reps/weight. PR is based on your lifetime max for that exercise.
+      </div>
+    </section>
+  </section>
+
+  <!-- LIFTS SCREEN -->
+  <section id="screen-lifts" class="screen">
+    <div class="screenTop">
+      <button class="ghost" type="button" data-home>← Back</button>
+      <h2 style="margin:0;">Progress</h2>
+    </div>
+
+    <section class="card">
+      <div class="topRight">
+        <h2>Lift Progress Log</h2>
+        <div class="row" style="gap:6px;">
+          <button id="liftViewTableBtn" class="miniBtn">Table</button>
+          <button id="liftViewGraphBtn" class="miniBtn ghost">Graph</button>
+          <button id="liftDownloadBtn" class="miniBtn ghost" title="Download current graph">Download PNG</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label>Exercise
+          <select id="liftSearch"></select>
+        </label>
+
+        <label>Routine
+          <select id="liftRoutine"></select>
+        </label>
+
+        <label>Date From
+          <input type="date" id="liftFrom" />
+        </label>
+
+        <label>Date To
+          <input type="date" id="liftTo" />
+        </label>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <label>Metric (Graph)
+          <select id="liftMetric">
+            <option value="top" selected>Top Weight</option>
+            <option value="e1rm">Estimated 1RM (Epley)</option>
+            <option value="vol">Volume</option>
+          </select>
+        </label>
+
+        <label>Rows (Table)
+          <select id="liftLimit">
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="0">All</option>
+          </select>
+        </label>
+
+        <button id="liftSearchBtn">Search</button>
+        <button id="liftClearBtn" class="ghost">Clear</button>
+      </div>
+
+      <div id="liftTableWrap" style="margin-top:10px; overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Exercise</th>
+              <th>Top Set</th>
+              <th>Sets</th>
+              <th>PR</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="liftTable"></tbody>
+        </table>
+      </div>
+
+      <div id="liftGraphWrap" style="margin-top:10px; display:none;">
+        <canvas id="liftChart" height="140"></canvas>
+        <div class="notice" style="margin-top:10px;">
+          Weekly separators are shown as vertical lines for easier progress blocks.
+        </div>
+      </div>
+
+      <div class="notice" style="margin-top:10px;">
+        Tap an exercise name in the table to view history.
+      </div>
+    </section>
+  </section>
+
+  <!-- SETTINGS SCREEN -->
+<section id="screen-settings" class="screen">
+  <div class="screenTop">
+    <button class="ghost" type="button" data-home>← Back</button>
+    <h2 style="margin:0;">Settings</h2>
+  </div>
+
+  <!-- Profile -->
+  <section class="card">
+    <h2>Profile</h2>
+    <div class="row">
+      <label>Name (optional)
+        <input id="setName" placeholder="e.g., Jordan" />
+      </label>
+
+      <label>Units
+        <select id="setUnits">
+          <option value="lbs" selected>lbs</option>
+        </select>
+      </label>
+
+      <label>Protein Goal (g)
+        <input id="setProteinGoal" type="number" min="0" placeholder="240" />
+      </label>
+
+      <label>Week Starts On
+        <select id="setWeekStart">
+          <option value="mon" selected>Monday</option>
+          <option value="sun">Sunday</option>
+        </select>
+      </label>
+
+      <label>Hide Rest Days
+        <select id="setHideRest">
+          <option value="1" selected>ON</option>
+          <option value="0">OFF</option>
+        </select>
+      </label>
+
+      <button id="saveProfileBtn">Save Profile</button>
+    </div>
+  </section>
+
+  <!-- Import / Backup -->
+  <section class="card">
+    <h2>Import / Backup</h2>
+    <div class="row" style="gap:6px;">
+      <button class="miniBtn" id="settingsImportBtn">Import</button>
+      <input id="settingsImportFile" type="file" accept="application/json" style="display:none;" />
+
+      <button class="miniBtn" id="backupNowBtn">Backup Now</button>
+
+      <span class="pill">
+        <span class="muted">Last Backup:</span>
+        <strong class="mono" id="lastBackupText">—</strong>
+      </span>
+    </div>
+
+    <div class="notice" style="margin-top:10px;">
+      <div><strong>Storage</strong></div>
+      <div class="small muted" id="storageInfo">—</div>
+      <div class="small warn" id="storageWarn" style="display:none;">Storage is getting large — consider backing up.</div>
+    </div>
+  </section>
+
+  <!-- Refresh -->
+  <section class="card">
+    <h2>Refresh</h2>
+    <div class="notice">Choose what to refresh (useful after an import or manual edits).</div>
+
+    <div class="row" style="margin-top:10px;">
+      <label><span class="muted">Routine</span>
+        <select id="rfRoutine"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Progress</span>
+        <select id="rfLifts"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Weight</span>
+        <select id="rfWeight"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Attendance</span>
+        <select id="rfAttendance"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Protein</span>
+        <select id="rfProtein"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+
+      <button id="runRefreshBtn">Refresh Selected</button>
+    </div>
+  </section>
+
+  <!-- Reset -->
+  <section class="card">
+    <h2>Reset</h2>
+    <div class="notice">
+      This clears everything on this device/browser.
+      <div class="small muted">Tip: Backup first.</div>
+    </div>
+
+    <div class="btnRow">
+      <button id="settingsResetBtn" class="danger">Reset ALL Data</button>
+    </div>
+  </section>
+</section>
+
+
+  <!-- ✅ KEEP YOUR MODALS EXACTLY AS-IS BELOW -->
+  <!-- LOG SETS MODAL -->
+  <div id="logModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
+    <div style="max-width:520px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+      <div class="topRight">
+        <div>
+          <h2 style="margin:0;">Log Sets</h2>
+          <div class="small muted" id="logRoutineLine">—</div>
+        </div>
+      </div>
+
+      <div class="notice" style="margin-top:10px;">
+        <div><strong id="logModalExercise">—</strong></div>
+        <div class="small muted">Enter what you actually did. Add/remove sets as needed.</div>
+      </div>
+
+      <div id="logPrevBox" class="notice" style="margin-top:10px; display:none;">
+        <div class="small muted">Last time:</div>
+        <div id="logPrevText" class="mono">—</div>
+        <div class="btnRow" style="margin-top:8px;">
+          <button id="logCopyLastBtn" type="button">Copy last time</button>
+          <button id="logViewHistoryBtn" type="button" class="ghost">View history</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <label>Date
+          <input type="date" id="logModalDate" />
+        </label>
+      </div>
+
+      <div id="logModalSets" style="margin-top:10px; display:grid; gap:8px;"></div>
+
+     <div class="btnRow">
+  <button id="logAddSetBtn" class="tap">Add Set</button>
+  <button id="logSaveBtn" class="tap">Confirm & Save</button>
+  <button id="logModalClose" class="tap ghost" type="button">Close</button>
+</div>
+    </div>
+  </div>
+
+  <!-- HISTORY MODAL -->
+  <div id="histModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
+    <div style="max-width:640px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+      <div class="topRight">
+        <h2 style="margin:0;">Exercise History</h2>
+        <button id="histCloseBtn">Close</button>
+      </div>
+
+      <div class="notice" style="margin-top:10px;">
+        <div><strong id="histExercise">—</strong></div>
+        <div class="small muted">Most recent first. Shows your saved set details (if available).</div>
+      </div>
+
+      <div style="margin-top:10px; overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Top Set</th>
+              <th>All Sets</th>
+              <th>PR</th>
+            </tr>
+          </thead>
+          <tbody id="histTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROUTINE EDITOR MODAL -->
+<div id="rtModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
+  <div style="max-width:760px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px;">
+    
+    <!-- Sticky Header -->
+    <div class="rtHead">
+      <h2>Routine Editor</h2>
+      <button id="rtCloseBtn" class="rtClose ghost" type="button">Close</button>
+    </div>
+
+    <div class="rtBody">
+      <div class="row" style="margin-top:10px;">
+        <label>Routine Name
+          <input id="rtName" placeholder="e.g., PPL (6 days)" />
+        </label>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="splitTabs" id="rtDayTabs"></div>
+
+      <div class="row" style="margin-top:8px;">
+        <label style="min-width:220px; flex:0 0 auto;">Day Label (optional)
+          <input id="rtDayLabel" placeholder="e.g., Push / Pull / Legs / Upper" />
+        </label>
+
+        <label style="min-width:220px; flex:0 0 auto;">Rest Day?
+          <select id="rtRestToggle">
+            <option value="0" selected>No</option>
+            <option value="1">Yes (hide day)</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="rtDayRestNotice" class="notice" style="margin-top:10px; display:none;">
+        This day is marked as a Rest Day. Exercises are kept but hidden on the dashboard.
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Add Exercise CTA tile -->
+      <div class="rtAddWrap" style="margin-top:10px;">
+        <div class="rtPick">
+          <label style="min-width:260px; width:100%;">Add Exercise
+            <input id="rtAddExName" list="rtExSuggestions" placeholder="Tap to pick an exercise..." readonly />
+            <datalist id="rtExSuggestions"></datalist>
+          </label>
+          <div class="hint">Tap to choose from your library</div>
+        </div>
+
+        <label style="width:110px;">Sets
+          <input id="rtAddExSets" type="number" min="1" placeholder="3" />
+        </label>
+
+        <label style="width:140px;">Reps
+          <input id="rtAddExReps" placeholder="8–10" />
+        </label>
+
+        <button id="rtAddExBtn" class="tap">Add</button>
+        <button id="rtAddMultiBtn" class="ghost tap" type="button">Add Multiple</button>
+      </div>
+
+      <div id="rtExList" style="margin-top:12px; display:grid; gap:10px;"></div>
+
+      <div class="notice" style="margin-top:10px;">
+        Swap replaces an exercise only for this day. Reorder uses Up/Down.
+      </div>
+    </div>
+
+    <!-- Sticky Footer -->
+    <div class="rtFooter">
+      <button id="rtCancelBtn" class="ghost tap" type="button">Cancel</button>
+      <button id="rtSaveBtn" class="tap" type="button">Save Routine</button>
+    </div>
+
+  </div>
+</div>
+
+  <!-- EXERCISE PICKER MODAL -->
+<div id="exPickModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
+  <div style="max-width:520px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+    <div class="topRight">
+      <h2 style="margin:0;" id="exPickTitle">Pick Exercise</h2>
+      <button id="exPickCloseBtn">Close</button>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <label style="min-width:220px; flex:1 1 220px;">Search
+        <input id="exPickSearch" placeholder="Type to filter..." />
+      </label>
+    </div>
+
+    <div id="exPickList"></div>
+
+    <div class="btnRow">
+      <button id="exPickConfirmBtn">Confirm</button>
+      <button id="exPickCancelBtn" class="ghost">Cancel</button>
+    </div>
+  </div>
+</div>
+
+  <!-- BATCH ADD MODAL (Multi-add sets/reps screen) -->
+<div id="batchAddModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
+  <div style="max-width:640px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+    <div class="topRight">
+      <h2 style="margin:0;">Add Multiple Exercises</h2>
+      <button id="batchAddCloseBtn" type="button">Close</button>
+    </div>
+
+    <div class="notice" style="margin-top:10px;">
+      <div class="small muted">Set the Sets + Reps for each exercise, then confirm.</div>
+    </div>
+
+    <div id="batchAddList" style="margin-top:10px; display:grid; gap:8px;"></div>
+
+    <div class="btnRow">
+      <button id="batchAddConfirmBtn" type="button">Add to Day</button>
+      <button id="batchAddCancelBtn" type="button" class="ghost">Cancel</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script defer src="assets/js/storage.js?v=4"></script>
+<script defer src="assets/js/dom.js?v=4"></script>
+<script defer src="assets/js/utils.js?v=4"></script>
+<script defer src="assets/js/app.js?v=4"></script>
+
+  <!-- ✅ Update Banner (shows when a new deploy is detected) -->
+<div id="updateBanner" class="updateBanner" style="display:none;">
+  <div class="updateBannerInner">
+    <div class="updateText">
+      <div class="updateTitle">✨ Update available</div>
+      <div class="updateSub">Refresh to load the latest version.</div>
+    </div>
+    <button id="updateRefreshBtn" class="miniBtn tap">Refresh</button>
+  </div>
+</div>
+  <!-- Bottom Navigation -->
+<nav class="bottomNav">
+  <div class="bottomNavInner">
+    <button class="navBtn tap" data-go="home" data-nav="home">
+  <div class="icon">🏠</div><div>Home</div>
+</button>
+
+<button class="navBtn tap" data-go="routine" data-nav="routine">
+  <div class="icon">🗓️</div><div>Routine</div>
+</button>
+<button class="navBtn tap" type="button" data-go="lifts" data-nav="lifts">
+      <div class="icon">📈</div><div>Progress</div>
+    </button>
+<button class="navBtn tap" type="button" data-go="settings" data-nav="settings">
+      <div class="icon">⚙️</div><div>Settings</div>
+    </button>
+  </div>
+</nav>
+</body>
+</html>
