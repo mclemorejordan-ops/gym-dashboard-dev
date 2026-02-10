@@ -186,26 +186,6 @@ function bytesToNice(n){
   return `${v.toFixed(i===0?0:1)} ${u[i]}`;
 }
 
-function renderAppInfo(){
-  const verEl = document.getElementById("appVersionText");
-  const syncEl = document.getElementById("appLastSyncText");
-
-  if(verEl){
-    const v = String(localStorage.getItem(KEY_APP_VERSION) || "").trim();
-    verEl.textContent = v ? `v${v}` : "—";
-  }
-
-  if(syncEl){
-    const iso = localStorage.getItem(KEY_LAST_SYNC);
-    if(!iso){
-      syncEl.textContent = "—";
-    } else {
-      const d = new Date(iso);
-      syncEl.textContent = isFinite(d.getTime()) ? d.toLocaleString() : "—";
-    }
-  }
-}
-
 function renderStorageInfo(){
   if(!storageInfo) return;
 
@@ -415,9 +395,17 @@ function renderHeaderSub(){
   const sub = document.getElementById("headerSub");
   if(!sub) return;
 
+  const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
   const goal = Number(profile?.proteinGoal || 240) || 240;
-  sub.textContent = `Protein goal ${goal}g`;
+
+  const v = localStorage.getItem(KEY_APP_VERSION) || "";
+
+  sub.textContent =
+    `Minimal tracker • Protein goal ${goal}g • ${restTxt}` +
+    (v ? ` • v${v}` : "");
 }
+
+
 
 
 // Replace PRO_GOAL usage with this
@@ -696,7 +684,6 @@ const onEnterScreen = {
     hydrateSettingsUI();
     renderStorageInfo();
     renderLastBackup();
-    renderAppInfo();
   }
 };
 
@@ -3326,10 +3313,6 @@ async function checkForUpdate(){
       console.log("version.json missing 'version' field:", data);
       return;
     }
-
-    // ✅ record last successful sync (version.json fetch + parse succeeded)
-    localStorage.setItem(KEY_LAST_SYNC, new Date().toISOString());
-
 
     const last = localStorage.getItem(KEY_APP_VERSION);
 
