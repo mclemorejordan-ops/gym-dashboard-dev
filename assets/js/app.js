@@ -575,9 +575,26 @@ const onEnterScreen = {
   }
 };
 
+/* ---------------------------
+   DOM cache (static nodes)
+   - Screens + bottom nav buttons are static in index.html
+   - Cache them to avoid repeated querySelectorAll calls
+---------------------------- */
+let _screenEls = null;
+let _navBtnEls = null;
+
+function getScreenEls(){
+  return _screenEls || (_screenEls = [...document.querySelectorAll(".screen")]);
+}
+
+function getNavBtnEls(){
+  return _navBtnEls || (_navBtnEls = [...document.querySelectorAll(".navBtn")]);
+}
+
+
 function showScreen(name){
   // remove active
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  getScreenEls().forEach(s => s.classList.remove("active"));
 
   // find target
   let el = document.getElementById(`screen-${name}`);
@@ -605,8 +622,9 @@ function showScreen(name){
   onEnterScreen[name]?.();
   setActiveNav(name);
 }
+
   function setActiveNav(name){
-  document.querySelectorAll(".navBtn").forEach(b=>{
+  getNavBtnEls().forEach(b=>{
     b.classList.toggle("active", b.getAttribute("data-nav") === name);
   });
 }
