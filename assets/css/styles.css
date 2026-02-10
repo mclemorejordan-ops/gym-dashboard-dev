@@ -831,29 +831,61 @@ header{
   z-index: 40;
 }
 
-/* little “tap” feel */
+/* ---------------------------
+   Tap feedback (iOS-friendly)
+   - Applies to ALL buttons (some buttons in HTML have no .tap class)
+   - Keeps bottom nav behavior as-is
+---------------------------- */
+
+/* remove iOS gray tap highlight + reduce delay */
+:where(button, .pill, .tap, .card, .navBtn){
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* bottom nav: keep existing subtle press (no scaling) */
 .navBtn:active{
   transform: translateY(1px);
 }
-  /* ---------------------------
-   Haptic-style tap feedback
----------------------------- */
-.tap{
+
+/* universal press feedback for buttons that are NOT bottom nav */
+button:not(.navBtn),
+.pill,
+.tap,
+.card{
   transition: transform .08s ease, opacity .08s ease;
   will-change: transform, opacity;
 }
 
-.tap:active{
+button:not(.navBtn):active,
+.pill:active,
+.tap:active,
+.card:active{
   transform: scale(0.97);
   opacity: 0.85;
 }
 
-/* optional: reduce motion respect */
+/* keyboard accessibility (no visual change on iPhone, but helps desktop) */
+:where(button, .pill, .navBtn):focus-visible{
+  outline: 2px solid rgba(124, 252, 0, .35);
+  outline-offset: 2px;
+}
+
+/* respect Reduce Motion */
 @media (prefers-reduced-motion: reduce){
-  .tap{
+  button:not(.navBtn),
+  .pill,
+  .tap,
+  .card{
     transition: none;
   }
+
+  :is(#logModal,#histModal,#rtModal,#exPickModal,#batchAddModal),
+  :is(#logModal,#histModal,#rtModal,#exPickModal,#batchAddModal) > div{
+    animation: none !important;
+  }
 }
+
       /* ---------------------------
    Update Banner (Option 1)
 ---------------------------- */
