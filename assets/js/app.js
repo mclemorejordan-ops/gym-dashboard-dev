@@ -186,6 +186,26 @@ function bytesToNice(n){
   return `${v.toFixed(i===0?0:1)} ${u[i]}`;
 }
 
+function renderAppInfo(){
+  const verEl = document.getElementById("appVersionText");
+  const syncEl = document.getElementById("appLastSyncText");
+
+  if(verEl){
+    const v = String(localStorage.getItem(KEY_APP_VERSION) || "").trim();
+    verEl.textContent = v ? `v${v}` : "—";
+  }
+
+  if(syncEl){
+    const iso = localStorage.getItem(KEY_LAST_SYNC);
+    if(!iso){
+      syncEl.textContent = "—";
+    } else {
+      const d = new Date(iso);
+      syncEl.textContent = isFinite(d.getTime()) ? d.toLocaleString() : "—";
+    }
+  }
+}
+
 function renderStorageInfo(){
   if(!storageInfo) return;
 
@@ -676,6 +696,7 @@ const onEnterScreen = {
     hydrateSettingsUI();
     renderStorageInfo();
     renderLastBackup();
+    renderAppInfo();
   }
 };
 
@@ -3305,6 +3326,10 @@ async function checkForUpdate(){
       console.log("version.json missing 'version' field:", data);
       return;
     }
+
+    // ✅ record last successful sync (version.json fetch + parse succeeded)
+    localStorage.setItem(KEY_LAST_SYNC, new Date().toISOString());
+
 
     const last = localStorage.getItem(KEY_APP_VERSION);
 
