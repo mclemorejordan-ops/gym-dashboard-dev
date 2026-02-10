@@ -4,7 +4,7 @@
    - Keeps version.json network-first (no-store)
 =========================== */
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const SHELL_CACHE = `gymdash-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `gymdash-runtime-${CACHE_VERSION}`;
 
