@@ -135,3 +135,11 @@ self.addEventListener("fetch", (event) => {
     })()
   );
 });
+/* ---------------------------
+   Allow page to trigger update
+---------------------------- */
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
