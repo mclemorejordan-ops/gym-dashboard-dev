@@ -395,17 +395,7 @@ function renderHeaderSub(){
   const sub = document.getElementById("headerSub");
   if(!sub) return;
 
-  const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
   const goal = Number(profile?.proteinGoal || 240) || 240;
-
-  const v = localStorage.getItem(KEY_APP_VERSION) || "";
-
-function renderHeaderSub(){
-  const sub = document.getElementById("headerSub");
-  if(!sub) return;
-
-  const goal = Number(profile?.proteinGoal || 240) || 240;
-
   sub.textContent = `Protein goal ${goal}g`;
 }
 
