@@ -14,20 +14,32 @@ window.addEventListener("error", (e)=>{
   `;
 });
 
-(function(){
+/* ---------------------------
+   Global dependency check
+   - Delay until DOM + scripts are loaded
+---------------------------- */
+document.addEventListener("DOMContentLoaded", ()=>{
   const required = [
     "LS",
-    "KEY_PROFILE","KEY_ROUTINES","KEY_ACTIVE_ROUTINE","KEY_ACTIVE_SCREEN",
-    "KEY_BW","KEY_ATT","KEY_PRO","KEY_LIFTS",
-    "todayISO","parseISO","localISODate","pad2","sameMonth",
-    "uid","normExName","cleanExerciseName","canonicalExerciseName"
+    "KEY_PROFILE",
+    "KEY_ROUTINES",
+    "KEY_ACTIVE_ROUTINE",
+    "KEY_ACTIVE_SCREEN",
+    "KEY_BW",
+    "KEY_ATT",
+    "KEY_PRO",
+    "KEY_LIFTS"
   ];
 
-  const missing = required.filter(k => typeof window[k] === "undefined");
+  const missing = required.filter(k => !(k in window));
   if(missing.length){
-    throw new Error("Missing globals (check storage.js/dom.js/utils.js): " + missing.join(", "));
+    throw new Error(
+      "Missing globals (check storage.js/dom.js/utils.js): " +
+      missing.join(", ")
+    );
   }
-})();
+});
+
 
 let modalDepth = 0;
 let _scrollLockY = 0;
