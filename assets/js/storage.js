@@ -1,3 +1,4 @@
+alert("storage.js loaded");
 /* ===========================
    Global Storage Keys
    (Single source of truth)
