@@ -43,6 +43,83 @@ document.addEventListener("DOMContentLoaded", ()=>{
   }
 });
 
+/* ===========================
+   Offline Indicator + Cache Health
+=========================== */
+const netBadge = document.getElementById("netBadge");
+const lastSyncText = document.getElementById("lastSyncText");
+const toastHost = document.getElementById("toastHost");
+
+let _wasOffline = false;
+
+function formatLastSync(iso){
+  if(!iso) return "—";
+  const d = new Date(iso);
+  if(!isFinite(d.getTime())) return "—";
+  return d.toLocaleString();
+}
+
+function renderLastSync(){
+  if(!lastSyncText) return;
+  const iso = localStorage.getItem(window.KEY_LAST_SYNC || "gym_last_sync_v1");
+  lastSyncText.textContent = `Last sync: ${formatLastSync(iso)}`;
+}
+
+function showToast(msg, ms=2200){
+  if(!toastHost) return;
+
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.textContent = msg;
+
+  toastHost.appendChild(el);
+
+  // animate in
+  requestAnimationFrame(()=> el.classList.add("show"));
+
+  // remove
+  window.setTimeout(()=>{
+    el.classList.remove("show");
+    window.setTimeout(()=> el.remove(), 200);
+  }, ms);
+}
+
+function renderNetStatus({ showBackOnlineToast=false } = {}){
+  const online = navigator.onLine !== false;
+
+  if(netBadge){
+    netBadge.style.display = online ? "none" : "inline-flex";
+  }
+
+  // If we were offline and came back online, toast it
+  if(online && _wasOffline && showBackOnlineToast){
+    showToast("Back online ✅");
+  }
+
+  _wasOffline = !online;
+}
+
+function initNetworkIndicators(){
+  // initial paint
+  _wasOffline = (navigator.onLine === false);
+  renderNetStatus({ showBackOnlineToast: false });
+  renderLastSync();
+
+  window.addEventListener("offline", ()=>{
+    renderNetStatus({ showBackOnlineToast: false });
+  });
+
+  window.addEventListener("online", ()=>{
+    renderNetStatus({ showBackOnlineToast: true });
+  });
+
+  // Update "Last sync" when LS.set writes
+  window.addEventListener("ls:write", ()=>{
+    renderLastSync();
+  });
+}
+
+
 
 let modalDepth = 0;
 let _scrollLockY = 0;
@@ -3286,6 +3363,9 @@ function init(){
   renderHeaderSub();
   renderStorageInfo();
   renderLastBackup();
+
+  initNetworkIndicators(); // ✅ Offline badge + back-online toast + last sync
+
 
   // Default view settings
   setBWView("table");
