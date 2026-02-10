@@ -27,6 +27,45 @@
   window.KEY_LAST_BACKUP  = "gym_last_backup_v1";
   window.KEY_ONBOARD_DONE = "gym_onboard_done_v1";
 
+     /* ---------------------------
+     Lock KEY_* constants
+     - Prevent accidental reassignment later
+     - Does NOT affect LS helper or any other globals
+  ---------------------------- */
+  (function lockKeys(){
+    const keysToLock = [
+      "KEY_PROFILE",
+      "KEY_ROUTINES",
+      "KEY_ACTIVE_ROUTINE",
+      "KEY_ACTIVE_SCREEN",
+      "KEY_BW",
+      "KEY_ATT",
+      "KEY_PRO",
+      "KEY_LIFTS",
+      "KEY_TARGETS",
+      "KEY_CUSTOM_EX",
+      "KEY_APP_VERSION",
+      "KEY_LAST_BACKUP",
+      "KEY_ONBOARD_DONE"
+    ];
+
+    keysToLock.forEach((k)=>{
+      try{
+        if (k in window){
+          Object.defineProperty(window, k, {
+            value: window[k],
+            writable: false,
+            configurable: false,
+            enumerable: true
+          });
+        }
+      }catch(e){
+        // If a browser ever refuses (unlikely), fail silently to avoid breaking the app.
+        console.warn("Could not lock key:", k, e);
+      }
+    });
+  })();
+
   // LocalStorage helper
   window.LS = window.LS || {
     get(key, fallback) {
