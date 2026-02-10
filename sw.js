@@ -5,7 +5,7 @@
    - Supports clean updates via SKIP_WAITING message
 =========================== */
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const SHELL_CACHE = `gymdash-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `gymdash-runtime-${CACHE_VERSION}`;
 
