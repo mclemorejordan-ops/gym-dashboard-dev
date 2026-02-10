@@ -50,19 +50,34 @@
     window.KEY_LAST_BACKUP  = "gym_last_backup_v1";
     window.KEY_ONBOARD_DONE = "gym_onboard_done_v1";
 
+     /* ✅ Cache health: last local write timestamp */
+   window.KEY_LAST_SYNC    = "gym_last_sync_v1";
+
     // 3) Upgrade LS.set to "write only if changed" (safe)
     const baseSet = window.LS.set.bind(window.LS);
     window.LS.set = function (key, value) {
-      try {
-        const next = JSON.stringify(value);
-        const prev = localStorage.getItem(key);
-        if (prev === next) return;
-        localStorage.setItem(key, next);
-      } catch (e) {
-        // fallback to basic set (still safe)
-        baseSet(key, value);
+  try {
+    const next = JSON.stringify(value);
+    const prev = localStorage.getItem(key);
+    if (prev === next) return;
+
+    localStorage.setItem(key, next);
+
+    // ✅ stamp "last sync" ONLY when an actual write happened
+    try{
+      if (key !== window.KEY_LAST_SYNC) {
+        const iso = new Date().toISOString();
+        localStorage.setItem(window.KEY_LAST_SYNC, iso);
+
+        // notify UI (optional, safe)
+        window.dispatchEvent(new CustomEvent("ls:write", { detail: { key, at: iso } }));
       }
-    };
+    } catch {}
+  } catch (e) {
+    // fallback to basic set (still safe)
+    baseSet(key, value);
+  }
+};
     window.LS.setIfChanged = function (key, value) {
       window.LS.set(key, value);
     };
@@ -83,7 +98,9 @@
           "KEY_CUSTOM_EX",
           "KEY_APP_VERSION",
           "KEY_LAST_BACKUP",
-          "KEY_ONBOARD_DONE"
+          "KEY_ONBOARD_DONE",
+           "KEY_LAST_SYNC"
+
         ];
 
         keysToLock.forEach((k) => {
