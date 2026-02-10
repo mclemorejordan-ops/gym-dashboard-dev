@@ -2,12 +2,15 @@
    Gym Dashboard Service Worker
    - App shell caching for offline reliability
    - Keeps version.json network-first (no-store)
+   - Supports clean updates via SKIP_WAITING message
 =========================== */
 
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v1";
 const SHELL_CACHE = `gymdash-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `gymdash-runtime-${CACHE_VERSION}`;
 
+// App shell (same-origin). We cache these so the app loads offline.
+// NOTE: We match cached assets ignoring URL query strings (?v=6) in fetch.
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -21,6 +24,7 @@ const APP_SHELL = [
   "./assets/icons/icon-maskable.svg"
 ];
 
+// Install: pre-cache shell (best effort)
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
@@ -28,20 +32,16 @@ self.addEventListener("install", (event) => {
         const cache = await caches.open(SHELL_CACHE);
         await cache.addAll(APP_SHELL.map((u) => new Request(u, { cache: "reload" })));
       } catch (e) {
+        // Fail-open: SW still installs even if some assets aren't present yet
         console.warn("SW install cache failed:", e);
       } finally {
-        // ✅ First install: activate immediately (no old SW exists)
-        // ✅ Update installs: will still wait unless page sends SKIP_WAITING
-        if (!(await self.clients.matchAll({ type: "window" })).some(c => c.url)) {
-          // safety fallback; not strictly necessary
-        }
         self.skipWaiting();
       }
     })()
   );
 });
 
-
+// Activate: clean old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
@@ -56,23 +56,41 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// ✅ Allow the page to trigger an immediate update
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
+// Helper: decide if request is navigation
 function isNavigationRequest(req) {
-  return req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html");
+  return (
+    req.mode === "navigate" ||
+    (req.headers.get("accept") || "").includes("text/html")
+  );
 }
 
+// Fetch strategies:
+// - version.json: network-first no-store (keep update checks accurate)
+// - navigation: network-first with cache fallback to index.html
+// - same-origin static: stale-while-revalidate
+// - cross-origin (Chart.js CDN): cache-first runtime
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
+  // Only handle GET
   if (req.method !== "GET") return;
 
-  // Keep update checks accurate
+  // Keep your update banner accurate (don’t serve a cached version.json)
   if (url.origin === self.location.origin && url.pathname.endsWith("/version.json")) {
     event.respondWith(
       (async () => {
         try {
           return await fetch(req, { cache: "no-store" });
         } catch {
+          // If offline, try cached version.json (if it exists)
           const cache = await caches.open(RUNTIME_CACHE);
           const hit = await cache.match(req, { ignoreSearch: true });
           return hit || new Response("{}", { headers: { "Content-Type": "application/json" } });
@@ -82,7 +100,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Navigation: network-first, fallback to cached index.html
+  // Navigation: serve cached index.html when offline
   if (url.origin === self.location.origin && isNavigationRequest(req)) {
     event.respondWith(
       (async () => {
@@ -100,7 +118,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Same-origin static: stale-while-revalidate
+  // Same-origin static assets: stale-while-revalidate
   if (url.origin === self.location.origin) {
     event.respondWith(
       (async () => {
@@ -117,13 +135,14 @@ self.addEventListener("fetch", (event) => {
           }
         })();
 
+        // Serve cached immediately if present, otherwise wait for network
         return cached || (await fetchPromise) || fetch(req);
       })()
     );
     return;
   }
 
-  // Cross-origin (Chart.js CDN): cache-first runtime
+  // Cross-origin runtime (Chart.js CDN etc): cache-first
   event.respondWith(
     (async () => {
       const cache = await caches.open(RUNTIME_CACHE);
