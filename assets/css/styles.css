@@ -33,8 +33,6 @@ textarea{
 /* Prevent iOS from auto-scaling text */
 html{
   -webkit-text-size-adjust: 100%;
-  background: var(--bg0); /* ✅ fills iOS safe-area behind translucent header */
-
 }
 
 /* ---------------------------
@@ -173,28 +171,21 @@ body{
 
 
     /* ✅ Unified app header (matches mockup) */
-/* ✅ Unified app header — iOS glass */
 header{
   position: sticky;
   top: 0;
   z-index: 60;
   padding: calc(env(safe-area-inset-top) + 14px) 16px 14px;
 
-  /* iOS glass: translucent + soft fade */
   background: linear-gradient(
     to bottom,
-    rgba(7,7,8,.70),
-    rgba(7,7,8,.52) 60%,
-    rgba(7,7,8,.22)
+    rgba(7,7,8,.92),
+    rgba(7,7,8,.55),
+    rgba(7,7,8,0)
   );
 
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-
-  box-shadow:
-    0 1px 0 rgba(255,255,255,.06),
-    0 12px 30px rgba(0,0,0,.35);
-
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-bottom: none;
 }
 header h1{
@@ -1152,30 +1143,6 @@ button:not(.navBtn):active,
 
 @media (prefers-reduced-motion: reduce){
   .toast{ transition:none; }
-}
-/* ===========================
-   DEV MODE BANNER
-=========================== */
-#devBanner{
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 99999;
-  padding: 8px 12px;
-  background: repeating-linear-gradient(
-    45deg,
-    #ffb703,
-    #ffb703 10px,
-    #fb8500 10px,
-    #fb8500 20px
-  );
-  color: #000;
-  font-weight: 700;
-  font-size: 13px;
-  text-align: center;
-  border-bottom: 2px solid rgba(0,0,0,.25);
-}
 
 /* push app content down so banner doesn't cover header */
 body{
