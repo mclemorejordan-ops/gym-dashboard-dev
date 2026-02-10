@@ -400,12 +400,14 @@ function renderHeaderSub(){
 
   const v = localStorage.getItem(KEY_APP_VERSION) || "";
 
-  sub.textContent =
-    `Minimal tracker • Protein goal ${goal}g • ${restTxt}` +
-    (v ? ` • v${v}` : "");
+function renderHeaderSub(){
+  const sub = document.getElementById("headerSub");
+  if(!sub) return;
+
+  const goal = Number(profile?.proteinGoal || 240) || 240;
+
+  sub.textContent = `Protein goal ${goal}g`;
 }
-
-
 
 
 // Replace PRO_GOAL usage with this
