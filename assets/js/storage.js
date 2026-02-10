@@ -69,7 +69,7 @@
     });
   })();
 
-  // LocalStorage helper
+   // LocalStorage helper
   window.LS = window.LS || {
     get(key, fallback) {
       try {
@@ -79,8 +79,17 @@
         return fallback;
       }
     },
+
+    // ✅ Write only if changed (reduces iOS jank)
     set(key, value) {
-      localStorage.setItem(key, JSON.stringify(value));
+      const next = JSON.stringify(value);
+      const prev = localStorage.getItem(key);
+      if (prev === next) return;           // no-op if identical
+      localStorage.setItem(key, next);
+    },
+
+    // Optional explicit alias (sometimes nice for readability)
+    setIfChanged(key, value) {
+      this.set(key, value);
     }
   };
-})();
