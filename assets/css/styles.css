@@ -738,8 +738,19 @@ main > *{
 body.modalOpen{
   overflow: hidden;
   height: 100%;
+
+  /* Strong iOS scroll lock */
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  top: var(--scroll-lock-top, 0px);
+
+  /* reduce scroll bleed / gestures */
   touch-action: none;
+  overscroll-behavior: none;
 }
+
 
 /* ---------------------------
    APP-LIKE UPGRADE (Bottom Nav + Transitions)
