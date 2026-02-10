@@ -46,6 +46,8 @@
     window.KEY_TARGETS     = "gym_targets_v1";
     window.KEY_CUSTOM_EX   = "gym_custom_ex_v1";
     window.KEY_APP_VERSION = "gym_app_version_v1";
+    window.KEY_LAST_SYNC  = "gym_last_sync_v1";
+
 
     window.KEY_LAST_BACKUP  = "gym_last_backup_v1";
     window.KEY_ONBOARD_DONE = "gym_onboard_done_v1";
