@@ -15,17 +15,60 @@ window.addEventListener("error", (e)=>{
 });
 
 /* ---------------------------
-   PWA: Service Worker registration
-   - Runs after initial load
-   - Safe (does not block app boot)
+   PWA: Service Worker registration + update flow
 ---------------------------- */
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("./sw.js", { scope: "./" })
-      .catch((e) => console.warn("SW register failed:", e));
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("./sw.js", { scope: "./" });
+
+      // If a new SW is already waiting, show update banner immediately
+      if (reg.waiting) {
+        showUpdateBanner(reg);
+      }
+
+      // Listen for future updates
+      reg.addEventListener("updatefound", () => {
+        const newSW = reg.installing;
+        if (!newSW) return;
+
+        newSW.addEventListener("statechange", () => {
+          if (newSW.state === "installed" && navigator.serviceWorker.controller) {
+            showUpdateBanner(reg);
+          }
+        });
+      });
+
+    } catch (e) {
+      console.warn("SW register failed:", e);
+    }
   });
 }
+
+/* ---------------------------
+   Update banner wiring
+---------------------------- */
+function showUpdateBanner(reg) {
+  const banner = document.getElementById("updateBanner");
+  const refreshBtn = document.getElementById("updateRefreshBtn");
+
+  if (!banner || !refreshBtn) return;
+
+  banner.style.display = "block";
+
+  refreshBtn.onclick = () => {
+    // Tell the waiting SW to activate
+    if (reg.waiting) {
+      reg.waiting.postMessage("SKIP_WAITING");
+    }
+
+    // Reload once the new SW takes control
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      window.location.reload();
+    });
+  };
+}
+
 
 /* ---------------------------
    Global dependency check
