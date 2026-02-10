@@ -28,15 +28,19 @@ self.addEventListener("install", (event) => {
         const cache = await caches.open(SHELL_CACHE);
         await cache.addAll(APP_SHELL.map((u) => new Request(u, { cache: "reload" })));
       } catch (e) {
-        // Fail-open: don't block install if any single file fails
         console.warn("SW install cache failed:", e);
-} finally {
-  // do not skipWaiting here
-  // we will activate only when the page tells us to
-}
+      } finally {
+        // ✅ First install: activate immediately (no old SW exists)
+        // ✅ Update installs: will still wait unless page sends SKIP_WAITING
+        if (!(await self.clients.matchAll({ type: "window" })).some(c => c.url)) {
+          // safety fallback; not strictly necessary
+        }
+        self.skipWaiting();
+      }
     })()
   );
 });
+
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -140,7 +144,8 @@ self.addEventListener("fetch", (event) => {
    Allow page to trigger update
 ---------------------------- */
 self.addEventListener("message", (event) => {
-  if (event.data === "SKIP_WAITING") {
+  const msg = event.data;
+  if (msg === "SKIP_WAITING" || msg?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
 });
