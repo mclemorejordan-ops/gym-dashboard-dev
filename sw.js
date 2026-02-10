@@ -144,8 +144,7 @@ self.addEventListener("fetch", (event) => {
    Allow page to trigger update
 ---------------------------- */
 self.addEventListener("message", (event) => {
-  const msg = event.data;
-  if (msg === "SKIP_WAITING" || msg?.type === "SKIP_WAITING") {
+  if (event.data === "SKIP_WAITING") {
     self.skipWaiting();
   }
 });
