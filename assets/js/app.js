@@ -30,16 +30,36 @@ window.addEventListener("error", (e)=>{
 })();
 
 let modalDepth = 0;
+let _scrollLockY = 0;
 
 function lockBodyScroll(){
-  if(modalDepth === 0) document.body.classList.add("modalOpen");
+  // Only lock on first modal open
+  if(modalDepth === 0){
+    _scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+
+    // lock body in place (strong iOS fix)
+    document.body.style.setProperty("--scroll-lock-top", `-${_scrollLockY}px`);
+    document.body.classList.add("modalOpen");
+  }
   modalDepth++;
 }
 
 function unlockBodyScroll(){
   modalDepth = Math.max(0, modalDepth - 1);
-  if(modalDepth === 0) document.body.classList.remove("modalOpen");
+
+  // Only unlock when last modal closes
+  if(modalDepth === 0){
+    document.body.classList.remove("modalOpen");
+    document.body.style.removeProperty("--scroll-lock-top");
+
+    // Restore scroll position after unlock
+    // (RAF prevents jump on iOS)
+    const y = _scrollLockY || 0;
+    _scrollLockY = 0;
+    requestAnimationFrame(()=>window.scrollTo(0, y));
+  }
 }
+
 
   /* ---------------------------
    Global State (safe defaults)
