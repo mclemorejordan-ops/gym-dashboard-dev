@@ -178,6 +178,14 @@ const storageInfo = document.getElementById("storageInfo");
 const storageWarn = document.getElementById("storageWarn");
 const runRefreshBtn = document.getElementById("runRefreshBtn");
 
+function renderAppVersion(){
+  const el = document.getElementById("appVersionText");
+  if(!el) return;
+
+  const v = localStorage.getItem(KEY_APP_VERSION) || "";
+  el.textContent = v || "—";
+}
+
 function bytesToNice(n){
   if(!isFinite(n)) return "0 B";
   const u = ["B","KB","MB","GB"];
@@ -681,6 +689,7 @@ const onEnterScreen = {
     hydrateSettingsUI();
     renderStorageInfo();
     renderLastBackup();
+    renderAppVersion(); // ✅ version now lives here
   }
 };
 
