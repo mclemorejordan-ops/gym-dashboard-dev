@@ -9,24 +9,129 @@
 <title>Gym Dashboard</title>
   <style>
 
-    .headerTop{
+ /* ===========================
+   FIXED 2-ROW HEADER (NO WRAP)
+=========================== */
+.appHeader{
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  padding: calc(env(safe-area-inset-top) + 14px) 16px 10px;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(7,7,8,.92),
+    rgba(7,7,8,.55),
+    rgba(7,7,8,0)
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Row 1: title + version (fixed positions) */
+.hdrRow1{
   display:flex;
   align-items:flex-end;
   justify-content:space-between;
   gap:12px;
-  flex-wrap:wrap;
+
+  /* IMPORTANT */
+  flex-wrap:nowrap;
+  min-height: 32px;
 }
 
-.headerPills{
+.hdrRow1 h1{
+  margin:0;
+  font-size:26px;
+  font-weight:800;
+  letter-spacing:.2px;
+  color: var(--text);
+
+  /* prevent wrap */
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.hdrVersion{
+  color: var(--muted);
+  font-size: 13px;
+  white-space:nowrap;
+  flex: 0 0 auto;
+}
+
+/* Row 2: single line summary, never wraps */
+.hdrRow2{
+  margin-top: 6px;
   display:flex;
-  gap:8px;
-  flex-wrap:wrap;
   align-items:center;
+  justify-content:space-between;
+  gap:12px;
+
+  flex-wrap:nowrap;
+  min-height: 22px;
 }
 
-#pillOnline.good strong{ color: var(--good); }
-#pillOnline.bad  strong{ color: var(--bad); }
-#pillOnline.warn strong{ color: var(--warn); }
+.hdrLeft{
+  display:flex;
+  align-items:center;
+  gap:8px;
+
+  /* prevent wrap */
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  min-width: 0;
+}
+
+.hdrDay{
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.hdrProtein{
+  color: var(--muted);
+  font-size: 13px;
+  flex: 0 0 auto;
+}
+
+.hdrSep{
+  color: rgba(255,255,255,.18);
+  font-size: 13px;
+  flex: 0 0 auto;
+}
+
+/* Status block has fixed width so the left side never shifts */
+.hdrStatus{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+
+  width: 170px;       /* key: keeps layout stable */
+  flex: 0 0 170px;
+
+  white-space:nowrap;
+}
+
+.hdrDot{
+  width: 20px;
+  text-align:center;
+  flex: 0 0 20px;
+}
+
+.hdrOnline{
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* color states */
+.hdrStatus.good .hdrOnline{ color: var(--good); }
+.hdrStatus.warn .hdrOnline{ color: var(--warn); }
+.hdrStatus.bad  .hdrOnline{ color: var(--bad); }
+
     
   :root{
   --bg0:#070708;
@@ -1095,18 +1200,29 @@ header{
 </head>
 
 <body>
-<header>
-  <div class="headerTop">
+<header class="appHeader">
+  <!-- Row 1 -->
+  <div class="hdrRow1">
     <h1 id="headerTitle">Gym Dashboard</h1>
+    <span class="hdrVersion mono" id="hdrVersion">—</span>
+  </div>
 
-    <div class="headerPills">
-      <span class="pill" id="pillVersion"><span class="muted">v</span> <strong class="mono" id="hdrVersion">—</strong></span>
-      <span class="pill" id="pillProtein"><span class="muted">Protein</span> <strong class="mono" id="hdrProtein">—</strong></span>
-      <span class="pill" id="pillToday"><span class="muted">Today</span> <strong id="hdrToday">—</strong></span>
-      <span class="pill" id="pillOnline"><span class="muted">Status</span> <strong id="hdrOnline">—</strong></span>
+  <!-- Row 2 (fixed layout) -->
+  <div class="hdrRow2">
+    <div class="hdrLeft">
+      <span class="hdrDay" id="hdrToday">—</span>
+      <span class="hdrSep">|</span>
+      <span class="hdrProtein" id="hdrProteinLine">—</span>
+      <span class="hdrSep">|</span>
+    </div>
+
+    <div class="hdrStatus" id="hdrStatus">
+      <span class="hdrDot" id="hdrDot">🟢</span>
+      <span class="hdrOnline" id="hdrOnline">—</span>
     </div>
   </div>
 </header>
+
 
 <main>
 
@@ -1871,11 +1987,12 @@ const AUTO_REFRESH_COUNTDOWN_S = 8;            // seconds
 const AUTO_REFRESH_COOLDOWN_MS = 30 * 1000;    // prevent reload loops
 
 const hdrVersion = document.getElementById("hdrVersion");
-const hdrProtein = document.getElementById("hdrProtein");
+const hdrProteinLine = document.getElementById("hdrProteinLine");
 const hdrToday   = document.getElementById("hdrToday");
 const hdrOnline  = document.getElementById("hdrOnline");
+const hdrStatus  = document.getElementById("hdrStatus");
+const hdrDot     = document.getElementById("hdrDot");
 
-const pillOnline = document.getElementById("pillOnline");
 
 let modalDepth = 0;
 
@@ -2145,9 +2262,11 @@ function renderHeaderPills(){
   const v = localStorage.getItem(KEY_APP_VERSION) || "";
   if(hdrVersion) hdrVersion.textContent = v ? v : "—";
 
-  // Protein goal
-  const goal = getProteinGoal();
-  if(hdrProtein) hdrProtein.textContent = `${goal}g`;
+ // Protein line: "240g / 300g"
+const goal = getProteinGoal();
+const td = todayISO();
+const total = getProteinTotalForDate(td);
+if(hdrProteinLine) hdrProteinLine.textContent = `${total}g / ${goal}g`;
 
   // Today label
   const todayLabel = getTodayWorkoutLabel();
@@ -5235,29 +5354,29 @@ async function checkForUpdate(){
   let appHasService = true; // "service" = can actually reach version.json
 
 function setOnlineUI(isOnline, hasService){
-  if(!hdrOnline || !pillOnline) return;
+  if(!hdrOnline || !hdrStatus || !hdrDot) return;
 
-  // status priority: offline beats everything
+  hdrStatus.classList.remove("good","warn","bad");
+
   if(!isOnline){
     hdrOnline.textContent = "Offline";
-    pillOnline.classList.remove("good","warn","bad");
-    pillOnline.classList.add("bad");
+    hdrDot.textContent = "🔴";
+    hdrStatus.classList.add("bad");
     return;
   }
 
-  // online but service failing (cannot reach version.json)
   if(!hasService){
     hdrOnline.textContent = "Online (No Service)";
-    pillOnline.classList.remove("good","warn","bad");
-    pillOnline.classList.add("warn");
+    hdrDot.textContent = "⚠️";
+    hdrStatus.classList.add("warn");
     return;
   }
 
-  // all good
-  hdrOnline.textContent = "Online";
-  pillOnline.classList.remove("good","warn","bad");
-  pillOnline.classList.add("good");
+  hdrOnline.textContent = "Synced";
+  hdrDot.textContent = "🟢";
+  hdrStatus.classList.add("good");
 }
+
 
 function updateConnectivityIndicators(){
   const isOnline = navigator.onLine !== false;
