@@ -1365,7 +1365,8 @@ header{
 
 /* Auto-fit 3D area on any iPhone */
 .routineTop{
-  flex: 0 0 clamp(150px, 24dvh, 240px);
+  flex: 0 0 clamp(120px, 18dvh, 180px);
+}
   position: relative;
   overflow: hidden;
   perspective: 1100px;
@@ -1397,8 +1398,8 @@ header{
 
 .dayCard3D{
   position:absolute;
-  width:  clamp(135px, 42vw, 190px);
-  height: clamp(88px,  20vw, 130px);
+  width:  clamp(95px, 30vw, 140px);
+  height: clamp(62px, 16vw, 95px);
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,.12);
   background:
@@ -6271,7 +6272,7 @@ window.addEventListener("DOMContentLoaded", init);
 function getCarouselRadius(){
   // fits all iPhones: smaller screens get smaller radius
   const w = Math.min(window.innerWidth, 520);
-  return Math.round(Math.max(210, Math.min(320, w * 0.55)));
+return Math.round(Math.max(150, Math.min(230, w * 0.40)));
 }
 let radius = getCarouselRadius();
   const step = 360 / N;
