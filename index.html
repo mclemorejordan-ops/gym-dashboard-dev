@@ -199,8 +199,17 @@ html, body{
   html, body{ overflow-x: hidden; }  /* fallback */
 }
 
-/* Anything that might exceed viewport gets clamped */
-img, svg, canvas{ max-width: 100%; height: auto; }
+/* ✅ SAFE media clamp (do NOT use * { max-width:100% } ) */
+img, svg, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+    /* ✅ HARD STOP: prevent viewport widening */
+html, body{
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
 
 /* Visual-only: prevent nested scrolling in Exercise Picker */
 #exPickModal > div{
