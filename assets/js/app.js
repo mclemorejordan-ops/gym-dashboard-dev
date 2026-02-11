@@ -3275,18 +3275,31 @@ function showUpdateBanner(reg = window.__SW_REG__){
   // Always ensure Refresh button applies the newest SW if available
   refreshBtn.onclick = async () => {
     const r = reg || window.__SW_REG__;
+    const pending = localStorage.getItem(window.KEY_PENDING_VERSION || "gym_pending_version_v1") || "";
+
+    // Helper: mark update as APPLIED (only when we are actually transitioning)
+    const markApplied = () => {
+      if(pending){
+        localStorage.setItem(KEY_APP_VERSION, pending);
+        localStorage.removeItem(window.KEY_PENDING_VERSION || "gym_pending_version_v1");
+      }
+    };
 
     // Helper: activate waiting SW and reload when it takes control
     const activateWaitingAndReload = async () => {
       if(!r?.waiting) return false;
 
-      r.waiting.postMessage("SKIP_WAITING");
-
+      // When the new SW takes control, THAT’S when the update is applied
       navigator.serviceWorker.addEventListener(
         "controllerchange",
-        () => window.location.reload(),
+        () => {
+          markApplied();
+          window.location.reload();
+        },
         { once:true }
       );
+
+      r.waiting.postMessage("SKIP_WAITING");
 
       // Safety: if controllerchange doesn't fire for any reason, still reload
       setTimeout(() => window.location.reload(), 1200);
@@ -3312,11 +3325,17 @@ function showUpdateBanner(reg = window.__SW_REG__){
       }
     }
 
-    // 3) Last resort: normal reload (still helps when navigation network-first hits fresh HTML)
-    window.location.reload();
+    // 3) Last resort: no SW waiting (or SW not available) -> reload with cache-bust
+    // (This is the best we can do without a waiting worker)
+    if(pending){
+      // We can't 100% prove assets updated without SW control,
+      // but user explicitly requested refresh, so we treat it as applied.
+      markApplied();
+    }
+    window.location.href = window.location.pathname + "?v=" + Date.now();
   };
-
 }
+
 
 function hideUpdateBanner(){
   const b = document.getElementById("updateBanner");
@@ -3345,19 +3364,26 @@ async function checkForUpdate(){
     console.log("Version check:", { last, latest });
 
     if(!last){
-      localStorage.setItem(KEY_APP_VERSION, latest);
-      renderHeaderSub();
-      return;
-    }
+  // First run: treat current fetched version as applied
+  localStorage.setItem(KEY_APP_VERSION, latest);
+  localStorage.removeItem(window.KEY_PENDING_VERSION || "gym_pending_version_v1");
+  renderHeaderSub();
+  return;
+}
+
 
     if(last !== latest){
-      showUpdateBanner();
-      localStorage.setItem(KEY_APP_VERSION, latest);
-      renderHeaderSub();
-      return;
-    }
+  // ✅ do NOT mark as applied yet
+  localStorage.setItem(window.KEY_PENDING_VERSION || "gym_pending_version_v1", latest);
+  showUpdateBanner();
+  renderHeaderSub();
+  return;
+}
 
-    renderHeaderSub();
+
+    // If we're already on latest, make sure no stale pending flag remains
+localStorage.removeItem(window.KEY_PENDING_VERSION || "gym_pending_version_v1");
+renderHeaderSub();
   }catch(e){
     console.log("checkForUpdate error:", e);
   }
