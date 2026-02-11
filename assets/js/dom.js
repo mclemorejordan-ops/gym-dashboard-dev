@@ -20,4 +20,5 @@ const KEY_PROFILE      = window.KEY_PROFILE;
 const KEY_LAST_BACKUP  = window.KEY_LAST_BACKUP;
 const KEY_ONBOARD_DONE = window.KEY_ONBOARD_DONE;
 const KEY_CUSTOM_EX    = window.KEY_CUSTOM_EX;
-const KEY_APP_VERSION  = window.KEY_APP_VERSION;
+const KEY_APP_VERSION       = window.KEY_APP_VERSION;
+const KEY_PENDING_VERSION   = window.KEY_PENDING_VERSION;
