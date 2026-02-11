@@ -48,7 +48,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
 =========================== */
 const netBadge = document.getElementById("netBadge");
 const lastSyncText = document.getElementById("lastSyncText");
-const appVersionText = document.getElementById("appVersionText");
 const toastHost = document.getElementById("toastHost");
 
 let _wasOffline = false;
@@ -63,14 +62,7 @@ function formatLastSync(iso){
 function renderLastSync(){
   if(!lastSyncText) return;
   const iso = localStorage.getItem(window.KEY_LAST_SYNC || "gym_last_sync_v1");
-  // Only render the value (label lives in the pill UI)
-  lastSyncText.textContent = formatLastSync(iso);
-}
-
-function renderAppVersion(){
-  if(!appVersionText) return;
-  const v = String(localStorage.getItem(KEY_APP_VERSION) || "").trim();
-  appVersionText.textContent = v ? `v${v}` : "—";
+  lastSyncText.textContent = `Last sync: ${formatLastSync(iso)}`;
 }
 
 function showToast(msg, ms=2200){
@@ -185,10 +177,6 @@ const saveProfileBtn = document.getElementById("saveProfileBtn");
 const storageInfo = document.getElementById("storageInfo");
 const storageWarn = document.getElementById("storageWarn");
 const runRefreshBtn = document.getElementById("runRefreshBtn");
-
-  const v = localStorage.getItem(KEY_APP_VERSION) || "";
-  el.textContent = v || "—";
-}
 
 function bytesToNice(n){
   if(!isFinite(n)) return "0 B";
@@ -410,10 +398,12 @@ function renderHeaderSub(){
   const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
   const goal = Number(profile?.proteinGoal || 240) || 240;
 
-  // Header should not show version anymore
-  sub.textContent = `Minimal tracker • Protein goal ${goal}g • ${restTxt}`;
-}
+  const v = localStorage.getItem(KEY_APP_VERSION) || "";
 
+  sub.textContent =
+    `Minimal tracker • Protein goal ${goal}g • ${restTxt}` +
+    (v ? ` • v${v}` : "");
+}
 
 
 
@@ -694,7 +684,6 @@ const onEnterScreen = {
     hydrateSettingsUI();
     renderStorageInfo();
     renderLastBackup();
-    renderAppVersion(); // ✅ version now lives here
   }
 };
 
@@ -3332,7 +3321,6 @@ async function checkForUpdate(){
     if(!last){
       localStorage.setItem(KEY_APP_VERSION, latest);
       renderHeaderSub();
-      renderAppVersion();
       return;
     }
 
@@ -3340,17 +3328,14 @@ async function checkForUpdate(){
       showUpdateBanner();
       localStorage.setItem(KEY_APP_VERSION, latest);
       renderHeaderSub();
-      renderAppVersion();
       return;
     }
 
     renderHeaderSub();
-    renderAppVersion();
   }catch(e){
     console.log("checkForUpdate error:", e);
   }
 }
-
 
   
 /* ---------------------------
@@ -3381,17 +3366,13 @@ function init(){
 
   initNetworkIndicators(); // ✅ Offline badge + back-online toast + last sync
 
+
   // Default view settings
   setBWView("table");
   setLiftView("table");
   applyLiftFiltersFromUI();
-  renderAppVersion();
 
-
-  // ✅ Ensure version is loaded, then render it
-checkForUpdate().finally(()=> {
-  renderAppVersion();
-});
+  checkForUpdate();        // ✅ ADD THIS LINE
 
 /* ---------------------------
    PWA: Service Worker registration + update flow
