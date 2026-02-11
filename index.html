@@ -3767,19 +3767,26 @@ function renderExercisePickerList(){
           <span>➕ Create "<strong>${rawQ}</strong>"</span>
         </div>
       `;
-      create.addEventListener("click", ()=>{
+     create.addEventListener("click", ()=>{
   const created = addCustomExercise(rawQ);
   if(!created) return;
 
-        if(exPickMulti){
-          exPickSelectedSet.add(created);
-          renderExercisePickerList();
-        } else {
-          exPickSelected = created;
-          [...exPickList.querySelectorAll(".exPickItem")].forEach(x=>x.classList.remove("active"));
-          create.classList.add("active");
-        }
-      });
+  if(exPickMulti){
+    // MULTI: add to selected list, stay open
+    exPickSelectedSet.add(created);
+    renderExercisePickerList();
+    return;
+  }
+
+  // SINGLE: create + immediately select + confirm + close
+  exPickSelected = created;
+
+  if(typeof exPickOnConfirm === "function"){
+    exPickOnConfirm(exPickSelected);
+  }
+
+  closeExercisePicker();
+});
       exPickList.appendChild(create);
     }
   }
@@ -3840,20 +3847,17 @@ exPickConfirmBtn.addEventListener("click", ()=>{
     return;
   }
 
-  // single mode
+// single mode
 if(!exPickSelected){
-  const typed = cleanExerciseName(exPickSearch.value);
-  if(!typed){
-    alert("Pick an exercise first.");
-    return;
-  }
-  exPickSelected = typed;
+  alert("Pick an exercise first.");
+  return;
 }
 
 if(typeof exPickOnConfirm === "function"){
   exPickOnConfirm(exPickSelected);
 }
 closeExercisePicker();
+
 });
 
   /* ---------------------------
