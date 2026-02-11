@@ -3270,26 +3270,50 @@ function showUpdateBanner(reg = window.__SW_REG__){
 
   banner.style.display = "block";
 
-  // Always ensure Refresh button uses SW-first if available
+  // Always ensure Refresh button applies the newest SW if available
   refreshBtn.onclick = async () => {
     const r = reg || window.__SW_REG__;
 
-    // If SW update is waiting, activate it first
-    if(r && r.waiting){
+    // Helper: activate waiting SW and reload when it takes control
+    const activateWaitingAndReload = async () => {
+      if(!r?.waiting) return false;
+
       r.waiting.postMessage("SKIP_WAITING");
 
-      // Reload once the new SW takes control (run once)
       navigator.serviceWorker.addEventListener(
         "controllerchange",
         () => window.location.reload(),
         { once:true }
       );
-      return;
+
+      // Safety: if controllerchange doesn't fire for any reason, still reload
+      setTimeout(() => window.location.reload(), 1200);
+      return true;
+    };
+
+    // 1) If already waiting -> activate immediately
+    if(await activateWaitingAndReload()) return;
+
+    // 2) Force SW update check NOW, then try again
+    if(r){
+      try{
+        await r.update(); // ask browser to fetch the newest sw.js
+      }catch(e){
+        // ignore and fallback to reload
+      }
+
+      // Give the installing worker a moment to become "waiting"
+      const start = Date.now();
+      while(Date.now() - start < 1500){
+        if(await activateWaitingAndReload()) return;
+        await new Promise(res => setTimeout(res, 150));
+      }
     }
 
-    // Fallback: normal reload
+    // 3) Last resort: normal reload (still helps when navigation network-first hits fresh HTML)
     window.location.reload();
   };
+
 }
 
 function hideUpdateBanner(){
