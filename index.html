@@ -1,3 +1,5 @@
+tell me what to update specifically:
+
 
 <!doctype html>
 
@@ -377,9 +379,6 @@ main > *{
     #homeFocus{
   white-space: pre-line;
 }
-
-  
-    
    .card{
   background: rgba(18,18,20,.72);   /* ✅ translucent so the body gradient shows through */
   border: 1px solid rgba(255,255,255,.08);
@@ -992,17 +991,6 @@ header{
     transition: none;
   }
 }
-
-    /* ===========================
-   SETTINGS: UPDATES CARD
-=========================== */
-#updatesCard .pill{
-  min-width: 210px;
-}
-#updatesCard .btnRow{
-  margin-top: 12px;
-}
-    
       /* ---------------------------
    Update Banner (Option 1)
 ---------------------------- */
@@ -1719,61 +1707,6 @@ header{
     </div>
   </section>
 
-    <!-- Updates -->
-  <section class="card" id="updatesCard">
-    <h2>Updates</h2>
-
-    <div class="row">
-      <span class="pill">
-        <span class="muted">Current:</span>
-        <strong class="mono" id="upCurrent">—</strong>
-      </span>
-
-      <span class="pill">
-        <span class="muted">Previous:</span>
-        <strong class="mono" id="upPrevious">—</strong>
-      </span>
-
-      <span class="pill">
-        <span class="muted">Latest:</span>
-        <strong class="mono" id="upLatest">—</strong>
-      </span>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="row" style="align-items:center;">
-      <span class="pill">
-        <span class="muted">Connection:</span>
-        <strong id="upConn" class="mono">—</strong>
-      </span>
-
-      <span class="pill">
-        <span class="muted">Status:</span>
-        <strong id="upStatus" class="mono">—</strong>
-      </span>
-
-      <span class="pill">
-        <span class="muted">Last checked:</span>
-        <strong id="upChecked" class="mono">—</strong>
-      </span>
-    </div>
-
-    <div class="btnRow">
-      <button class="miniBtn tap" id="upCheckNowBtn" type="button">Check Now</button>
-      <button class="miniBtn tap" id="upUpdateNowBtn" type="button">Update Now (Reload)</button>
-
-      <button class="miniBtn ghost tap" id="upClearCacheBtn" type="button" title="Unregister service worker (if any), clear caches, then reload">
-        Clear Cache & Reload
-      </button>
-    </div>
-
-    <div class="notice small muted" style="margin-top:10px;">
-      Tip: “Update Now” forces a reload to pull the newest files. If you’re offline, it will reload the cached app.
-    </div>
-  </section>
-
-
   <!-- Refresh -->
   <section class="card">
     <h2>Refresh</h2>
@@ -2086,26 +2019,6 @@ let bwLogs = [];
 let attendance = new Set();
 let proteinMap = {};
 let lifts = [];
-
-
-  /* ---------------------------
-   Updates UI bindings (Settings)
----------------------------- */
-const upCurrent   = document.getElementById("upCurrent");
-const upPrevious  = document.getElementById("upPrevious");
-const upLatest    = document.getElementById("upLatest");
-
-const upConn      = document.getElementById("upConn");
-const upStatus    = document.getElementById("upStatus");
-const upChecked   = document.getElementById("upChecked");
-
-const upCheckNowBtn   = document.getElementById("upCheckNowBtn");
-const upUpdateNowBtn  = document.getElementById("upUpdateNowBtn");
-const upClearCacheBtn = document.getElementById("upClearCacheBtn");
-
-// NEW key for Previous Version
-const KEY_APP_PREVIOUS_VERSION = "gym_app_previous_version_v1";
-
 
   /* ---------------------------
    SETTINGS bindings
@@ -2641,11 +2554,10 @@ const onEnterScreen = {
   },
 
   settings: () => {
-  hydrateSettingsUI();
-  renderStorageInfo();
-  renderLastBackup();
-  renderUpdatesCard();
-}
+    hydrateSettingsUI();
+    renderStorageInfo();
+    renderLastBackup();
+  }
 };
 
 function showScreen(name){
@@ -5380,17 +5292,13 @@ function scheduleAutoReload(){
     setUpdateBannerSub(`Auto-refreshing in ${remaining}s… (click banner to postpone)`);
   }, 1000);
 
-    _autoReloadTimer = setTimeout(()=>{
+  _autoReloadTimer = setTimeout(()=>{
     clearAutoReloadTimers();
     localStorage.setItem(KEY_APP_LAST_RELOAD, String(Date.now()));
-
-    // ✅ before reloading, make "current" become "latest"
-    const latest = localStorage.getItem(KEY_APP_LATEST_VERSION) || "";
-    if(latest) localStorage.setItem(KEY_APP_VERSION, latest);
-
+    // Hard reload helps ensure the newest assets are requested.
     location.reload();
   }, AUTO_REFRESH_COUNTDOWN_S * 1000);
-
+}
 
 function postponeAutoReload(minutes=10){
   clearAutoReloadTimers();
@@ -5433,110 +5341,39 @@ async function getLatestVersion(){
   }
 }
 
-  function fmtLastChecked(ts){
-  if(!ts) return "—";
-  const d = new Date(ts);
-  return d.toLocaleString([], { month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit" });
-}
-
-function setText(el, val){
-  if(!el) return;
-  el.textContent = (val === null || val === undefined || val === "") ? "—" : String(val);
-}
-
-function setStatusEl(el, text, cls){
-  if(!el) return;
-  el.classList.remove("good","warn","bad","muted");
-  if(cls) el.classList.add(cls);
-  el.textContent = text || "—";
-}
-
-function renderUpdatesCard(){
-  const current = localStorage.getItem(KEY_APP_VERSION) || "";
-  const prev    = localStorage.getItem(KEY_APP_PREVIOUS_VERSION) || "";
-  const latest  = localStorage.getItem(KEY_APP_LATEST_VERSION) || "";
-  const lastCheckedTs = localStorage.getItem("gym_updates_last_checked_ts_v1") || "";
-
-  setText(upCurrent, current || "—");
-  setText(upPrevious, prev || "—");
-  setText(upLatest, latest || "—");
-  setText(upChecked, fmtLastChecked(lastCheckedTs));
-
-  const isOnline = navigator.onLine !== false;
-
-  if(!isOnline){
-    setStatusEl(upConn, "Offline", "bad");
-  } else if(!appHasService){
-    setStatusEl(upConn, "Online (No Service)", "warn");
-  } else {
-    setStatusEl(upConn, "Online", "good");
-  }
-
-  if(!isOnline){
-    setStatusEl(upStatus, "Unable to check (offline)", "muted");
-    return;
-  }
-  if(!appHasService){
-    setStatusEl(upStatus, "Unable to check (no service)", "warn");
-    return;
-  }
-  if(!current){
-    setStatusEl(upStatus, "Unknown", "muted");
-    return;
-  }
-
-  // ✅ Compare current vs latest
-  if(latest && current !== latest){
-    setStatusEl(upStatus, "Update available", "warn");
-  } else {
-    setStatusEl(upStatus, "Up to date", "good");
-  }
-}
-
-
-
 async function checkForUpdate(){
   try{
-    localStorage.setItem("gym_updates_last_checked_ts_v1", String(Date.now()));
-
     const latest = await getLatestVersion();
-    if(!latest){
-      renderUpdatesCard();
-      return;
-    }
+    if(!latest) return;
 
-    // ✅ always store latest separately
-    localStorage.setItem(KEY_APP_LATEST_VERSION, latest);
+    const last = localStorage.getItem(KEY_APP_VERSION);
 
-    const current = localStorage.getItem(KEY_APP_VERSION);
-
-    // First run: if we don’t have a current version yet
-    if(!current){
+    // First run: store and render, no banner.
+    if(!last){
       localStorage.setItem(KEY_APP_VERSION, latest);
       renderHeaderPills();
-      renderUpdatesCard();
       return;
     }
 
-    // ✅ If current != latest, update is available
-    if(current !== latest){
+    if(last !== latest){
       showUpdateBanner();
-      renderUpdatesCard();
-      scheduleAutoReload();
+      localStorage.setItem(KEY_APP_VERSION, latest);
+      renderHeaderPills();
+
+      // Best-effort SW update (safe no-op if unused)
       tryUpdateServiceWorker();
+
+      // Production behavior: auto-refresh with safeguards
+      scheduleAutoReload();
       return;
     }
 
     // No update
     renderHeaderPills();
-    renderUpdatesCard();
-
   }catch(e){
     console.log("checkForUpdate error:", e);
-    renderUpdatesCard();
   }
 }
-
   let appHasService = true; // "service" = can actually reach version.json
 
 function setOnlineUI(isOnline, hasService){
@@ -5614,44 +5451,6 @@ document.addEventListener("click", (e)=>{
   // force a reload (browser will fetch latest files)
   location.reload();
 });
-
-  upCheckNowBtn?.addEventListener("click", async ()=>{
-  await checkForUpdate();
-  alert("Checked ✅");
-});
-
-upUpdateNowBtn?.addEventListener("click", ()=>{
-  localStorage.setItem(KEY_APP_LAST_RELOAD, String(Date.now()));
-  location.reload();
-});
-
-async function clearCachesAndReload(){
-  try{
-    // Unregister SW if present
-    if("serviceWorker" in navigator){
-      const reg = await navigator.serviceWorker.getRegistration();
-      if(reg) await reg.unregister();
-    }
-
-    // Clear Cache Storage (if supported)
-    if("caches" in window){
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }
-  }catch(e){
-    console.log("clearCachesAndReload error:", e);
-  }finally{
-    localStorage.setItem(KEY_APP_LAST_RELOAD, String(Date.now()));
-    location.reload();
-  }
-}
-
-upClearCacheBtn?.addEventListener("click", ()=>{
-  const ok = confirm("Clear cache + reload? (This can fix stuck updates)");
-  if(!ok) return;
-  clearCachesAndReload();
-});
-
   
 /* ---------------------------
    Init (single pass)
@@ -5678,8 +5477,6 @@ function init(){
   renderHeaderPills();
   renderStorageInfo();
   renderLastBackup();
-  renderUpdatesCard();
-
 
   // Default view settings
   setBWView("table");
