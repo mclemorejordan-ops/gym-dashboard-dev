@@ -30,13 +30,22 @@
 <body>
 <header>
   <h1>Gym Dashboard</h1>
-  <div class="sub" id="headerSub">—</div>
 
-  <!-- ✅ Network + cache health -->
-  <div class="statusRow" aria-live="polite">
-    <span id="netBadge" class="netBadge" style="display:none;">Offline mode</span>
+  <!-- Pills row -->
+  <div class="headerPills" aria-live="polite">
+    <span class="pillChip" id="hdrWorkout">—</span>
+
+    <!-- Keep same ID so your existing offline logic still works -->
+    <span id="netBadge" class="pillChip netBadge online">Online</span>
+
+    <!-- Version pill -->
+    <span class="pillChip" id="headerVersion">v—</span>
   </div>
+
+  <!-- Keep this ID for compatibility; we’ll populate it with a clean fallback line if needed -->
+  <div class="sub" id="headerSub" style="display:none;">—</div>
 </header>
+
 
 
 <main>
