@@ -186,10 +186,6 @@ const storageInfo = document.getElementById("storageInfo");
 const storageWarn = document.getElementById("storageWarn");
 const runRefreshBtn = document.getElementById("runRefreshBtn");
 
-function renderAppVersion(){
-  const el = document.getElementById("appVersionText");
-  if(!el) return;
-
   const v = localStorage.getItem(KEY_APP_VERSION) || "";
   el.textContent = v || "—";
 }
@@ -3382,18 +3378,20 @@ function init(){
   renderHeaderSub();
   renderStorageInfo();
   renderLastBackup();
-  renderAppVersion();
-
 
   initNetworkIndicators(); // ✅ Offline badge + back-online toast + last sync
-
 
   // Default view settings
   setBWView("table");
   setLiftView("table");
   applyLiftFiltersFromUI();
+  renderAppVersion();
 
-  checkForUpdate();        // ✅ ADD THIS LINE
+
+  // ✅ Ensure version is loaded, then render it
+checkForUpdate().finally(()=> {
+  renderAppVersion();
+});
 
 /* ---------------------------
    PWA: Service Worker registration + update flow
