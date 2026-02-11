@@ -3619,6 +3619,8 @@ routineSelect.addEventListener("change", ()=>{
     renderLiftRoutineDropdown();
     buildRoutineExerciseSuggestions();
 
+   renderHeaderPills();
+    refreshHome();
     return;
   }
 
@@ -3628,6 +3630,10 @@ routineSelect.addEventListener("change", ()=>{
   renderPPL();
   renderLiftRoutineDropdown();
   buildRoutineExerciseSuggestions();
+
+   // ✅ ADD
+  renderHeaderPills();
+  refreshHome(); 
 });
 
 
@@ -4923,6 +4929,12 @@ rtRestToggle.addEventListener("change", ()=>{
   }
   rtDayRestNotice.style.display = draftRoutine.days[k].rest ? "block" : "none";
   renderRtDayTabs();
+
+  // ✅ ADD (live update if editing today's rest toggle)
+  if(editDayIndex === getTodaySplitIndex()){
+    renderHeaderPills();
+    refreshHome();
+  }
 });
 
 rtAddExBtn.addEventListener("click", ()=>{
@@ -4976,12 +4988,16 @@ rtSaveBtn.addEventListener("click", ()=>{
   setActiveRoutine(draftRoutine.id);
 
   closeRoutineEditor();
-  renderRoutineDropdown();
-  renderPPL();
-  renderLiftRoutineDropdown();
-  buildRoutineExerciseSuggestions();
+renderRoutineDropdown();
+renderPPL();
+renderLiftRoutineDropdown();
+buildRoutineExerciseSuggestions();
 
-  // If onboarding is not done yet, finish it and send to Home
+// ✅ ADD: update header + home immediately (no manual refresh)
+renderHeaderPills();
+refreshHome();
+
+// If onboarding is not done yet, finish it and send to Home
 if(!isOnboardingDone()){
   setOnboardingDone();
   refreshHome();
