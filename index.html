@@ -4243,18 +4243,21 @@ if(pplTabs){
   }, {passive:true});
 
   pplTabs.addEventListener("touchmove", (e)=>{
-    const t = e.touches && e.touches[0];
-    if(!t) return;
+  // ✅ ONLY preventDefault if the carousel can actually scroll horizontally
+  if(pplTabs.scrollWidth <= pplTabs.clientWidth) return;
 
-    const dx = t.clientX - sx;
-    const dy = t.clientY - sy;
+  const t = e.touches && e.touches[0];
+  if(!t) return;
 
-    // If user is swiping mostly sideways, prevent page scroll/rubber-band
-    if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 6){
-      e.preventDefault();
-    }
-  }, {passive:false});
-}
+  const dx = t.clientX - sx;
+  const dy = t.clientY - sy;
+
+  // if it's mostly horizontal, stop Safari from moving the page
+  if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 6){
+    e.preventDefault();
+  }
+}, {passive:false});
+
 
 
 function renderPPL(){
