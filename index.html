@@ -3422,9 +3422,14 @@ document.getElementById("pSaveBtn").addEventListener("click", ()=>{
     bed:Number(pBed.value)||0,
   };
   LS.set(KEY_PRO, proteinMap);
-refreshHome();
-alert("Saved ✅");
+
+  // ✅ ADD THESE
+  renderHeaderPills();  // updates "Xg / Goal"
+  refreshHome();        // updates home circle + focus text
+
+  alert("Saved ✅");
 });
+
 
 /* ---------------------------
    Lifts + PR helpers
