@@ -3261,9 +3261,15 @@ const backupNowBtn = document.getElementById("backupNowBtn");
 
 function buildExportPayload(){
   return {
-    v: 3,
+    v: 4,
     exportedAt: new Date().toISOString(),
+
+    // ✅ identity + app state
     profile: LS.get(KEY_PROFILE, defaultProfile()),
+    onboardDone: (localStorage.getItem(KEY_ONBOARD_DONE) === "1"),
+    appVersion: localStorage.getItem(KEY_APP_VERSION) || null,
+
+    // existing
     lastBackup: localStorage.getItem(KEY_LAST_BACKUP) || null,
     activeScreen: localStorage.getItem(KEY_ACTIVE_SCREEN) || "home",
 
@@ -3275,6 +3281,7 @@ function buildExportPayload(){
     activeRoutineId: LS.get(KEY_ACTIVE_ROUTINE, null)
   };
 }
+
 function downloadJSON(filename, obj){
   const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -3307,35 +3314,68 @@ importFile.addEventListener("change", async ()=>{
     const text = await file.text();
     const data = JSON.parse(text);
 
-    const bw = Array.isArray(data.bwLogs) ? data.bwLogs : null;
-    const att = Array.isArray(data.attendance) ? data.attendance : null;
-    const pro = (data.proteinMap && typeof data.proteinMap === "object") ? data.proteinMap : null;
-    const lf = Array.isArray(data.lifts) ? data.lifts : null;
-    const rts = Array.isArray(data.routines) ? data.routines : null;
-    const arId = (typeof data.activeRoutineId === "string" || data.activeRoutineId === null) ? data.activeRoutineId : null;
+const bw = Array.isArray(data.bwLogs) ? data.bwLogs : null;
+const att = Array.isArray(data.attendance) ? data.attendance : null;
+const pro = (data.proteinMap && typeof data.proteinMap === "object") ? data.proteinMap : null;
+const lf = Array.isArray(data.lifts) ? data.lifts : null;
+const rts = Array.isArray(data.routines) ? data.routines : null;
+const arId = (typeof data.activeRoutineId === "string" || data.activeRoutineId === null) ? data.activeRoutineId : null;
 
-    if(!bw || !att || !pro || !lf || !rts){
-      alert("That file doesn’t look like a valid export from this dashboard.");
-      return;
-    }
+// ✅ NEW: identity + app state (optional but strongly validated when present)
+const prof = (data.profile && typeof data.profile === "object") ? data.profile : null;
+const onboardDone = (typeof data.onboardDone === "boolean") ? data.onboardDone : null;
+const appVer = (typeof data.appVersion === "string" || data.appVersion === null) ? data.appVersion : null;
+
+if(!bw || !att || !pro || !lf || !rts){
+  alert("That file doesn’t look like a valid export from this dashboard.");
+  return;
+}
+
+// profile should exist in your exports — but fail-open for older files
+// (we'll seed default if missing)
+
 
     const ok = confirm("Import will overwrite your current saved data on this browser. Continue?");
     if(!ok) return;
 
-    LS.set(KEY_BW, bw);
-    LS.set(KEY_ATT, att);
-    LS.set(KEY_PRO, pro);
-    LS.set(KEY_LIFTS, lf);
-    LS.set(KEY_ROUTINES, rts);
-    LS.set(KEY_ACTIVE_ROUTINE, arId);
+    // ✅ Restore identity + state FIRST (so downstream renders use correct profile/goal)
+LS.set(KEY_PROFILE, prof || defaultProfile());
 
-    bwLogs = LS.get(KEY_BW, []);
-    attendance = new Set(LS.get(KEY_ATT, []));
-    proteinMap = LS.get(KEY_PRO, {});
-    lifts = LS.get(KEY_LIFTS, []);
-    ensureLiftCompatibility();
+if(onboardDone === true) localStorage.setItem(KEY_ONBOARD_DONE, "1");
+else if(onboardDone === false) localStorage.removeItem(KEY_ONBOARD_DONE);
 
-    ({routines, activeId: activeRoutineId} = loadRoutines());
+// ✅ Restore app version if present (prevents update banner logic from behaving weirdly)
+// Also clear any pending version — import should represent a stable snapshot.
+if(appVer){
+  localStorage.setItem(KEY_APP_VERSION, appVer);
+} else if(appVer === null && data.v >= 4){
+  localStorage.removeItem(KEY_APP_VERSION);
+}
+localStorage.removeItem(window.KEY_PENDING_VERSION || "gym_pending_version_v1");
+
+// Then restore the core datasets
+LS.set(KEY_BW, bw);
+LS.set(KEY_ATT, att);
+LS.set(KEY_PRO, pro);
+LS.set(KEY_LIFTS, lf);
+LS.set(KEY_ROUTINES, rts);
+LS.set(KEY_ACTIVE_ROUTINE, arId);
+
+
+    // ✅ Re-hydrate in-memory state (including profile)
+profile = loadProfile();
+hydrateSettingsUI();
+hydrateOnboardingInputs();
+renderHeaderSub();
+
+bwLogs = LS.get(KEY_BW, []);
+attendance = new Set(LS.get(KEY_ATT, []));
+proteinMap = LS.get(KEY_PRO, {});
+lifts = LS.get(KEY_LIFTS, []);
+ensureLiftCompatibility();
+
+({routines, activeId: activeRoutineId} = loadRoutines());
+
 
     // ✅ init data + state first
 renderCal();
