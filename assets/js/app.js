@@ -47,11 +47,8 @@ document.addEventListener("DOMContentLoaded", ()=>{
    Offline Indicator + Cache Health
 =========================== */
 const netBadge = document.getElementById("netBadge");
+const lastSyncText = document.getElementById("lastSyncText");
 const toastHost = document.getElementById("toastHost");
-const lastSyncText = document.getElementById("lastSyncText"); // (optional) header may not have this
-const appVersionText = document.getElementById("appVersionText");
-const appLastSyncText = document.getElementById("appLastSyncText");
-
 
 let _wasOffline = false;
 
@@ -63,18 +60,9 @@ function formatLastSync(iso){
 }
 
 function renderLastSync(){
+  if(!lastSyncText) return;
   const iso = localStorage.getItem(window.KEY_LAST_SYNC || "gym_last_sync_v1");
-  const nice = formatLastSync(iso);
-
-  // Header (only if it exists)
-  if(lastSyncText){
-    lastSyncText.textContent = `Last sync: ${nice}`;
-  }
-
-  // Settings (preferred location)
-  if(appLastSyncText){
-    appLastSyncText.textContent = nice;
-  }
+  lastSyncText.textContent = `Last sync: ${formatLastSync(iso)}`;
 }
 
 function showToast(msg, ms=2200){
@@ -115,10 +103,7 @@ function initNetworkIndicators(){
   // initial paint
   _wasOffline = (navigator.onLine === false);
   renderNetStatus({ showBackOnlineToast: false });
-
-  // Render cache health + version (settings)
   renderLastSync();
-  renderAppVersion();
 
   window.addEventListener("offline", ()=>{
     renderNetStatus({ showBackOnlineToast: false });
@@ -134,12 +119,6 @@ function initNetworkIndicators(){
   });
 }
 
-
-function renderAppVersion(){
-  if(!appVersionText) return;
-  const v = localStorage.getItem(KEY_APP_VERSION) || "";
-  appVersionText.textContent = v ? `v${v}` : "—";
-}
 
 
 let modalDepth = 0;
@@ -416,11 +395,17 @@ function renderHeaderSub(){
   const sub = document.getElementById("headerSub");
   if(!sub) return;
 
+  const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
   const goal = Number(profile?.proteinGoal || 240) || 240;
 
-  // Header should only show Protein goal (per requirement)
-  sub.textContent = `Protein goal ${goal}g`;
+  const v = localStorage.getItem(KEY_APP_VERSION) || "";
+
+  sub.textContent =
+    `Minimal tracker • Protein goal ${goal}g • ${restTxt}` +
+    (v ? ` • v${v}` : "");
 }
+
+
 
 
 // Replace PRO_GOAL usage with this
@@ -696,15 +681,10 @@ const onEnterScreen = {
   },
 
   settings: () => {
-  hydrateSettingsUI();
-  renderStorageInfo();
-  renderLastBackup();
-
-  // Settings → App Info pills
-  renderAppVersion();
-  renderLastSync();
-}
-
+    hydrateSettingsUI();
+    renderStorageInfo();
+    renderLastBackup();
+  }
 };
 
 /* ---------------------------
