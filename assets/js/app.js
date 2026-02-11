@@ -3432,7 +3432,20 @@ function init(){
 if("serviceWorker" in navigator){
   window.addEventListener("load", async ()=>{
     try{
-      const reg = await navigator.serviceWorker.register("./sw.js", { scope:"./" });
+      // ✅ Force SW update whenever version.json changes (even if sw.js file content didn't)
+      let swUrl = "./sw.js";
+      try{
+        const vRes = await fetch("./version.json?ts=" + Date.now(), { cache: "no-store" });
+        if(vRes.ok){
+          const vData = await vRes.json();
+          const v = String(vData.version || "").trim();
+          if(v) swUrl = `./sw.js?swv=${encodeURIComponent(v)}`;
+        }
+      }catch(e){
+        // offline / fail-open: keep default sw.js
+      }
+
+      const reg = await navigator.serviceWorker.register(swUrl, { scope:"./" });
 
       // ✅ store globally (your file already expects this)
       window.__SW_REG__ = reg;
