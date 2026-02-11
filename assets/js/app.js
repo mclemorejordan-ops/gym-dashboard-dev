@@ -644,9 +644,11 @@ function toggleTodayAttendance(){
 
 homeCheckInBtn?.addEventListener("click", toggleTodayAttendance);
 /* ---------------------------
-   Screen Router (Option A) — FIXED
+   Screen Router (Option A)
+   - Use the canonical key from storage.js
 ---------------------------- */
-const KEY_ACTIVE_SCREEN = "gym_active_screen_v1";
+const KEY_ACTIVE_SCREEN = window.KEY_ACTIVE_SCREEN;
+
 
 const onEnterScreen = {
   home: () => {
