@@ -88,7 +88,11 @@ function renderNetStatus({ showBackOnlineToast=false } = {}){
   const online = navigator.onLine !== false;
 
   if(netBadge){
-    netBadge.style.display = online ? "none" : "inline-flex";
+    // Always show a pill; switch text + class
+    netBadge.style.display = "inline-flex";
+    netBadge.textContent = online ? "Online" : "⚠ Offline";
+    netBadge.classList.toggle("online", online);
+    netBadge.classList.toggle("offline", !online);
   }
 
   // If we were offline and came back online, toast it
@@ -98,6 +102,7 @@ function renderNetStatus({ showBackOnlineToast=false } = {}){
 
   _wasOffline = !online;
 }
+
 
 function initNetworkIndicators(){
   // initial paint
@@ -545,17 +550,50 @@ function saveProfile(next){
 
 
 function renderHeaderSub(){
+  // Pills
+  const workoutPill = document.getElementById("hdrWorkout");
+  const verPill = document.getElementById("headerVersion");
+
+  // Fallback (kept for compatibility)
   const sub = document.getElementById("headerSub");
-  if(!sub) return;
 
-  const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
-  const goal = Number(profile?.proteinGoal || 240) || 240;
+  // --- Workout label (today) ---
+  let workoutLabel = "—";
+  try{
+    const ar = getActiveRoutine();
+    const todayIdx = getTodaySplitIndex(); // Mon=0..Sun=6
+    const dayKey = DAY_KEYS[todayIdx];
+    const day = ar?.days?.[dayKey] || { label:"", rest:false };
 
+    if(day.rest){
+      workoutLabel = "Rest Day";
+    } else {
+      const raw = String(day.label || "").trim();
+      if(raw){
+        // If it's a single word like "Push", make it "Push Day"
+        const singleWord = raw.split(/\s+/).length === 1;
+        const alreadyDay = /day$/i.test(raw);
+        workoutLabel = (singleWord && !alreadyDay) ? `${raw} Day` : raw;
+      } else {
+        // If no label, fall back to weekday key (Mon/Tue/etc.)
+        workoutLabel = `${dayKey} Workout`;
+      }
+    }
+  }catch{}
+
+  // --- Version pill (applied version) ---
   const v = localStorage.getItem(KEY_APP_VERSION) || "";
+  const vTxt = v ? `v${v}` : "v—";
 
-  sub.textContent =
-    `Minimal tracker • Protein goal ${goal}g • ${restTxt}` +
-    (v ? ` • v${v}` : "");
+  if(workoutPill) workoutPill.textContent = workoutLabel;
+  if(verPill) verPill.textContent = vTxt;
+
+  // Keep old sub as hidden fallback text (in case)
+  if(sub){
+    const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
+    const goal = Number(profile?.proteinGoal || 240) || 240;
+    sub.textContent = `Minimal tracker • Protein goal ${goal}g • ${restTxt} • ${vTxt}`;
+  }
 }
 
 
@@ -1845,10 +1883,13 @@ function renderRoutineDropdown(forceId){
     const ar = getActiveRoutine();
     activeRoutineMeta.textContent = `${ar.name} • ${DAY_KEYS.length} days`;
   } else {
-    // template selected, meta can stay based on current active routine
     const ar = getActiveRoutine();
     activeRoutineMeta.textContent = `${ar.name} • ${DAY_KEYS.length} days`;
   }
+
+  // ✅ keep header pills synced when routine changes
+  renderHeaderSub();
+}
 }
   
 routineSelect.addEventListener("change", ()=>{
@@ -1980,6 +2021,10 @@ function renderPPL(){
   const day = ar.days[dayKey];
 
   pplList.innerHTML = "";
+
+  // ✅ update header workout pill immediately when day changes
+  renderHeaderSub();
+
 
   if(day.rest){
     const restCard = document.createElement("div");
