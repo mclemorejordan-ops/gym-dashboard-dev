@@ -84,18 +84,31 @@ function showToast(msg, ms=2200){
   }, ms);
 }
 
+// ---- Connectivity (navigator.onLine can lie on iOS airplane mode) ----
+let _netPingOk = true;
+let _pingInFlight = false;
+let _lastPingOkAt = 0;
+
+function isEffectivelyOnline(){
+  // If the browser explicitly says offline, trust it
+  if(navigator.onLine === false) return false;
+
+  // Otherwise, require a recent successful ping (or allow first-run grace)
+  const age = Date.now() - (_lastPingOkAt || 0);
+  const grace = (_lastPingOkAt === 0); // before first ping completes
+  return grace ? true : (_netPingOk && age < 45_000); // 45s freshness window
+}
+
 function renderNetStatus({ showBackOnlineToast=false } = {}){
-  const online = navigator.onLine !== false;
+  const online = isEffectivelyOnline();
 
   if(netBadge){
-    // Always show a pill; switch text + class
     netBadge.style.display = "inline-flex";
     netBadge.textContent = online ? "Online" : "⚠ Offline";
     netBadge.classList.toggle("online", online);
     netBadge.classList.toggle("offline", !online);
   }
 
-  // If we were offline and came back online, toast it
   if(online && _wasOffline && showBackOnlineToast){
     showToast("Back online ✅");
   }
@@ -103,19 +116,64 @@ function renderNetStatus({ showBackOnlineToast=false } = {}){
   _wasOffline = !online;
 }
 
+async function pingConnectivity(){
+  if(_pingInFlight) return;
+  if(document.visibilityState === "hidden") return;
+
+  _pingInFlight = true;
+
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), 2500);
+
+  try{
+    // version.json is same-origin, tiny, and already part of your update strategy
+    const res = await fetch("./version.json?ping=" + Date.now(), {
+      cache: "no-store",
+      signal: ctrl.signal
+    });
+
+    if(res && res.ok){
+      _netPingOk = true;
+      _lastPingOkAt = Date.now();
+    } else {
+      _netPingOk = false;
+    }
+  }catch(e){
+    _netPingOk = false;
+  }finally{
+    clearTimeout(t);
+    _pingInFlight = false;
+    renderNetStatus({ showBackOnlineToast: false });
+  }
+}
 
 function initNetworkIndicators(){
-  // initial paint
+  // initial paint (always show pill)
   _wasOffline = (navigator.onLine === false);
   renderNetStatus({ showBackOnlineToast: false });
   renderLastSync();
 
+  // First ping ASAP
+  pingConnectivity();
+
+  // Keep it accurate (airplane mode / captive portal / flaky wifi)
+  const iv = setInterval(pingConnectivity, 15_000);
+
   window.addEventListener("offline", ()=>{
+    _netPingOk = false;
     renderNetStatus({ showBackOnlineToast: false });
   });
 
   window.addEventListener("online", ()=>{
-    renderNetStatus({ showBackOnlineToast: true });
+    // don’t instantly claim “Online” — confirm via ping
+    pingConnectivity();
+    renderNetStatus({ showBackOnlineToast: false });
+  });
+
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.visibilityState === "visible"){
+      pingConnectivity();
+    }
   });
 
   // Update "Last sync" when LS.set writes
@@ -123,6 +181,7 @@ function initNetworkIndicators(){
     renderLastSync();
   });
 }
+
 
 
 
@@ -557,36 +616,64 @@ function renderHeaderSub(){
   // Fallback (kept for compatibility)
   const sub = document.getElementById("headerSub");
 
-  // --- Workout label (today) ---
-  let workoutLabel = "—";
-  try{
-    const ar = getActiveRoutine();
-    const todayIdx = getTodaySplitIndex(); // Mon=0..Sun=6
-    const dayKey = DAY_KEYS[todayIdx];
-    const day = ar?.days?.[dayKey] || { label:"", rest:false };
+  // --- Workout label (Today OR selected Routine day) ---
+let workoutLabel = "—";
+try{
+  const ar = getActiveRoutine();
 
+  // If user is on Routine screen, show the currently selected day tab
+  const activeScreen = localStorage.getItem(KEY_ACTIVE_SCREEN) || "home";
+  const useIdx = (activeScreen === "routine")
+    ? (typeof activeDayIndex === "number" ? activeDayIndex : 0)
+    : getTodaySplitIndex(); // Mon=0..Sun=6
+
+  const dayKey = DAY_KEYS[useIdx] || DAY_KEYS[0];
+  const day = ar?.days?.[dayKey] || { label:"", rest:false };
+
+  const raw = String(day.label || "").trim();
+
+  if(activeScreen === "routine"){
+    // Routine screen: keep it concise + informative
+    if(day.rest){
+      workoutLabel = `${dayKey} • Rest`;
+    } else if(raw){
+      workoutLabel = `${dayKey} • ${raw}`;
+    } else {
+      workoutLabel = `${dayKey} • Workout`;
+    }
+  } else {
+    // Everywhere else: "Push Day" style (your original preference)
     if(day.rest){
       workoutLabel = "Rest Day";
+    } else if(raw){
+      const singleWord = raw.split(/\s+/).length === 1;
+      const alreadyDay = /day$/i.test(raw);
+      workoutLabel = (singleWord && !alreadyDay) ? `${raw} Day` : raw;
     } else {
-      const raw = String(day.label || "").trim();
-      if(raw){
-        // If it's a single word like "Push", make it "Push Day"
-        const singleWord = raw.split(/\s+/).length === 1;
-        const alreadyDay = /day$/i.test(raw);
-        workoutLabel = (singleWord && !alreadyDay) ? `${raw} Day` : raw;
-      } else {
-        // If no label, fall back to weekday key (Mon/Tue/etc.)
-        workoutLabel = `${dayKey} Workout`;
-      }
+      workoutLabel = `${dayKey} Workout`;
     }
-  }catch{}
+  }
+}catch{}
 
-  // --- Version pill (applied version) ---
-  const v = localStorage.getItem(KEY_APP_VERSION) || "";
-  const vTxt = v ? `v${v}` : "v—";
 
-  if(workoutPill) workoutPill.textContent = workoutLabel;
-  if(verPill) verPill.textContent = vTxt;
+// --- Version pill (align with version.json) ---
+// If an update is detected, KEY_PENDING_VERSION stores the latest version.json value.
+// Show that (because it matches version.json). Otherwise show applied.
+const pending = localStorage.getItem(window.KEY_PENDING_VERSION || "gym_pending_version_v1") || "";
+const current = localStorage.getItem(KEY_APP_VERSION) || "";
+const shown = (pending && pending !== current) ? pending : current;
+const vTxt = shown ? `v${shown}` : "v—";
+
+if(workoutPill) workoutPill.textContent = workoutLabel;
+
+if(verPill){
+  verPill.textContent = vTxt;
+  verPill.classList.toggle("warn", !!(pending && pending !== current));
+  verPill.title = (pending && pending !== current)
+    ? `Update available (current: v${current || "—"}, latest: v${pending})`
+    : `Current version: ${vTxt}`;
+}
+
 
   // Keep old sub as hidden fallback text (in case)
   if(sub){
