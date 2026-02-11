@@ -5380,13 +5380,17 @@ function scheduleAutoReload(){
     setUpdateBannerSub(`Auto-refreshing in ${remaining}s… (click banner to postpone)`);
   }, 1000);
 
-  _autoReloadTimer = setTimeout(()=>{
+    _autoReloadTimer = setTimeout(()=>{
     clearAutoReloadTimers();
     localStorage.setItem(KEY_APP_LAST_RELOAD, String(Date.now()));
-    // Hard reload helps ensure the newest assets are requested.
+
+    // ✅ before reloading, make "current" become "latest"
+    const latest = localStorage.getItem(KEY_APP_LATEST_VERSION) || "";
+    if(latest) localStorage.setItem(KEY_APP_VERSION, latest);
+
     location.reload();
   }, AUTO_REFRESH_COUNTDOWN_S * 1000);
-}
+
 
 function postponeAutoReload(minutes=10){
   clearAutoReloadTimers();
@@ -5450,7 +5454,7 @@ function setStatusEl(el, text, cls){
 function renderUpdatesCard(){
   const current = localStorage.getItem(KEY_APP_VERSION) || "";
   const prev    = localStorage.getItem(KEY_APP_PREVIOUS_VERSION) || "";
-  const latest  = localStorage.getItem(KEY_APP_VERSION) || ""; // latest stored when checkForUpdate sees it
+  const latest  = localStorage.getItem(KEY_APP_LATEST_VERSION) || "";
   const lastCheckedTs = localStorage.getItem("gym_updates_last_checked_ts_v1") || "";
 
   setText(upCurrent, current || "—");
@@ -5458,8 +5462,8 @@ function renderUpdatesCard(){
   setText(upLatest, latest || "—");
   setText(upChecked, fmtLastChecked(lastCheckedTs));
 
-  // Connection line (uses your existing appHasService + navigator.onLine)
   const isOnline = navigator.onLine !== false;
+
   if(!isOnline){
     setStatusEl(upConn, "Offline", "bad");
   } else if(!appHasService){
@@ -5468,7 +5472,6 @@ function renderUpdatesCard(){
     setStatusEl(upConn, "Online", "good");
   }
 
-  // Status line: compare versions if we have both
   if(!isOnline){
     setStatusEl(upStatus, "Unable to check (offline)", "muted");
     return;
@@ -5477,22 +5480,23 @@ function renderUpdatesCard(){
     setStatusEl(upStatus, "Unable to check (no service)", "warn");
     return;
   }
-
-  // If we have any current version at all:
   if(!current){
     setStatusEl(upStatus, "Unknown", "muted");
     return;
   }
 
-  // If current == latest (stored), up-to-date. If mismatch, update available.
-  // (Because we store latest into KEY_APP_VERSION when checkForUpdate() finds it.)
-  setStatusEl(upStatus, "Up to date", "good");
+  // ✅ Compare current vs latest
+  if(latest && current !== latest){
+    setStatusEl(upStatus, "Update available", "warn");
+  } else {
+    setStatusEl(upStatus, "Up to date", "good");
+  }
 }
+
 
 
 async function checkForUpdate(){
   try{
-    // stamp last-checked regardless of outcome
     localStorage.setItem("gym_updates_last_checked_ts_v1", String(Date.now()));
 
     const latest = await getLatestVersion();
@@ -5501,9 +5505,12 @@ async function checkForUpdate(){
       return;
     }
 
+    // ✅ always store latest separately
+    localStorage.setItem(KEY_APP_LATEST_VERSION, latest);
+
     const current = localStorage.getItem(KEY_APP_VERSION);
 
-    // First run: store current + render
+    // First run: if we don’t have a current version yet
     if(!current){
       localStorage.setItem(KEY_APP_VERSION, latest);
       renderHeaderPills();
@@ -5511,23 +5518,12 @@ async function checkForUpdate(){
       return;
     }
 
-    // New version detected
+    // ✅ If current != latest, update is available
     if(current !== latest){
-      // store previous once
-      localStorage.setItem(KEY_APP_PREVIOUS_VERSION, current);
-
-      // store new as current (your app uses KEY_APP_VERSION in header)
-      localStorage.setItem(KEY_APP_VERSION, latest);
-
       showUpdateBanner();
-      renderHeaderPills();
       renderUpdatesCard();
-
-      // Best-effort SW update (safe no-op if unused)
-      tryUpdateServiceWorker();
-
-      // Production behavior: auto-refresh with safeguards
       scheduleAutoReload();
+      tryUpdateServiceWorker();
       return;
     }
 
