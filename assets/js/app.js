@@ -46,9 +46,17 @@ document.addEventListener("DOMContentLoaded", ()=>{
 /* ===========================
    Offline Indicator + Cache Health
 =========================== */
-const netBadge = document.getElementById("netBadge");
-const lastSyncText = document.getElementById("lastSyncText");
-const toastHost = document.getElementById("toastHost");
+let netBadge = null;
+let lastSyncText = null;
+let toastHost = null;
+
+function refreshStatusDomRefs(){
+  // Call anytime after DOM is ready (safe to call repeatedly)
+  netBadge = document.getElementById("netBadge");
+  lastSyncText = document.getElementById("lastSyncText");
+  toastHost = document.getElementById("toastHost");
+}
+
 
 let _wasOffline = false;
 
@@ -148,10 +156,14 @@ async function pingConnectivity(){
 }
 
 function initNetworkIndicators(){
+  // ensure refs exist
+  refreshStatusDomRefs();
+
   // initial paint (always show pill)
   _wasOffline = (navigator.onLine === false);
   renderNetStatus({ showBackOnlineToast: false });
   renderLastSync();
+
 
   // First ping ASAP
   pingConnectivity();
@@ -1977,7 +1989,6 @@ function renderRoutineDropdown(forceId){
   // ✅ keep header pills synced when routine changes
   renderHeaderSub();
 }
-}
   
 routineSelect.addEventListener("change", ()=>{
   const val = routineSelect.value;
@@ -3732,6 +3743,14 @@ async function checkForUpdate(){
 
     const data = await res.json();
     const latest = String(data.version || "").trim();
+        // ✅ immediately reflect version.json in the header pill
+    try{
+      const verPill = document.getElementById("headerVersion");
+      if(verPill && latest){
+        verPill.textContent = `v${latest}`;
+      }
+    }catch(e){}
+
     if(!latest){
       console.log("version.json missing 'version' field:", data);
       return;
@@ -3803,6 +3822,15 @@ function init(){
   applyLiftFiltersFromUI();
 
   checkForUpdate();        // ✅ ADD THIS LINE
+
+    // ✅ One final header paint after hydration + async tasks begin
+  setTimeout(()=>{
+    try{
+      renderHeaderSub();
+      renderNetStatus({ showBackOnlineToast:false });
+    }catch(e){}
+  }, 0);
+
 
 /* ---------------------------
    PWA: Service Worker registration + update flow
