@@ -1103,6 +1103,46 @@ button:not(.navBtn):active,
   background: rgba(255, 209, 102, .10);
   color: var(--warn);
 }
+/* ===========================
+   Header Pills (Recommendation)
+=========================== */
+
+.headerPills{
+  margin-top: 10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.pillChip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.2px;
+
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(18,18,20,.55);
+  color: var(--muted);
+}
+
+/* Network pill states (re-uses existing #netBadge) */
+.netBadge.online{
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(18,18,20,.55);
+  color: var(--muted);
+}
+
+.netBadge.offline{
+  border:1px solid rgba(255, 209, 102, .35);
+  background: rgba(255, 209, 102, .10);
+  color: var(--warn);
+}
+
 
 /* Toasts sit above bottom nav */
 .toastHost{
