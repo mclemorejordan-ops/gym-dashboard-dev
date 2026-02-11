@@ -31,18 +31,17 @@
 <header>
   <h1>Gym Dashboard</h1>
 
-  <!-- Pills row -->
+  <!-- Header pills (Workout • Online/Offline • Version) -->
   <div class="headerPills" aria-live="polite">
-    <span class="pillChip" id="hdrWorkout">—</span>
+    <span id="hdrWorkout" class="pillChip">—</span>
 
-    <!-- Keep same ID so your existing offline logic still works -->
-    <span id="netBadge" class="pillChip netBadge online">Online</span>
+    <!-- Always visible; JS will update text + class -->
+    <span id="netBadge" class="netBadge online">Online</span>
 
-    <!-- Version pill -->
-    <span class="pillChip" id="headerVersion">v—</span>
+    <span id="headerVersion" class="pillChip">v—</span>
   </div>
 
-  <!-- Keep this ID for compatibility; we’ll populate it with a clean fallback line if needed -->
+  <!-- Legacy fallback text (kept for compatibility, hidden) -->
   <div class="sub" id="headerSub" style="display:none;">—</div>
 </header>
 
