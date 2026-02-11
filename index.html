@@ -549,7 +549,41 @@
 
       <button id="runRefreshBtn">Refresh Selected</button>
     </div>
+
+    <!-- ✅ Safety valve: App update panel -->
+    <div class="notice" style="margin-top:12px;">
+      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;">
+        <div><strong>App update</strong></div>
+        <div class="small muted" id="appUpdateStatus">—</div>
+      </div>
+
+      <div class="row" style="gap:8px; margin-top:10px; align-items:center;">
+        <button class="miniBtn" id="appUpdateCheckBtn" type="button">Check for update</button>
+        <button class="miniBtn" id="appUpdateApplyBtn" type="button" style="display:none;">Apply update</button>
+        <button class="ghost miniBtn" id="appUpdateHardReloadBtn" type="button">Hard reload</button>
+      </div>
+
+      <div class="row" style="gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap;">
+        <span class="pill">
+          <span class="muted">Current:</span>
+          <strong class="mono" id="appVerCurrent">—</strong>
+        </span>
+        <span class="pill">
+          <span class="muted">Latest:</span>
+          <strong class="mono" id="appVerLatest">—</strong>
+        </span>
+        <span class="pill">
+          <span class="muted">SW:</span>
+          <strong class="mono" id="appSwState">—</strong>
+        </span>
+      </div>
+
+      <div class="small muted" style="margin-top:8px;">
+        If an update is available, you can apply it here (or via the top banner). “Hard reload” is a fallback if caching gets weird.
+      </div>
+    </div>
   </section>
+
 
   <!-- Reset -->
   <section class="card">
