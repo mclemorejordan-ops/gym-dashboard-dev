@@ -3,27 +3,6 @@
 
 <html lang="en">
 <head>
-<script>
-(async () => {
-  try {
-    // Unregister any existing SWs from older builds
-    if ("serviceWorker" in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
-
-    // Clear Cache Storage (old SW precaches often live here)
-    if ("caches" in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }
-  } catch (e) {
-    // fail-open
-  }
-})();
-</script>
-
-  
   <meta charset="utf-8" />
   <meta name="viewport" content="
     width=device-width,
@@ -823,7 +802,38 @@
 
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- ✅ Update Banner (shows when a new deploy is detected) -->
+<div id="updateBanner" class="updateBanner" style="display:none;">
+  <div class="updateBannerInner">
+    <div class="updateText">
+      <div class="updateTitle">✨ Update available</div>
+      <div class="updateSub">Refresh to load the latest version.</div>
+    </div>
+    <button id="updateRefreshBtn" class="miniBtn tap">Refresh</button>
+  </div>
+</div>
+  <!-- Bottom Navigation -->
+<nav class="bottomNav">
+  <div class="bottomNavInner">
+    <button class="navBtn tap" data-go="home" data-nav="home">
+  <div class="icon">🏠</div><div>Home</div>
+</button>
+
+<button class="navBtn tap" data-go="routine" data-nav="routine">
+  <div class="icon">🗓️</div><div>Routine</div>
+</button>
+<button class="navBtn tap" type="button" data-go="lifts" data-nav="lifts">
+      <div class="icon">📈</div><div>Progress</div>
+    </button>
+<button class="navBtn tap" type="button" data-go="settings" data-nav="settings">
+      <div class="icon">⚙️</div><div>Settings</div>
+    </button>
+  </div>
+</nav>
+  <!-- ✅ Toast host (Back online, etc.) -->
+<div id="toastHost" class="toastHost" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <script>
 (async () => {
@@ -873,38 +883,5 @@
   }
 })();
 </script>
-
-
-
-  <!-- ✅ Update Banner (shows when a new deploy is detected) -->
-<div id="updateBanner" class="updateBanner" style="display:none;">
-  <div class="updateBannerInner">
-    <div class="updateText">
-      <div class="updateTitle">✨ Update available</div>
-      <div class="updateSub">Refresh to load the latest version.</div>
-    </div>
-    <button id="updateRefreshBtn" class="miniBtn tap">Refresh</button>
-  </div>
-</div>
-  <!-- Bottom Navigation -->
-<nav class="bottomNav">
-  <div class="bottomNavInner">
-    <button class="navBtn tap" data-go="home" data-nav="home">
-  <div class="icon">🏠</div><div>Home</div>
-</button>
-
-<button class="navBtn tap" data-go="routine" data-nav="routine">
-  <div class="icon">🗓️</div><div>Routine</div>
-</button>
-<button class="navBtn tap" type="button" data-go="lifts" data-nav="lifts">
-      <div class="icon">📈</div><div>Progress</div>
-    </button>
-<button class="navBtn tap" type="button" data-go="settings" data-nav="settings">
-      <div class="icon">⚙️</div><div>Settings</div>
-    </button>
-  </div>
-</nav>
-  <!-- ✅ Toast host (Back online, etc.) -->
-<div id="toastHost" class="toastHost" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>
