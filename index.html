@@ -1862,21 +1862,30 @@ header{
     </div>
   </section>
 
-      <div class="updatesPills" style="margin-top:10px;">
-        <div class="pillRow" id="uResLine1">—</div>
-        <div class="pillRow" id="uResLine2">—</div>
-        <div class="pillRow" id="uResLine3">—</div>
-        <div class="pillRow" id="uResLine4">—</div>
-        <div class="pillRow" id="uResLine5">—</div>
-        <div class="pillRow" id="uResLine6">—</div>
-      </div>
+      <!-- Update Result Popup -->
+<div id="updateResultModal" class="uModal" style="display:none;">
+  <div class="uModalCard">
+    <div class="uModalHead">
+      <div class="uModalTitle" id="uModalTitle">Update Result</div>
+      <button id="uModalCloseX" class="ghost tap" type="button">Close</button>
+    </div>
 
-      <div class="uModalActions">
-        <button id="uModalTryAgain" class="tap" type="button" style="display:none;">Try Again</button>
-        <button id="uModalCloseBtn" class="tap ghost" type="button">Close</button>
-      </div>
+    <div class="updatesPills" style="margin-top:10px;">
+      <div class="pillRow" id="uResLine1">—</div>
+      <div class="pillRow" id="uResLine2">—</div>
+      <div class="pillRow" id="uResLine3">—</div>
+      <div class="pillRow" id="uResLine4">—</div>
+      <div class="pillRow" id="uResLine5">—</div>
+      <div class="pillRow" id="uResLine6">—</div>
+    </div>
+
+    <div class="uModalActions">
+      <button id="uModalTryAgain" class="tap" type="button" style="display:none;">Try Again</button>
+      <button id="uModalCloseBtn" class="tap ghost" type="button">Close</button>
     </div>
   </div>
+</div>
+
 
   <!-- Reset -->
   <section class="card">
