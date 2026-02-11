@@ -103,18 +103,35 @@
   flex: 0 0 auto;
 }
 
-/* Status block has fixed width so the left side never shifts */
+/* Status block: desktop stable, mobile flexible */
 .hdrStatus{
   display:flex;
   align-items:center;
   justify-content:flex-end;
   gap:8px;
 
-  width: 170px;       /* key: keeps layout stable */
+  width: 170px;        /* desktop */
   flex: 0 0 170px;
 
   white-space:nowrap;
+  min-width: 0;
 }
+
+/* iPhone/small screens: DON'T force 170px */
+@media (max-width: 420px){
+  .hdrStatus{
+    width: auto;
+    flex: 0 1 auto;      /* allow shrink */
+    max-width: 140px;    /* prevents overflow */
+  }
+
+  .hdrOnline{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+}
+
 
 .hdrDot{
   width: 20px;
