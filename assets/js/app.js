@@ -48,6 +48,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
 =========================== */
 const netBadge = document.getElementById("netBadge");
 const lastSyncText = document.getElementById("lastSyncText");
+const appVersionText = document.getElementById("appVersionText");
 const toastHost = document.getElementById("toastHost");
 
 let _wasOffline = false;
@@ -62,7 +63,14 @@ function formatLastSync(iso){
 function renderLastSync(){
   if(!lastSyncText) return;
   const iso = localStorage.getItem(window.KEY_LAST_SYNC || "gym_last_sync_v1");
-  lastSyncText.textContent = `Last sync: ${formatLastSync(iso)}`;
+  // Only render the value (label lives in the pill UI)
+  lastSyncText.textContent = formatLastSync(iso);
+}
+
+function renderAppVersion(){
+  if(!appVersionText) return;
+  const v = String(localStorage.getItem(KEY_APP_VERSION) || "").trim();
+  appVersionText.textContent = v ? `v${v}` : "—";
 }
 
 function showToast(msg, ms=2200){
@@ -406,8 +414,9 @@ function renderHeaderSub(){
   const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
   const goal = Number(profile?.proteinGoal || 240) || 240;
 
-sub.textContent =
-  `Minimal tracker • Protein goal ${goal}g • ${restTxt}`;
+  // Header should not show version anymore
+  sub.textContent = `Minimal tracker • Protein goal ${goal}g • ${restTxt}`;
+}
 
 
 
@@ -3327,6 +3336,7 @@ async function checkForUpdate(){
     if(!last){
       localStorage.setItem(KEY_APP_VERSION, latest);
       renderHeaderSub();
+      renderAppVersion();
       return;
     }
 
@@ -3334,14 +3344,17 @@ async function checkForUpdate(){
       showUpdateBanner();
       localStorage.setItem(KEY_APP_VERSION, latest);
       renderHeaderSub();
+      renderAppVersion();
       return;
     }
 
     renderHeaderSub();
+    renderAppVersion();
   }catch(e){
     console.log("checkForUpdate error:", e);
   }
 }
+
 
   
 /* ---------------------------
@@ -3369,6 +3382,8 @@ function init(){
   renderHeaderSub();
   renderStorageInfo();
   renderLastBackup();
+  renderAppVersion();
+
 
   initNetworkIndicators(); // ✅ Offline badge + back-online toast + last sync
 
