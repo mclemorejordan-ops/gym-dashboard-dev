@@ -32,7 +32,7 @@
   ">
 
   <title>Gym Dashboard</title>
-  <link rel="stylesheet" href="assets/css/styles.css">
+<link id="appCSS" rel="stylesheet" href="assets/css/styles.css?v=boot">
 
   <!-- PWA -->
   <meta name="theme-color" content="#070708">
@@ -824,10 +824,51 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script defer src="assets/js/storage.js?v=4"></script>
-<script defer src="assets/js/dom.js?v=4"></script>
-<script defer src="assets/js/utils.js?v=4"></script>
-<script defer src="assets/js/app.js?v=4"></script>
+
+  <script>
+(async () => {
+  async function getVersion() {
+    try {
+      const res = await fetch("./version.json?ts=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) return String(Date.now());
+      const data = await res.json();
+      return String(data.version || "").trim() || String(Date.now());
+    } catch {
+      return String(Date.now());
+    }
+  }
+
+  const v = await getVersion();
+
+  // cache-bust CSS
+  const css = document.getElementById("appCSS");
+  if (css) css.href = "assets/css/styles.css?v=" + encodeURIComponent(v);
+
+  // load scripts IN ORDER
+  const scripts = [
+    "assets/js/storage.js",
+    "assets/js/dom.js",
+    "assets/js/utils.js",
+    "assets/js/app.js"
+  ];
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src + "?v=" + encodeURIComponent(v);
+      s.defer = true;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  for (const src of scripts) {
+    await loadScript(src);
+  }
+})();
+</script>
+
 
   <!-- ✅ Update Banner (shows when a new deploy is detected) -->
 <div id="updateBanner" class="updateBanner" style="display:none;">
