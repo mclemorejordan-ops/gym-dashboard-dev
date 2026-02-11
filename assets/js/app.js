@@ -35,26 +35,6 @@ if (document.readyState === "loading") {
 } else {
   bootOnce();
 }
-  const required = [
-    "LS",
-    "KEY_PROFILE",
-    "KEY_ROUTINES",
-    "KEY_ACTIVE_ROUTINE",
-    "KEY_ACTIVE_SCREEN",
-    "KEY_BW",
-    "KEY_ATT",
-    "KEY_PRO",
-    "KEY_LIFTS"
-  ];
-
-  const missing = required.filter(k => !(k in window));
-  if(missing.length){
-    throw new Error(
-      "Missing globals (check storage.js/dom.js/utils.js): " +
-      missing.join(", ")
-    );
-  }
-});
 
 /* ===========================
    Offline Indicator + Cache Health
@@ -3836,5 +3816,3 @@ function init(){
   // Route LAST (this calls showScreen which renders what’s needed)
   routeInitialScreen();
 }
-
-window.addEventListener("DOMContentLoaded", init);
