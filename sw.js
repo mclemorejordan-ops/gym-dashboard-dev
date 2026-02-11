@@ -5,7 +5,7 @@
    - Supports clean updates via SKIP_WAITING message
 =========================== */
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const SHELL_CACHE = `gymdash-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `gymdash-runtime-${CACHE_VERSION}`;
 
@@ -158,12 +158,4 @@ self.addEventListener("fetch", (event) => {
       }
     })()
   );
-});
-/* ---------------------------
-   Allow page to trigger update
----------------------------- */
-self.addEventListener("message", (event) => {
-  if (event.data === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
 });
