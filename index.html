@@ -8,6 +8,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Gym Dashboard</title>
   <style>
+
+    .headerTop{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.headerPills{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+#pillOnline.good strong{ color: var(--good); }
+#pillOnline.bad  strong{ color: var(--bad); }
+#pillOnline.warn strong{ color: var(--warn); }
     
   :root{
   --bg0:#070708;
@@ -1077,8 +1096,16 @@ header{
 
 <body>
 <header>
-  <h1>Gym Dashboard</h1>
-  <div class="sub" id="headerSub">—</div>
+  <div class="headerTop">
+    <h1 id="headerTitle">Gym Dashboard</h1>
+
+    <div class="headerPills">
+      <span class="pill" id="pillVersion"><span class="muted">v</span> <strong class="mono" id="hdrVersion">—</strong></span>
+      <span class="pill" id="pillProtein"><span class="muted">Protein</span> <strong class="mono" id="hdrProtein">—</strong></span>
+      <span class="pill" id="pillToday"><span class="muted">Today</span> <strong id="hdrToday">—</strong></span>
+      <span class="pill" id="pillOnline"><span class="muted">Status</span> <strong id="hdrOnline">—</strong></span>
+    </div>
+  </div>
 </header>
 
 <main>
@@ -1843,7 +1870,12 @@ const VERSION_CHECK_INTERVAL_MS = 60 * 1000;   // 1 min
 const AUTO_REFRESH_COUNTDOWN_S = 8;            // seconds
 const AUTO_REFRESH_COOLDOWN_MS = 30 * 1000;    // prevent reload loops
 
+const hdrVersion = document.getElementById("hdrVersion");
+const hdrProtein = document.getElementById("hdrProtein");
+const hdrToday   = document.getElementById("hdrToday");
+const hdrOnline  = document.getElementById("hdrOnline");
 
+const pillOnline = document.getElementById("pillOnline");
 
 let modalDepth = 0;
 
@@ -2089,25 +2121,41 @@ function saveProfile(next){
     ...next
   };
   LS.set(KEY_PROFILE, profile);
-  renderHeaderSub();
+  renderHeaderPills();
   refreshHome();
   hydrateSettingsUI(); // ✅ add this line
 }
 
 
-function renderHeaderSub(){
-  const sub = document.getElementById("headerSub");
-  if(!sub) return;
+function getTodayWorkoutLabel(){
+  const ar = getActiveRoutine();
+  const todayIdx = getTodaySplitIndex();
+  const dayKey = DAY_KEYS[todayIdx];
+  const day = ar?.days?.[dayKey] || { label:"", rest:false };
 
-  const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
-  const goal = Number(profile?.proteinGoal || 240) || 240;
-
-  const v = localStorage.getItem(KEY_APP_VERSION) || "";
-
-  sub.textContent =
-    `Minimal tracker • Protein goal ${goal}g • ${restTxt}` +
-    (v ? ` • v${v}` : "");
+  const label = String(day.label || "").trim();
+  // You said: “use the Day - Workout Day Label here”
+  // If rest day, show Rest (or label if present)
+  if(day.rest) return label || "Rest";
+  return label || dayKey; // fallback if no label set
 }
+
+function renderHeaderPills(){
+  // Version
+  const v = localStorage.getItem(KEY_APP_VERSION) || "";
+  if(hdrVersion) hdrVersion.textContent = v ? v : "—";
+
+  // Protein goal
+  const goal = getProteinGoal();
+  if(hdrProtein) hdrProtein.textContent = `${goal}g`;
+
+  // Today label
+  const todayLabel = getTodayWorkoutLabel();
+  if(hdrToday) hdrToday.textContent = todayLabel;
+
+  // Online/offline text is set by setOnlineUI()
+}
+
 
 
 
@@ -5119,20 +5167,36 @@ function postponeAutoReload(minutes=10){
 
 async function getLatestVersion(){
   const url = "./version.json?ts=" + Date.now();
-  const res = await fetch(url, { cache: "no-store" });
 
-  if(!res.ok){
-    console.log("version.json fetch failed:", res.status, url);
+  try{
+    const res = await fetch(url, { cache: "no-store" });
+
+    if(!res.ok){
+      appHasService = false;
+      updateConnectivityIndicators();
+      console.log("version.json fetch failed:", res.status, url);
+      return null;
+    }
+
+    const data = await res.json();
+    const latest = String(data.version || "").trim();
+
+    // If we can fetch and parse version.json, we DEFINITELY have service.
+    appHasService = true;
+    updateConnectivityIndicators();
+
+    if(!latest){
+      console.log("version.json missing 'version' field:", data);
+      return null;
+    }
+    return latest;
+
+  }catch(e){
+    appHasService = false;
+    updateConnectivityIndicators();
+    console.log("version.json fetch error:", e);
     return null;
   }
-
-  const data = await res.json();
-  const latest = String(data.version || "").trim();
-  if(!latest){
-    console.log("version.json missing 'version' field:", data);
-    return null;
-  }
-  return latest;
 }
 
 async function checkForUpdate(){
@@ -5145,14 +5209,14 @@ async function checkForUpdate(){
     // First run: store and render, no banner.
     if(!last){
       localStorage.setItem(KEY_APP_VERSION, latest);
-      renderHeaderSub();
+      renderHeaderPills();
       return;
     }
 
     if(last !== latest){
       showUpdateBanner();
       localStorage.setItem(KEY_APP_VERSION, latest);
-      renderHeaderSub();
+      renderHeaderPills();
 
       // Best-effort SW update (safe no-op if unused)
       tryUpdateServiceWorker();
@@ -5163,11 +5227,44 @@ async function checkForUpdate(){
     }
 
     // No update
-    renderHeaderSub();
+    renderHeaderPills();
   }catch(e){
     console.log("checkForUpdate error:", e);
   }
 }
+  let appHasService = true; // "service" = can actually reach version.json
+
+function setOnlineUI(isOnline, hasService){
+  if(!hdrOnline || !pillOnline) return;
+
+  // status priority: offline beats everything
+  if(!isOnline){
+    hdrOnline.textContent = "Offline";
+    pillOnline.classList.remove("good","warn","bad");
+    pillOnline.classList.add("bad");
+    return;
+  }
+
+  // online but service failing (cannot reach version.json)
+  if(!hasService){
+    hdrOnline.textContent = "Online (No Service)";
+    pillOnline.classList.remove("good","warn","bad");
+    pillOnline.classList.add("warn");
+    return;
+  }
+
+  // all good
+  hdrOnline.textContent = "Online";
+  pillOnline.classList.remove("good","warn","bad");
+  pillOnline.classList.add("good");
+}
+
+function updateConnectivityIndicators(){
+  const isOnline = navigator.onLine !== false;
+  setOnlineUI(isOnline, appHasService);
+}
+window.addEventListener("online",  updateConnectivityIndicators);
+window.addEventListener("offline", updateConnectivityIndicators);
 
 function startVersionPolling(){
   if(_versionPollTimer) return;
@@ -5235,7 +5332,7 @@ function init(){
   // Static UI (not screen-specific)
   hydrateSettingsUI();
   hydrateOnboardingInputs();
-  renderHeaderSub();
+  renderHeaderPills();
   renderStorageInfo();
   renderLastBackup();
 
