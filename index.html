@@ -1,15 +1,12 @@
+
 <!doctype html>
 
 
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-<meta name="viewport" content="
-  width=device-width,
-  initial-scale=1,
-  maximum-scale=1
-">
-  <title>Gym Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Gym Dashboard</title>
   <style>
     
   :root{
@@ -1802,6 +1799,9 @@ header{
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
+(function(){
+'use strict';
+
 /* ---------------------------
    Storage helpers
 ---------------------------- */
@@ -1836,6 +1836,13 @@ const KEY_LAST_BACKUP = "gym_last_backup_v1";
 const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
 const KEY_CUSTOM_EX = "gym_custom_ex_v1";
 const KEY_APP_VERSION = "gym_app_version_v1"; // ✅ ADD THIS
+const KEY_APP_LAST_RELOAD = "gym_app_last_reload_v1";
+const KEY_APP_UPDATE_DISMISSED_UNTIL = "gym_app_update_dismissed_until_v1";
+
+const VERSION_CHECK_INTERVAL_MS = 60 * 1000;   // 1 min
+const AUTO_REFRESH_COUNTDOWN_S = 8;            // seconds
+const AUTO_REFRESH_COOLDOWN_MS = 30 * 1000;    // prevent reload loops
+
 
 
 let modalDepth = 0;
@@ -4997,9 +5004,16 @@ function routeInitialScreen(){
 }
 
   /* ---------------------------
-   App Version + Update Banner
-   - bump APP_VERSION on each deploy
+   App Version + Update Banner (Production-grade)
+   - version.json should be deployed alongside index.html
+   - version.json example: { "version": "2026.02.11.1" }
+   - We cache-bust + no-store to avoid stale reads.
+   - When a new version is detected:
+       1) show the banner
+       2) attempt to update a Service Worker (if present)
+       3) auto-refresh with a short countdown (user can postpone)
 ---------------------------- */
+
 function showUpdateBanner(){
   const b = document.getElementById("updateBanner");
   if(b) b.style.display = "block";
@@ -5010,27 +5024,121 @@ function hideUpdateBanner(){
   if(b) b.style.display = "none";
 }
 
+function setUpdateBannerSub(text){
+  const sub = document.querySelector("#updateBanner .updateSub");
+  if(sub) sub.textContent = text;
+}
+
+function canAutoReloadNow(){
+  // Prevent infinite refresh loops:
+  const lastReload = Number(localStorage.getItem(KEY_APP_LAST_RELOAD) || "0");
+  if(lastReload && (Date.now() - lastReload) < AUTO_REFRESH_COOLDOWN_MS) return false;
+
+  // If user postponed recently, respect it
+  const dismissedUntil = Number(localStorage.getItem(KEY_APP_UPDATE_DISMISSED_UNTIL) || "0");
+  if(dismissedUntil && Date.now() < dismissedUntil) return false;
+
+  // If tab is hidden, wait until it becomes visible
+  if(document.visibilityState !== "visible") return false;
+
+  // If offline, don’t force reload
+  if(navigator && navigator.onLine === false) return false;
+
+  return true;
+}
+
+async function tryUpdateServiceWorker(){
+  // Optional: only relevant if you register a SW somewhere else.
+  // Safe no-op if SW is not used.
+  try{
+    if(!("serviceWorker" in navigator)) return;
+
+    const reg = await navigator.serviceWorker.getRegistration();
+    if(!reg) return;
+
+    // Ask browser to check for an updated SW script
+    await reg.update();
+
+    // If there’s a waiting SW, ask it to activate immediately.
+    if(reg.waiting){
+      reg.waiting.postMessage({ type: "SKIP_WAITING" });
+    }
+  }catch(e){
+    // Non-fatal — version.json-based reload still works.
+    console.log("tryUpdateServiceWorker error:", e);
+  }
+}
+
+let _versionPollTimer = null;
+let _autoReloadTimer = null;
+let _autoReloadTick = null;
+
+function clearAutoReloadTimers(){
+  if(_autoReloadTimer){ clearTimeout(_autoReloadTimer); _autoReloadTimer = null; }
+  if(_autoReloadTick){ clearInterval(_autoReloadTick); _autoReloadTick = null; }
+}
+
+function scheduleAutoReload(){
+  clearAutoReloadTimers();
+
+  if(!canAutoReloadNow()){
+    setUpdateBannerSub("Refresh to load the latest version.");
+    return;
+  }
+
+  let remaining = AUTO_REFRESH_COUNTDOWN_S;
+  setUpdateBannerSub(`Auto-refreshing in ${remaining}s… (click banner to postpone)`);
+
+  _autoReloadTick = setInterval(()=>{
+    remaining -= 1;
+    if(remaining <= 0){
+      clearAutoReloadTimers();
+      return;
+    }
+    setUpdateBannerSub(`Auto-refreshing in ${remaining}s… (click banner to postpone)`);
+  }, 1000);
+
+  _autoReloadTimer = setTimeout(()=>{
+    clearAutoReloadTimers();
+    localStorage.setItem(KEY_APP_LAST_RELOAD, String(Date.now()));
+    // Hard reload helps ensure the newest assets are requested.
+    location.reload();
+  }, AUTO_REFRESH_COUNTDOWN_S * 1000);
+}
+
+function postponeAutoReload(minutes=10){
+  clearAutoReloadTimers();
+  const until = Date.now() + (minutes * 60 * 1000);
+  localStorage.setItem(KEY_APP_UPDATE_DISMISSED_UNTIL, String(until));
+  setUpdateBannerSub(`Update available. Postponed for ${minutes} minutes.`);
+}
+
+async function getLatestVersion(){
+  const url = "./version.json?ts=" + Date.now();
+  const res = await fetch(url, { cache: "no-store" });
+
+  if(!res.ok){
+    console.log("version.json fetch failed:", res.status, url);
+    return null;
+  }
+
+  const data = await res.json();
+  const latest = String(data.version || "").trim();
+  if(!latest){
+    console.log("version.json missing 'version' field:", data);
+    return null;
+  }
+  return latest;
+}
+
 async function checkForUpdate(){
   try{
-    const url = "./version.json?ts=" + Date.now();
-    const res = await fetch(url, { cache: "no-store" });
-
-    if(!res.ok){
-      console.log("version.json fetch failed:", res.status, url);
-      return;
-    }
-
-    const data = await res.json();
-    const latest = String(data.version || "").trim();
-    if(!latest){
-      console.log("version.json missing 'version' field:", data);
-      return;
-    }
+    const latest = await getLatestVersion();
+    if(!latest) return;
 
     const last = localStorage.getItem(KEY_APP_VERSION);
 
-    console.log("Version check:", { last, latest });
-
+    // First run: store and render, no banner.
     if(!last){
       localStorage.setItem(KEY_APP_VERSION, latest);
       renderHeaderSub();
@@ -5041,15 +5149,57 @@ async function checkForUpdate(){
       showUpdateBanner();
       localStorage.setItem(KEY_APP_VERSION, latest);
       renderHeaderSub();
+
+      // Best-effort SW update (safe no-op if unused)
+      tryUpdateServiceWorker();
+
+      // Production behavior: auto-refresh with safeguards
+      scheduleAutoReload();
       return;
     }
 
+    // No update
     renderHeaderSub();
   }catch(e){
     console.log("checkForUpdate error:", e);
   }
 }
 
+function startVersionPolling(){
+  if(_versionPollTimer) return;
+  // Run immediately, then on an interval.
+  checkForUpdate();
+  _versionPollTimer = setInterval(()=>{
+    // Don’t spam when hidden — visibility handler will run a check upon return.
+    if(document.visibilityState === "visible") checkForUpdate();
+  }, VERSION_CHECK_INTERVAL_MS);
+}
+
+function stopVersionPolling(){
+  if(_versionPollTimer){
+    clearInterval(_versionPollTimer);
+    _versionPollTimer = null;
+  }
+}
+
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "visible"){
+    // Re-check when user comes back (common after deployment)
+    checkForUpdate();
+  }
+});
+
+// If user clicks the banner anywhere (except the refresh button), postpone.
+document.addEventListener("click", (e)=>{
+  const banner = e.target.closest("#updateBanner");
+  if(!banner) return;
+
+  const refreshBtn = e.target.closest("#updateRefreshBtn");
+  if(refreshBtn) return; // handled below
+
+  // Postpone for 10 minutes
+  postponeAutoReload(10);
+});
 
 document.addEventListener("click", (e)=>{
   const btn = e.target.closest("#updateRefreshBtn");
@@ -5090,7 +5240,7 @@ function init(){
   setLiftView("table");
   applyLiftFiltersFromUI();
 
-  checkForUpdate();        // ✅ ADD THIS LINE
+  startVersionPolling();        // ✅ Production-grade version polling
 
 
   // Route LAST (this calls showScreen which renders what’s needed)
@@ -5099,6 +5249,8 @@ function init(){
 
 window.addEventListener("DOMContentLoaded", init);
 
+
+})();
 </script>
 
   <!-- ✅ Update Banner (shows when a new deploy is detected) -->
