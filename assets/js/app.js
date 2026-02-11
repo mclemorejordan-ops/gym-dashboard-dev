@@ -26,6 +26,24 @@ let __booted = false;
 function bootOnce() {
   if (__booted) return;
   __booted = true;
+
+  const required = [
+    "LS",
+    "KEY_PROFILE",
+    "KEY_ROUTINES",
+    "KEY_ACTIVE_ROUTINE",
+    "KEY_ACTIVE_SCREEN",
+    "KEY_BW",
+    "KEY_ATT",
+    "KEY_PRO",
+    "KEY_LIFTS"
+  ];
+
+  const missing = required.filter(k => !(k in window));
+  if (missing.length) {
+    throw new Error("Missing globals (check storage.js/dom.js/utils.js): " + missing.join(", "));
+  }
+
   init();
 }
 
