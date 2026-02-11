@@ -957,23 +957,41 @@ main > *{
   margin-top:12px;
 }
 
+/* ===========================
+   WEEK ROW (perfect alignment)
+=========================== */
+.weekRow,
+.weekDots{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 14px;                 /* ONE gap value for both rows */
+  justify-items:center;
+  align-items:center;
+  max-width: 260px;          /* controls how wide the week row is */
+  margin: 10px auto 0;
+}
+
 .weekRow{
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  margin-top:10px;
   font-size:12px;
   color:var(--muted);
+  margin-top: 10px;
 }
 
 .weekDots{
-  display:flex;
-  justify-content:center;
-  gap:18px;
-  margin-top:8px;
-  align-items:center;
+  margin-top: 8px;
 }
 
+/* day letters */
+.wday{
+  opacity:.85;
+}
+.wday.today{
+  opacity: 1;
+  color: var(--text);
+  text-shadow: 0 0 10px rgba(124,252,0,.25);
+}
+
+/* dots */
 .wdot{
   width:10px;
   height:10px;
@@ -991,6 +1009,21 @@ main > *{
 .wdot.off{
   opacity:.35;
 }
+
+/* subtle premium highlight for TODAY dot */
+.wdot.today{
+  box-shadow: 0 0 0 2px rgba(124,252,0,.18);
+}
+
+/* rest-day marker (greyed) */
+.wdot.rest{
+  opacity: .18;
+  border-style: dashed;
+}
+.wdot.rest.on{
+  opacity: .45; /* if you checked in on a rest day, still show it but muted */
+}
+
 
 .kpiLine{
   display:flex;
@@ -1461,14 +1494,25 @@ header{
     <section class="card">
       <h2>This Week</h2>
 
-      <div class="weekRow">
-        <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
-      </div>
+     <div class="weekRow" id="homeWeekRow">
+  <span class="wday" data-idx="0">M</span>
+  <span class="wday" data-idx="1">T</span>
+  <span class="wday" data-idx="2">W</span>
+  <span class="wday" data-idx="3">T</span>
+  <span class="wday" data-idx="4">F</span>
+  <span class="wday" data-idx="5">S</span>
+  <span class="wday" data-idx="6">S</span>
+</div>
+
 
       <div class="weekDots" id="homeWeekDots"></div>
 
      <div class="kpiLine">
+  <div style="display:flex; flex-direction:column; gap:4px;">
   <span class="muted" id="homeWeekCount">—</span>
+  <span class="muted" id="homeStreakLine">—</span>
+</div>
+
 
   <div style="display:flex; gap:8px; align-items:center;">
     <button class="miniBtn" type="button" id="homeCheckInBtn">✅ Check In</button>
@@ -2616,20 +2660,62 @@ function refreshHome(){
     homeCheckInBtn.classList.toggle("ghost", checked);
   }
 
-  // week dots + count
+  // week dots + count + streak + today highlight + rest-day markers
   const weekStart = weekStartDate(new Date());
   const dots = [];
   for(let i=0;i<7;i++){
     dots.push(dateISOFrom(weekStart, i));
   }
 
+  const todayIso2 = todayISO();
+
+  // helper: ISO date -> routine dayKey (Mon..Sun)
+  function dayKeyFromISO(iso){
+    const d = parseISO(iso);
+    const dow = d.getDay(); // 0 Sun..6 Sat
+    // If week starts Sunday, index matches Sun..Sat, but your DAY_KEYS is Mon..Sun
+    if(profile.weekStart === "sun"){
+      // map: Sun(0)->Sun, Mon(1)->Mon, ... Sat(6)->Sat
+      if(dow === 0) return "Sun";
+      return DAY_KEYS[dow - 1]; // Mon..Sat
+    } else {
+      // week starts Monday: Mon(1)->Mon ... Sat(6)->Sat, Sun(0)->Sun
+      if(dow === 0) return "Sun";
+      return DAY_KEYS[dow - 1]; // Mon..Sat
+    }
+  }
+
+  const ar = getActiveRoutine();
+  function isRestDayISO(iso){
+    const key = dayKeyFromISO(iso);
+    const day = ar?.days?.[key];
+    return !!day?.rest;
+  }
+
   const attendedCount = dots.filter(d => attendance.has(d)).length;
 
+  // TODAY highlight on letters
+  const weekRowEl = document.getElementById("homeWeekRow");
+  if(weekRowEl){
+    const spans = weekRowEl.querySelectorAll(".wday");
+    spans.forEach((s, idx)=>{
+      const iso = dots[idx];
+      s.classList.toggle("today", iso === todayIso2);
+    });
+  }
+
+  // render dots
   if(homeWeekDots){
     homeWeekDots.innerHTML = "";
-    dots.forEach(d=>{
+    dots.forEach((d)=>{
       const dot = document.createElement("div");
-      dot.className = "wdot " + (attendance.has(d) ? "on" : "off");
+      const checked = attendance.has(d);
+      const rest = isRestDayISO(d);
+
+      dot.className = "wdot " + (checked ? "on" : "off");
+      if(d === todayIso2) dot.classList.add("today");
+      if(rest) dot.classList.add("rest");
+
       dot.title = d;
       homeWeekDots.appendChild(dot);
     });
@@ -2638,6 +2724,38 @@ function refreshHome(){
   if(homeWeekCount){
     homeWeekCount.textContent = `Workouts this week: ${attendedCount} / 7`;
   }
+
+  // streak + best streak (ignores rest days)
+  function calcStreaks(){
+    // current streak (walk backward)
+    let cur = 0;
+    for(let back=0; back<400; back++){
+      const iso = addDaysISO(todayIso2, -back);
+      if(isRestDayISO(iso)) continue;          // skip rest days
+      if(attendance.has(iso)) cur++;
+      else break;
+    }
+
+    // best streak (scan last ~400 days)
+    let best = 0;
+    let run = 0;
+    for(let back=399; back>=0; back--){
+      const iso = addDaysISO(todayIso2, -back);
+      if(isRestDayISO(iso)) continue;          // skip rest days
+      if(attendance.has(iso)) run++;
+      else run = 0;
+      if(run > best) best = run;
+    }
+
+    return {cur, best};
+  }
+
+  const {cur, best} = calcStreaks();
+  const homeStreakLine = document.getElementById("homeStreakLine");
+  if(homeStreakLine){
+    homeStreakLine.textContent = `🔥 Streak: ${cur}   🏆 Best: ${best}`;
+  }
+
 
   // ✅ Focus engine (Recovery warning > Stalled lift > Weekly countdown > Default)
   if(homeFocus){
