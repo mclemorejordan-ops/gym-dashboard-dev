@@ -4,6 +4,27 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <style>
+  /* If JS never boots, DON'T stay blank */
+  body:not(.js-ready) #screen-home { display:block !important; }
+  body:not(.js-ready) .screen { display:none !important; }
+
+  /* Debug overlay */
+  #bootDebug {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    padding: 14px;
+    font: 13px/1.35 -apple-system, system-ui, sans-serif;
+    background: rgba(0,0,0,.92);
+    color: #e8eaed;
+    overflow: auto;
+    white-space: pre-wrap;
+  }
+  #bootDebug .ok { color:#7CFC00; }
+  #bootDebug .bad { color:#ff6b6b; }
+</style>
+
   <meta name="viewport" content="
     width=device-width,
     initial-scale=1,
@@ -28,6 +49,7 @@
 
 
 <body>
+  <div id="bootDebug">Booting…</div>
 <header>
   <h1>Gym Dashboard</h1>
 
@@ -836,52 +858,107 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <script>
-(async () => {
-  try {
-    async function getVersion() {
-      try {
-        const res = await fetch("./version.json?ts=" + Date.now(), { cache: "no-store" });
-        if (!res.ok) return String(Date.now());
-        const data = await res.json();
-        return String(data.version || "").trim() || String(Date.now());
-      } catch {
-        return String(Date.now());
-      }
-    }
+(() => {
+  const box = document.getElementById("bootDebug");
+  const log = (msg, cls="") => {
+    if (!box) return;
+    const line = document.createElement("div");
+    line.textContent = msg;
+    if (cls) line.className = cls;
+    box.appendChild(line);
+  };
 
-    const v = encodeURIComponent(await getVersion());
+  window.onerror = (m, src, line, col) => {
+    log(`❌ JS ERROR: ${m}\n   at ${src}:${line}:${col}`, "bad");
+  };
+  window.onunhandledrejection = (e) => {
+    log(`❌ PROMISE ERROR: ${e?.reason?.message || e?.reason || e}`, "bad");
+  };
 
-    // cache-bust CSS
-    const css = document.getElementById("appCSS");
-    if (css) css.href = "assets/css/styles.css?v=" + v;
+  const abs = (p) => new URL(p, location.href).toString();
 
-    // load scripts IN ORDER (Safari-safe)
-    const scripts = [
-      "assets/js/storage.js",
-      "assets/js/dom.js",
-      "assets/js/utils.js",
-      "assets/js/app.js"
+  async function fetchVersion() {
+    // IMPORTANT: GitHub Pages is picky. Try both.
+    const tries = [
+      abs("version.json") + "?ts=" + Date.now(),
+      abs("./version.json") + "?ts=" + Date.now()
     ];
 
-    const load = (src) =>
-      new Promise((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = src + "?v=" + v;
-        s.async = false;            // ✅ guarantees order for dynamic scripts
-        s.onload = resolve;
-        s.onerror = () => reject(new Error("Failed to load: " + s.src));
-        document.body.appendChild(s); // ✅ append to body, not head
-      });
-
-    for (const src of scripts) {
-      await load(src);
+    for (const url of tries) {
+      try {
+        log("Fetching version: " + url);
+        const res = await fetch(url, { cache: "no-store" });
+        log("version status: " + res.status + " (" + res.type + ")");
+        if (!res.ok) continue;
+        const data = await res.json();
+        const v = String(data?.version || "").trim();
+        if (v) return v;
+      } catch (e) {
+        log("version fetch failed: " + (e?.message || e), "bad");
+      }
     }
-  } catch (e) {
-    console.error(e);
-    // Optional: show something on-screen so you know it failed
-    alert("App failed to load. Check Safari console.\n" + (e?.message || e));
+    return String(Date.now());
   }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.async = false;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("Failed to load " + src));
+      document.body.appendChild(s);
+    });
+  }
+
+  (async () => {
+    try {
+      log("✅ Loader start", "ok");
+
+      const v = encodeURIComponent(await fetchVersion());
+      log("✅ version = " + v, "ok");
+
+      // CSS
+      const css = document.getElementById("appCSS");
+      if (css) {
+        css.href = "assets/css/styles.css?v=" + v;
+        log("✅ css set: " + css.href, "ok");
+      } else {
+        log("❌ #appCSS not found", "bad");
+      }
+
+      // Scripts (log each one)
+      const files = [
+        "assets/js/storage.js",
+        "assets/js/dom.js",
+        "assets/js/utils.js",
+        "assets/js/app.js"
+      ];
+
+      for (const f of files) {
+        const url = abs(f) + "?v=" + v;
+        log("Loading: " + url);
+        await loadScript(url);
+        log("✅ loaded: " + f, "ok");
+      }
+
+      // If we get here, JS loaded — allow app to control screens
+      document.body.classList.add("js-ready");
+      log("✅ js-ready set (app should render now)", "ok");
+
+      // Hide debug after a second (optional)
+      setTimeout(() => {
+        const b = document.getElementById("bootDebug");
+        if (b) b.style.display = "none";
+      }, 1000);
+
+    } catch (e) {
+      log("❌ BOOT FAILED: " + (e?.message || e), "bad");
+      // Keep debug visible so you can screenshot it
+    }
+  })();
 })();
 </script>
+
 </body>
 </html>
