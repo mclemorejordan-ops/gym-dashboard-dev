@@ -1130,6 +1130,13 @@ button:not(.navBtn):active,
   color: var(--muted);
 }
 
+/* Version pill highlight when a newer version is detected */
+.pillChip.warn{
+  border:1px solid rgba(255, 209, 102, .35);
+  background: rgba(255, 209, 102, .10);
+  color: var(--warn);
+}
+
 /* Network pill states (re-uses existing #netBadge) */
 .netBadge.online{
   border:1px solid rgba(255,255,255,.10);
