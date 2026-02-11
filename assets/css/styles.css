@@ -1148,28 +1148,3 @@ button:not(.navBtn):active,
 body{
   padding-top: 44px;
 }
-/* ===========================
-   DEV ENVIRONMENT BADGE
-   (DEV ONLY – DO NOT COPY TO PROD)
-=========================== */
-.dev-badge{
-  position: fixed;
-  bottom: 12px;
-  right: 12px;
-  z-index: 9999;
-
-  padding: 6px 10px;
-  border-radius: 10px;
-
-  background: #ff6b6b;
-  color: #0b0b0c;
-
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1px;
-
-  box-shadow: 0 6px 20px rgba(0,0,0,.5);
-  opacity: .85;
-
-  pointer-events: none; /* never blocks taps */
-}
