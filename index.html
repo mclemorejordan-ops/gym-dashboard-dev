@@ -1,3 +1,4 @@
+
 <!doctype html>
 
 
@@ -466,6 +467,30 @@ main > *{
   width: 100%;
   border-radius: 999px;
   padding: 12px 12px;
+  font-size: 13px;
+}
+
+
+/* ===========================
+   UPDATES DROPDOWN PANELS
+=========================== */
+.updatesDropPanel{
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(18,18,20,.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.updatesDropHead{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.updatesDropTitle{
+  font-weight: 900;
   font-size: 13px;
 }
 
@@ -1860,31 +1885,45 @@ header{
       <button id="upShowResultBtn" class="tap ghost">📋 Show Last Update Result</button>
       <button id="upDiagBtn" class="tap ghost">📈 Update Diagnostics</button>
     </div>
+  
+    <!-- Inline dropdown panels (instead of popup) -->
+    <div id="upResultPanel" class="updatesDropPanel" style="display:none;">
+      <div class="updatesDropHead">
+        <div class="updatesDropTitle">Update Result</div>
+        <button id="upResultHideBtn" class="tap ghost" type="button">Hide</button>
+      </div>
+      <div class="updatesPills" style="margin-top:8px;">
+        <div class="pillRow" id="uResLine1">—</div>
+        <div class="pillRow" id="uResLine2">—</div>
+        <div class="pillRow" id="uResLine3">—</div>
+        <div class="pillRow" id="uResLine4">—</div>
+        <div class="pillRow" id="uResLine5">—</div>
+        <div class="pillRow" id="uResLine6"></div>
+      </div>
+      <div class="btnRow" style="margin-top:10px; justify-content:flex-end;">
+        <button id="uModalTryAgain" class="tap" type="button" style="display:none;">Try Again</button>
+      </div>
+    </div>
+
+    <div id="upDiagPanel" class="updatesDropPanel" style="display:none;">
+      <div class="updatesDropHead">
+        <div class="updatesDropTitle">Update Diagnostics</div>
+        <button id="upDiagHideBtn" class="tap ghost" type="button">Hide</button>
+      </div>
+      <div class="updatesPills" style="margin-top:8px;">
+        <div class="pillRow" id="uDiag1">—</div>
+        <div class="pillRow" id="uDiag2">—</div>
+        <div class="pillRow" id="uDiag3">—</div>
+        <div class="pillRow" id="uDiag4">—</div>
+        <div class="pillRow" id="uDiag5">—</div>
+      </div>
+    </div>
+
   </section>
 
-      <!-- Update Result Popup -->
-<div id="updateResultModal" class="uModal" style="display:none;">
-  <div class="uModalCard">
-    <div class="uModalHead">
-      <div class="uModalTitle" id="uModalTitle">Update Result</div>
-      <button id="uModalCloseX" class="ghost tap" type="button">Close</button>
-    </div>
 
-    <div class="updatesPills" style="margin-top:10px;">
-      <div class="pillRow" id="uResLine1">—</div>
-      <div class="pillRow" id="uResLine2">—</div>
-      <div class="pillRow" id="uResLine3">—</div>
-      <div class="pillRow" id="uResLine4">—</div>
-      <div class="pillRow" id="uResLine5">—</div>
-      <div class="pillRow" id="uResLine6">—</div>
-    </div>
+      
 
-    <div class="uModalActions">
-      <button id="uModalTryAgain" class="tap" type="button" style="display:none;">Try Again</button>
-      <button id="uModalCloseBtn" class="tap ghost" type="button">Close</button>
-    </div>
-  </div>
-</div>
 
 
   <!-- Reset -->
@@ -5710,8 +5749,13 @@ function loadUpdateResult(){
 }
 
 function showUpdateResultPopup(result){
-  const modal = document.getElementById("updateResultModal");
-  if(!modal) return;
+  // Now rendered inline (dropdown panel) instead of a popup modal.
+  const panel = document.getElementById("upResultPanel");
+  if(!panel) return;
+
+  // Hide diagnostics if open
+  const diag = document.getElementById("upDiagPanel");
+  if(diag) diag.style.display = "none";
 
   const tryBtn = document.getElementById("uModalTryAgain");
   const l1 = document.getElementById("uResLine1");
@@ -5723,7 +5767,6 @@ function showUpdateResultPopup(result){
 
   const ok = !!result?.ok;
 
-  // Title lines like your mock:
   l1.textContent = ok ? "✅ Update Successful" : "⚠️ Update Failed";
 
   if(ok){
@@ -5732,7 +5775,6 @@ function showUpdateResultPopup(result){
     l4.textContent = `Service Worker reset: ${result.swReset ? "Yes" : "No"}`;
     l5.textContent = `Cache cleared: ${result.cacheCleared ? "Yes" : "No"}`;
     l6.textContent = `Time: ${result.timeLabel || "—"}`;
-
     if(tryBtn) tryBtn.style.display = "none";
   }else{
     l2.textContent = `Step failed: ${result.stepFailed || "Unknown"}`;
@@ -5740,18 +5782,17 @@ function showUpdateResultPopup(result){
     l4.textContent = `Suggestion: ${result.suggestion || "Try again"}`;
     l5.textContent = `Time: ${result.timeLabel || "—"}`;
     l6.textContent = "";
-
     if(tryBtn) tryBtn.style.display = "inline-flex";
   }
 
-  modal.style.display = "flex";
-  document.body.classList.add("modalOpen");
+  panel.style.display = "block";
+  // Make sure it lands in-view on mobile
+  panel.scrollIntoView({behavior:"smooth", block:"start"});
 }
 
 function hideUpdateResultPopup(){
-  const modal = document.getElementById("updateResultModal");
-  if(modal) modal.style.display = "none";
-  document.body.classList.remove("modalOpen");
+  const panel = document.getElementById("upResultPanel");
+  if(panel) panel.style.display = "none";
 }
 
 async function fullWipeAndReload(){
@@ -5853,44 +5894,28 @@ async function clearCacheAndReload(){
 }
 
 function showDiagnosticsPopup(){
+  // Now rendered inline (dropdown panel) instead of a popup modal.
+  const panel = document.getElementById("upDiagPanel");
+  if(!panel) return;
+
+  // Hide result if open
+  const res = document.getElementById("upResultPanel");
+  if(res) res.style.display = "none";
+
   const failCount = Number(localStorage.getItem(KEY_UP_FAIL_COUNT) || "0");
   const lastSuccess = Number(localStorage.getItem(KEY_UP_LAST_SUCCESS) || "0");
   const lastChecked = Number(localStorage.getItem(KEY_UP_LAST_CHECKED) || "0");
 
-  const result = {
-    ok: true,
-    updatedTo: localStorage.getItem(KEY_APP_VERSION) || "—",
-    reloadTriggered: false,
-    swReset: false,
-    cacheCleared: false,
-    timeLabel: new Date().toLocaleString()
-  };
+  setText("uDiag1", `Fail count: ${failCount}`);
+  setText("uDiag2", `Last success: ${lastSuccess ? new Date(lastSuccess).toLocaleString() : "—"}`);
+  setText("uDiag3", `Last checked: ${lastChecked ? new Date(lastChecked).toLocaleString() : "—"}`);
+  setText("uDiag4", `Current version: ${localStorage.getItem(KEY_APP_VERSION) || "—"}`);
+  setText("uDiag5", `Latest seen: ${localStorage.getItem("gym_latest_seen_version_v1") || "—"}`);
 
-  // Reuse popup lines to show diagnostics (simple + readable)
-  saveUpdateResult(result);
-
-  const modal = document.getElementById("updateResultModal");
-  if(!modal) return;
-
-  const l1 = document.getElementById("uResLine1");
-  const l2 = document.getElementById("uResLine2");
-  const l3 = document.getElementById("uResLine3");
-  const l4 = document.getElementById("uResLine4");
-  const l5 = document.getElementById("uResLine5");
-  const l6 = document.getElementById("uResLine6");
-  const tryBtn = document.getElementById("uModalTryAgain");
-  if(tryBtn) tryBtn.style.display = "none";
-
-  l1.textContent = "📈 Update Diagnostics";
-  l2.textContent = `Fail count: ${failCount}`;
-  l3.textContent = `Last success: ${lastSuccess ? new Date(lastSuccess).toLocaleString() : "—"}`;
-  l4.textContent = `Last checked: ${lastChecked ? new Date(lastChecked).toLocaleString() : "—"}`;
-  l5.textContent = `Current version: ${localStorage.getItem(KEY_APP_VERSION) || "—"}`;
-  l6.textContent = `Latest seen: ${localStorage.getItem("gym_latest_seen_version_v1") || "—"}`;
-
-  modal.style.display = "flex";
-  document.body.classList.add("modalOpen");
+  panel.style.display = "block";
+  panel.scrollIntoView({behavior:"smooth", block:"start"});
 }
+
 
 /* Bind buttons once */
 function bindUpdatesPanel(){
@@ -5898,7 +5923,14 @@ function bindUpdatesPanel(){
   document.getElementById("upUpdateNowBtn")?.addEventListener("click", fullWipeAndReload);
   document.getElementById("upClearCacheBtn")?.addEventListener("click", clearCacheAndReload);
 
+  // Advanced dropdowns (inline)
   document.getElementById("upShowResultBtn")?.addEventListener("click", ()=>{
+    const panel = document.getElementById("upResultPanel");
+    if(panel && panel.style.display === "block"){
+      hideUpdateResultPopup();
+      return;
+    }
+
     const last = loadUpdateResult();
     if(last) showUpdateResultPopup(last);
     else showUpdateResultPopup({
@@ -5910,22 +5942,32 @@ function bindUpdatesPanel(){
     });
   });
 
-  document.getElementById("upDiagBtn")?.addEventListener("click", showDiagnosticsPopup);
+  document.getElementById("upDiagBtn")?.addEventListener("click", ()=>{
+    const panel = document.getElementById("upDiagPanel");
+    if(panel && panel.style.display === "block"){
+      const p = document.getElementById("upDiagPanel");
+      if(p) p.style.display = "none";
+      return;
+    }
+    showDiagnosticsPopup();
+  });
 
-  // Popup close actions
-  document.getElementById("uModalCloseBtn")?.addEventListener("click", hideUpdateResultPopup);
-  document.getElementById("uModalCloseX")?.addEventListener("click", hideUpdateResultPopup);
+  document.getElementById("upResultHideBtn")?.addEventListener("click", hideUpdateResultPopup);
+  document.getElementById("upDiagHideBtn")?.addEventListener("click", ()=>{
+    const p = document.getElementById("upDiagPanel");
+    if(p) p.style.display = "none";
+  });
 
   document.getElementById("uModalTryAgain")?.addEventListener("click", ()=>{
     hideUpdateResultPopup();
     fullWipeAndReload();
   });
 
-  // clicking outside card closes
-  document.getElementById("updateResultModal")?.addEventListener("click", (e)=>{
-    if(e.target?.id === "updateResultModal") hideUpdateResultPopup();
-  });
+  // Keep Connection pill synced with header (online/offline changes)
+  window.addEventListener("online",  ()=>renderUpdatesPanel());
+  window.addEventListener("offline", ()=>renderUpdatesPanel());
 }
+
 
 
 // If user clicks the banner anywhere (except the refresh button), postpone.
