@@ -479,9 +479,12 @@ appUpdateApplyBtn?.addEventListener("click", applyWaitingSwNow);
 appUpdateHardReloadBtn?.addEventListener("click", ()=>{
   const ok = confirm("Hard reload will reload the app with a cache-busting URL. Continue?");
   if(!ok) return;
-  const base = window.location.pathname;
-  window.location.href = base + "?v=" + Date.now();
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("v", String(Date.now()));
+  window.location.href = url.toString();
 });
+
 
 
 const obName = document.getElementById("obName");
@@ -742,8 +745,9 @@ function isStalledExercise(exName, lookback=3){
   const maxW = Math.max(...weights);
   const newest = weights[0];
 
-  // stalled = newest is not the best of the last 3
-  return newest < maxW || newest === maxW; // (still stalled if it’s flat)
+   // stalled = newest did NOT beat the best in the window
+  return newest < maxW;
+
 }
 
 function pickStalledExerciseFromToday(todayExercises){
@@ -3498,21 +3502,6 @@ if(!bw || !att || !pro || !lf || !rts){
 
     const ok = confirm("Import will overwrite your current saved data on this browser. Continue?");
     if(!ok) return;
-
-    // ✅ Restore identity + state FIRST (so downstream renders use correct profile/goal)
-LS.set(KEY_PROFILE, prof || defaultProfile());
-
-if(onboardDone === true) localStorage.setItem(KEY_ONBOARD_DONE, "1");
-else if(onboardDone === false) localStorage.removeItem(KEY_ONBOARD_DONE);
-
-// ✅ Restore app version if present (prevents update banner logic from behaving weirdly)
-// Also clear any pending version — import should represent a stable snapshot.
-if(appVer){
-  localStorage.setItem(KEY_APP_VERSION, appVer);
-} else if(appVer === null && data.v >= 4){
-  localStorage.removeItem(KEY_APP_VERSION);
-}
-localStorage.removeItem(window.KEY_PENDING_VERSION || "gym_pending_version_v1");
 
 // ✅ Restore identity + state FIRST (so downstream renders use correct profile/goal)
 LS.set(KEY_PROFILE, prof || defaultProfile());
