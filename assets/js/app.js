@@ -3261,13 +3261,17 @@ const backupNowBtn = document.getElementById("backupNowBtn");
 
 function buildExportPayload(){
   return {
-    v: 4,
+    v: 5,
     exportedAt: new Date().toISOString(),
 
     // ✅ identity + app state
     profile: LS.get(KEY_PROFILE, defaultProfile()),
     onboardDone: (localStorage.getItem(KEY_ONBOARD_DONE) === "1"),
     appVersion: localStorage.getItem(KEY_APP_VERSION) || null,
+
+    // ✅ extras
+    customExercises: LS.get(KEY_CUSTOM_EX, []),
+    targets: LS.get(KEY_TARGETS, {}),
 
     // existing
     lastBackup: localStorage.getItem(KEY_LAST_BACKUP) || null,
@@ -3281,6 +3285,7 @@ function buildExportPayload(){
     activeRoutineId: LS.get(KEY_ACTIVE_ROUTINE, null)
   };
 }
+
 
 function downloadJSON(filename, obj){
   const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
@@ -3321,15 +3326,20 @@ const lf = Array.isArray(data.lifts) ? data.lifts : null;
 const rts = Array.isArray(data.routines) ? data.routines : null;
 const arId = (typeof data.activeRoutineId === "string" || data.activeRoutineId === null) ? data.activeRoutineId : null;
 
-// ✅ NEW: identity + app state (optional but strongly validated when present)
+// ✅ identity + app state (optional but strongly validated when present)
 const prof = (data.profile && typeof data.profile === "object") ? data.profile : null;
 const onboardDone = (typeof data.onboardDone === "boolean") ? data.onboardDone : null;
 const appVer = (typeof data.appVersion === "string" || data.appVersion === null) ? data.appVersion : null;
+
+// ✅ NEW: extras (fail-open for older exports)
+const customEx = Array.isArray(data.customExercises) ? data.customExercises : null;
+const targets = (data.targets && typeof data.targets === "object") ? data.targets : null;
 
 if(!bw || !att || !pro || !lf || !rts){
   alert("That file doesn’t look like a valid export from this dashboard.");
   return;
 }
+
 
 // profile should exist in your exports — but fail-open for older files
 // (we'll seed default if missing)
@@ -3353,6 +3363,25 @@ if(appVer){
 }
 localStorage.removeItem(window.KEY_PENDING_VERSION || "gym_pending_version_v1");
 
+// ✅ Restore identity + state FIRST (so downstream renders use correct profile/goal)
+LS.set(KEY_PROFILE, prof || defaultProfile());
+
+if(onboardDone === true) localStorage.setItem(KEY_ONBOARD_DONE, "1");
+else if(onboardDone === false) localStorage.removeItem(KEY_ONBOARD_DONE);
+
+// ✅ Restore app version if present (prevents update banner logic from behaving weirdly)
+// Also clear any pending version — import should represent a stable snapshot.
+if(appVer){
+  localStorage.setItem(KEY_APP_VERSION, appVer);
+} else if(appVer === null && data.v >= 4){
+  localStorage.removeItem(KEY_APP_VERSION);
+}
+localStorage.removeItem(window.KEY_PENDING_VERSION || "gym_pending_version_v1");
+
+// ✅ Restore extras (fail-open: if missing, keep current values)
+if(customEx) LS.set(KEY_CUSTOM_EX, customEx);
+if(targets) LS.set(KEY_TARGETS, targets);
+
 // Then restore the core datasets
 LS.set(KEY_BW, bw);
 LS.set(KEY_ATT, att);
@@ -3360,6 +3389,7 @@ LS.set(KEY_PRO, pro);
 LS.set(KEY_LIFTS, lf);
 LS.set(KEY_ROUTINES, rts);
 LS.set(KEY_ACTIVE_ROUTINE, arId);
+
 
 
     // ✅ Re-hydrate in-memory state (including profile)
