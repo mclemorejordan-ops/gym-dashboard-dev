@@ -478,11 +478,16 @@ main > *{
   background: rgba(0,0,0,.55);
   z-index: 99999;
   padding: 16px;
+
+  /* ✅ Always center the card on screen */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .uModalCard{
-  max-width: 560px;
-  margin: 10vh auto 0;
+  width: min(560px, 100%);
+  margin: 0;
   background: rgba(18,18,20,.92);
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 16px;
@@ -490,7 +495,12 @@ main > *{
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 16px 50px rgba(0,0,0,.55);
+
+  /* ✅ If screen is short, card scrolls instead of going off screen */
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
 }
+
 
 .uModalHead{
   display: flex;
@@ -1852,14 +1862,6 @@ header{
     </div>
   </section>
 
-  <!-- Update Result Popup -->
-  <div id="updateResultModal" class="uModal" style="display:none;">
-    <div class="uModalCard">
-      <div class="uModalHead">
-        <div class="uModalTitle" id="uModalTitle">Update Result</div>
-        <button id="uModalCloseX" class="ghost tap" type="button">Close</button>
-      </div>
-
       <div class="updatesPills" style="margin-top:10px;">
         <div class="pillRow" id="uResLine1">—</div>
         <div class="pillRow" id="uResLine2">—</div>
@@ -2084,6 +2086,14 @@ header{
 </div>
 
 </main>
+
+    <!-- Update Result Popup -->
+  <div id="updateResultModal" class="uModal" style="display:none;">
+    <div class="uModalCard">
+      <div class="uModalHead">
+        <div class="uModalTitle" id="uModalTitle">Update Result</div>
+        <button id="uModalCloseX" class="ghost tap" type="button">Close</button>
+      </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
@@ -5551,7 +5561,13 @@ function setOnlineUI(isOnline, hasService){
 function updateConnectivityIndicators(){
   const isOnline = navigator.onLine !== false;
   setOnlineUI(isOnline, appHasService);
+
+  // ✅ Keep Settings "Connection" pill synced with header in real time
+  if(typeof renderUpdatesPanel === "function"){
+    renderUpdatesPanel(null);
+  }
 }
+
 window.addEventListener("online",  updateConnectivityIndicators);
 window.addEventListener("offline", updateConnectivityIndicators);
 
@@ -5631,22 +5647,26 @@ function renderUpdatesPanel(latestVersionMaybe=null){
   const latest  = latestVersionMaybe || localStorage.getItem("gym_latest_seen_version_v1") || current;
 
   // Connection uses your existing indicators logic:
-    const isOnline = navigator.onLine !== false;
+     const isOnline = navigator.onLine !== false;
 
-  let connLabel = "🔴 Offline";
+  let icon = "🔴";
+  let text = "Offline";
 
   if(isOnline){
     if(typeof appHasService !== "undefined"){
       if(appHasService){
-        connLabel = "🟢 Synced";
+        icon = "🟢";
+        text = "Synced";
       }else{
-        connLabel = "🟡 Online (No Service)";
+        icon = "⚠️";
+        text = "Online (No Service)";
       }
     }else{
-      // fallback if appHasService not defined
-      connLabel = "🟢 Synced";
+      icon = "🟢";
+      text = "Synced";
     }
   }
+
 
 
   const lastChecked = Number(localStorage.getItem(KEY_UP_LAST_CHECKED) || "0");
@@ -5655,7 +5675,7 @@ function renderUpdatesPanel(latestVersionMaybe=null){
   setText("upPrevVer",  `🕘 Previous Version: ${prev}`);
   setText("upLatestVer",`⬆️ Latest Available: ${latest}`);
 
-  setText("upConn",     `🌐 Connection: ${connLabel}`);
+  setText("upConn", `🌐 Connection: ${icon} ${text}`);
   setText("upStatus",   `✅ Update Status: ${computeUpdateStatus(current, latest)}`);
   setText("upChecked",  lastChecked ? `🕒 Last Checked: ${new Date(lastChecked).toLocaleString()}` : "🕒 Last Checked: —");
 
