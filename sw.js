@@ -34,8 +34,10 @@ self.addEventListener("install", (event) => {
       } catch (e) {
         // Fail-open: SW still installs even if some assets aren't present yet
         console.warn("SW install cache failed:", e);
-      } finally {
-        self.skipWaiting();
+            } finally {
+        // ✅ Do NOT auto-activate.
+        // Let the new SW reach "waiting" so the app can show an update banner
+        // and only activate when the user chooses (via SKIP_WAITING message).
       }
     })()
   );
