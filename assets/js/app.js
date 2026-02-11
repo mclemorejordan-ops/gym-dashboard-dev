@@ -398,12 +398,9 @@ function renderHeaderSub(){
   const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
   const goal = Number(profile?.proteinGoal || 240) || 240;
 
-  const v = localStorage.getItem(KEY_APP_VERSION) || "";
+sub.textContent =
+  `Minimal tracker • Protein goal ${goal}g • ${restTxt}`;
 
-  sub.textContent =
-    `Minimal tracker • Protein goal ${goal}g • ${restTxt}` +
-    (v ? ` • v${v}` : "");
-}
 
 
 
