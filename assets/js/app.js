@@ -3261,7 +3261,7 @@ const backupNowBtn = document.getElementById("backupNowBtn");
 
 function buildExportPayload(){
   return {
-    v: 5,
+    v: 6,
     exportedAt: new Date().toISOString(),
 
     // ✅ identity + app state
@@ -3272,6 +3272,9 @@ function buildExportPayload(){
     // ✅ extras
     customExercises: LS.get(KEY_CUSTOM_EX, []),
     targets: LS.get(KEY_TARGETS, {}),
+
+    // ✅ cache health / merge support
+    lastSync: localStorage.getItem(KEY_LAST_SYNC) || null,
 
     // existing
     lastBackup: localStorage.getItem(KEY_LAST_BACKUP) || null,
@@ -3285,6 +3288,7 @@ function buildExportPayload(){
     activeRoutineId: LS.get(KEY_ACTIVE_ROUTINE, null)
   };
 }
+
 
 
 function downloadJSON(filename, obj){
@@ -3331,14 +3335,18 @@ const prof = (data.profile && typeof data.profile === "object") ? data.profile :
 const onboardDone = (typeof data.onboardDone === "boolean") ? data.onboardDone : null;
 const appVer = (typeof data.appVersion === "string" || data.appVersion === null) ? data.appVersion : null;
 
-// ✅ NEW: extras (fail-open for older exports)
+// ✅ extras (fail-open for older exports)
 const customEx = Array.isArray(data.customExercises) ? data.customExercises : null;
 const targets = (data.targets && typeof data.targets === "object") ? data.targets : null;
+
+// ✅ cache health timestamp (string, fail-open)
+const lastSync = (typeof data.lastSync === "string" || data.lastSync === null) ? data.lastSync : null;
 
 if(!bw || !att || !pro || !lf || !rts){
   alert("That file doesn’t look like a valid export from this dashboard.");
   return;
 }
+
 
 
 // profile should exist in your exports — but fail-open for older files
@@ -3390,6 +3398,12 @@ LS.set(KEY_LIFTS, lf);
 LS.set(KEY_ROUTINES, rts);
 LS.set(KEY_ACTIVE_ROUTINE, arId);
 
+// ✅ Restore lastSync LAST so LS.set stamping doesn't overwrite it
+if(lastSync){
+  localStorage.setItem(KEY_LAST_SYNC, lastSync);
+} else if(lastSync === null && data.v >= 6){
+  localStorage.removeItem(KEY_LAST_SYNC);
+}
 
 
     // ✅ Re-hydrate in-memory state (including profile)
