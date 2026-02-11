@@ -255,6 +255,159 @@ runRefreshBtn?.addEventListener("click", ()=>{
   alert("Refreshed ✅");
 });
 
+/* ---------------------------
+   Settings: App update safety valve
+   - Clear status: current vs latest, SW state
+   - Can apply waiting SW
+   - “Hard reload” cache-busts as last resort
+---------------------------- */
+const appUpdateCheckBtn = document.getElementById("appUpdateCheckBtn");
+const appUpdateApplyBtn = document.getElementById("appUpdateApplyBtn");
+const appUpdateHardReloadBtn = document.getElementById("appUpdateHardReloadBtn");
+
+const appUpdateStatus = document.getElementById("appUpdateStatus");
+const appVerCurrent = document.getElementById("appVerCurrent");
+const appVerLatest = document.getElementById("appVerLatest");
+const appSwState = document.getElementById("appSwState");
+
+const PENDING_VER_KEY = window.KEY_PENDING_VERSION || "gym_pending_version_v1";
+
+function setUpdateText(el, txt){
+  if(!el) return;
+  el.textContent = txt || "—";
+}
+
+function getSwStateLabel(reg){
+  if(!("serviceWorker" in navigator)) return "unsupported";
+  if(!reg) return "not registered";
+  if(reg.waiting) return "waiting";
+  if(reg.installing) return "installing";
+  if(reg.active) return navigator.serviceWorker.controller ? "active (controlling)" : "active (no control)";
+  return "unknown";
+}
+
+async function fetchLatestVersion(){
+  try{
+    const res = await fetch("./version.json?ts=" + Date.now(), { cache:"no-store" });
+    if(!res.ok) return "";
+    const data = await res.json();
+    return String(data.version || "").trim();
+  }catch(e){
+    return "";
+  }
+}
+
+function renderAppUpdatePanel({ latest="", checking=false } = {}){
+  const reg = window.__SW_REG__ || null;
+
+  const current = localStorage.getItem(KEY_APP_VERSION) || "";
+  const pending = localStorage.getItem(PENDING_VER_KEY) || "";
+
+  setUpdateText(appVerCurrent, current || "—");
+  setUpdateText(appVerLatest, latest || "—");
+  setUpdateText(appSwState, getSwStateLabel(reg));
+
+  // Apply button only when a worker is actually waiting
+  if(appUpdateApplyBtn){
+    appUpdateApplyBtn.style.display = (reg && reg.waiting) ? "" : "none";
+  }
+
+  if(!appUpdateStatus) return;
+
+  if(checking){
+    appUpdateStatus.textContent = "Checking…";
+    appUpdateStatus.className = "small muted";
+    return;
+  }
+
+  if(navigator.onLine === false){
+    appUpdateStatus.textContent = "Offline — can’t verify latest";
+    appUpdateStatus.className = "small muted";
+    return;
+  }
+
+  // If SW is waiting, update is ready
+  if(reg && reg.waiting){
+    appUpdateStatus.textContent = "Update ready — apply it";
+    appUpdateStatus.className = "small warn";
+    return;
+  }
+
+  // If version.json says there’s a newer version (or we have a pending flag)
+  if((latest && current && latest !== current) || pending){
+    appUpdateStatus.textContent = "Update available — refresh to apply";
+    appUpdateStatus.className = "small warn";
+    return;
+  }
+
+  // Otherwise: up to date
+  if(latest && current && latest === current){
+    appUpdateStatus.textContent = "Up to date ✅";
+    appUpdateStatus.className = "small muted";
+    return;
+  }
+
+  // Unknown state (e.g. first run without current)
+  appUpdateStatus.textContent = "—";
+  appUpdateStatus.className = "small muted";
+}
+
+async function runManualUpdateCheck(){
+  renderAppUpdatePanel({ checking:true });
+
+  const reg = window.__SW_REG__ || null;
+
+  // 1) Ask browser to check SW (best effort)
+  if(reg){
+    try{ await reg.update(); }catch(e){ /* ignore */ }
+  }
+
+  // 2) Check version.json directly (source of truth for “latest”)
+  const latest = await fetchLatestVersion();
+
+  // 3) If latest differs from current, mark pending + show banner (don’t mark applied here)
+  const current = localStorage.getItem(KEY_APP_VERSION) || "";
+  if(latest && current && latest !== current){
+    localStorage.setItem(PENDING_VER_KEY, latest);
+    showUpdateBanner(reg);
+  }
+
+  // 4) Render status
+  renderAppUpdatePanel({ latest, checking:false });
+}
+
+function applyWaitingSwNow(){
+  const reg = window.__SW_REG__ || null;
+  if(!reg?.waiting){
+    alert("No update is waiting right now.");
+    return;
+  }
+
+  // When the new SW takes control, reload (this is the safest moment)
+  navigator.serviceWorker.addEventListener(
+    "controllerchange",
+    () => window.location.reload(),
+    { once:true }
+  );
+
+  reg.waiting.postMessage("SKIP_WAITING");
+
+  // Safety fallback
+  setTimeout(() => window.location.reload(), 1200);
+}
+
+appUpdateCheckBtn?.addEventListener("click", runManualUpdateCheck);
+appUpdateApplyBtn?.addEventListener("click", applyWaitingSwNow);
+
+// Hard reload: cache-bust the page URL (helps even if SW/version logic is acting up)
+appUpdateHardReloadBtn?.addEventListener("click", ()=>{
+  const ok = confirm("Hard reload will reload the app with a cache-busting URL. Continue?");
+  if(!ok) return;
+  const base = window.location.pathname;
+  window.location.href = base + "?v=" + Date.now();
+});
+
+
 const obName = document.getElementById("obName");
 const obUnits = document.getElementById("obUnits");
 const obProteinGoal = document.getElementById("obProteinGoal");
@@ -682,10 +835,19 @@ const onEnterScreen = {
     renderLifts();
   },
 
-  settings: () => {
+   settings: async () => {
     hydrateSettingsUI();
     renderStorageInfo();
     renderLastBackup();
+
+    // ✅ Paint update panel immediately using what we know now
+    renderAppUpdatePanel({ latest:"", checking:false });
+
+    // ✅ If online, do a lightweight latest-version fetch (does NOT auto-reload)
+    if(navigator.onLine !== false){
+      const latest = await fetchLatestVersion();
+      renderAppUpdatePanel({ latest, checking:false });
+    }
   }
 };
 
