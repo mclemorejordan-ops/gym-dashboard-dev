@@ -5754,7 +5754,7 @@ function showUpdateResultPopup(result){
     if(tryBtn) tryBtn.style.display = "inline-flex";
   }
 
-  modal.style.display = "block";
+  modal.style.display = "flex";
   document.body.classList.add("modalOpen");
 }
 
@@ -5898,7 +5898,7 @@ function showDiagnosticsPopup(){
   l5.textContent = `Current version: ${localStorage.getItem(KEY_APP_VERSION) || "—"}`;
   l6.textContent = `Latest seen: ${localStorage.getItem("gym_latest_seen_version_v1") || "—"}`;
 
-  modal.style.display = "block";
+  modal.style.display = "flex";
   document.body.classList.add("modalOpen");
 }
 
