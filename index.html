@@ -10,7 +10,7 @@
     maximum-scale=1
   ">
 
-  <title>Dev Gym Dashboard</title>
+  <title>Gym Dashboard</title>
   <link rel="stylesheet" href="assets/css/styles.css">
 
   <!-- PWA -->
@@ -28,23 +28,16 @@
 
 
 <body>
-<!-- DEV BANNER -->
-<div id="devBanner">
-  ⚠️ DEV BUILD — Changes here do not affect production
-</div>
-<header class="appHeader">
-  <div class="headerInner">
-    <h1>Gym Dashboard</h1>
+<header>
+  <h1>Gym Dashboard</h1>
+  <div class="sub" id="headerSub">—</div>
 
-    <div id="headerSub" class="headerSub">—</div>
-
-    <!-- ✅ Network + cache health -->
-    <div class="statusRow" aria-live="polite">
-      <span id="netBadge" class="netBadge" style="display:none;">Offline mode</span>
-    </div>
+  <!-- ✅ Network + cache health -->
+  <div class="statusRow" aria-live="polite">
+    <span id="netBadge" class="netBadge" style="display:none;">Offline mode</span>
+    <span id="lastSyncText" class="muted small">Last sync: —</span>
   </div>
 </header>
-
 
 
 <main>
@@ -526,21 +519,6 @@
       <div class="small muted" id="storageInfo">—</div>
       <div class="small warn" id="storageWarn" style="display:none;">Storage is getting large — consider backing up.</div>
     </div>
-    <div class="notice" style="margin-top:10px;">
-  <div><strong>App Info</strong></div>
-
-  <div class="row" style="gap:10px; margin-top:8px;">
-    <span class="pill">
-      <span class="muted">Version:</span>
-      <strong class="mono" id="appVersionText">—</strong>
-    </span>
-
-    <span class="pill">
-      <span class="muted">Last Sync:</span>
-      <strong class="mono" id="appLastSyncText">—</strong>
-    </span>
-  </div>
-</div>
   </section>
 
   <!-- Refresh -->
@@ -779,10 +757,10 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script defer src="assets/js/storage.js?v=6"></script>
-<script defer src="assets/js/dom.js?v=6"></script>
-<script defer src="assets/js/utils.js?v=6"></script>
-<script defer src="assets/js/app.js?v=6"></script>
+<script defer src="assets/js/storage.js?v=4"></script>
+<script defer src="assets/js/dom.js?v=4"></script>
+<script defer src="assets/js/utils.js?v=4"></script>
+<script defer src="assets/js/app.js?v=4"></script>
 
   <!-- ✅ Update Banner (shows when a new deploy is detected) -->
 <div id="updateBanner" class="updateBanner" style="display:none;">
@@ -812,7 +790,7 @@
     </button>
   </div>
 </nav>
-<!-- ✅ Toast host (Back online, etc.) -->
+  <!-- ✅ Toast host (Back online, etc.) -->
 <div id="toastHost" class="toastHost" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>
