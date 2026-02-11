@@ -103,35 +103,18 @@
   flex: 0 0 auto;
 }
 
-/* Status block: desktop stable, mobile flexible */
+/* Status block has fixed width so the left side never shifts */
 .hdrStatus{
   display:flex;
   align-items:center;
   justify-content:flex-end;
   gap:8px;
 
-  width: 170px;        /* desktop */
+  width: 170px;       /* key: keeps layout stable */
   flex: 0 0 170px;
 
   white-space:nowrap;
-  min-width: 0;
 }
-
-/* iPhone/small screens: DON'T force 170px */
-@media (max-width: 420px){
-  .hdrStatus{
-    width: auto;
-    flex: 0 1 auto;      /* allow shrink */
-    max-width: 140px;    /* prevents overflow */
-  }
-
-  .hdrOnline{
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-  }
-}
-
 
 .hdrDot{
   width: 20px;
@@ -185,30 +168,6 @@ textarea{
 /* Prevent iOS from auto-scaling text */
 html{
   -webkit-text-size-adjust: 100%;
-}
-/* iPhone Safari: stop horizontal rubber-band + “wider than phone” layout */
-html, body{
-  width: 100%;
-  max-width: 100%;
-  overflow-x: clip;           /* Safari 16+ */
-  overscroll-behavior-x: none;
-  position: relative;
-}
-
-@supports not (overflow: clip){
-  html, body{ overflow-x: hidden; }  /* fallback */
-}
-
-/* ✅ SAFE media clamp (do NOT use * { max-width:100% } ) */
-img, svg, video, canvas {
-  max-width: 100%;
-  height: auto;
-}
-    /* ✅ HARD STOP: prevent viewport widening */
-html, body{
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
 }
 
 /* Visual-only: prevent nested scrolling in Exercise Picker */
@@ -651,97 +610,6 @@ main > *{
       color:var(--text);
       border-color:#2a2b2f;
     }
-    /* ===========================
-   DAY CAROUSEL (Routine)
-=========================== */
-.dayCarousel{
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-
-  scroll-snap-type: x mandatory;
-  scroll-padding: 12px;
-
-  /* Safari gesture handling */
-  touch-action: pan-x;
-  overscroll-behavior-x: contain;
-
-  padding: 6px 0 10px;
-  margin-top: 8px;
-
-  /* iOS-friendly fade edges */
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
-          mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
-}
-
-.dayCarousel::-webkit-scrollbar{ display:none; }
-
-.dayTrack{
-  display: flex;
-  gap: 12px;
-  padding: 0 14px;
-  align-items: center;
-}
-
-.dayCard{
-  scroll-snap-align: center;
-  min-width: 150px;
-  max-width: 150px;
-  padding: 12px 12px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(18,18,20,.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  transform: perspective(900px) rotateY(0deg) scale(.96);
-  transition: transform .18s ease, border-color .18s ease, background .18s ease;
-  cursor: pointer;
-  user-select: none;
-}
-
-.dayCard.active{
-  border-color: rgba(124,252,0,.45);
-  background: rgba(18,18,20,.75);
-  transform: perspective(900px) rotateY(0deg) scale(1);
-}
-
-.dayCardTop{
-  display:flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.dayKey{
-  font-weight: 800;
-  letter-spacing: .02em;
-}
-
-.dayBadges{
-  display:flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.dayLabel{
-  font-size: 12px;
-  opacity: .9;
-}
-
-.dayRest{
-  opacity: .75;
-}
-
-.dayHint{
-  margin-top: 8px;
-  font-size: 12px;
-  opacity: .72;
-}
     .exerciseList{
       display:grid;
       gap:8px;
@@ -1839,9 +1707,7 @@ header{
         </div>
       </div>
 
-<div id="pplTabs" class="dayCarousel" aria-label="Routine day carousel">
-  <div id="dayTrack" class="dayTrack"></div>
-</div>
+      <div class="splitTabs" id="pplTabs"></div>
       <div class="exerciseList" id="pplList"></div>
 
       <div class="notice" style="margin-top:10px;">
@@ -4148,14 +4014,9 @@ function getTodaySplitIndex(){
 ---------------------------- */
 const pplTabs = document.getElementById("pplTabs");
 const pplList = document.getElementById("pplList");
-const dayTrack = document.getElementById("dayTrack");
 
 function renderDayTabs(){
-  // We keep the same function name so NOTHING else breaks,
-  // but now it renders the carousel cards into #dayTrack.
-  if(!dayTrack) return;
-
-  dayTrack.innerHTML = "";
+  pplTabs.innerHTML = "";
   const ar = getActiveRoutine();
 
   DAY_KEYS.forEach((k, idx)=>{
@@ -4163,110 +4024,20 @@ function renderDayTabs(){
     const label = (day.label || "").trim();
     const rest = !!day.rest;
 
-    const card = document.createElement("div");
-    card.className = "dayCard" + (idx === activeDayIndex ? " active" : "");
-
-    card.innerHTML = `
-      <div class="dayCardTop">
-        <div class="dayKey">${k}</div>
-        <div class="dayBadges">
-          ${label ? `<span class="badge">${label}</span>` : ``}
-          ${rest ? `<span class="badge dayRest">Rest</span>` : ``}
-        </div>
-      </div>
-      <div class="dayLabel">${label ? label : (rest ? "Rest day" : "Workout day")}</div>
-      <div class="dayHint">Tap to view exercises</div>
+    const b = document.createElement("div");
+    b.className = "tab" + (idx===activeDayIndex ? " active" : "");
+    b.innerHTML = `
+      <span>${k}</span>
+      ${label ? `<span class="badge">${label}</span>` : ""}
+      ${rest ? `<span class="badge">Rest</span>` : ""}
     `;
-
-    card.addEventListener("click", ()=>{
+    b.addEventListener("click", ()=>{
       activeDayIndex = idx;
-      renderPPL(); // this still populates #pplList exactly like before
-      centerActiveDayCard();
+      renderPPL();
     });
-
-    dayTrack.appendChild(card);
-  });
-
-  // after rendering, align view + apply 3D feel
-  requestAnimationFrame(()=>{
-    centerActiveDayCard(false);
-    updateCarousel3DEffect();
+    pplTabs.appendChild(b);
   });
 }
-function centerActiveDayCard(smooth = true){
-  if(!dayTrack) return;
-  const cards = dayTrack.querySelectorAll(".dayCard");
-  const card = cards[activeDayIndex];
-  if(!card) return;
-
-  card.scrollIntoView({
-    behavior: smooth ? "smooth" : "auto",
-    inline: "center",
-    block: "nearest"
-  });
-}
-
-function updateCarousel3DEffect(){
-  if(!dayTrack) return;
-  const cards = [...dayTrack.querySelectorAll(".dayCard")];
-  if(!cards.length) return;
-
-  const trackRect = dayTrack.getBoundingClientRect();
-  const centerX = trackRect.left + trackRect.width / 2;
-
-  cards.forEach((c, idx)=>{
-    const r = c.getBoundingClientRect();
-    const cardCenter = r.left + r.width / 2;
-    const dist = (cardCenter - centerX);
-    const norm = Math.max(-1, Math.min(1, dist / 220)); // 220 = how “wide” the effect feels
-
-    // rotate away from center + scale down slightly
-    const rot = norm * 18;                 // degrees
-    const scale = 1 - Math.min(Math.abs(norm) * 0.10, 0.10);
-
-    if(idx === activeDayIndex){
-      c.style.transform = `perspective(900px) rotateY(0deg) scale(1)`;
-    } else {
-      c.style.transform = `perspective(900px) rotateY(${rot}deg) scale(${scale})`;
-    }
-  });
-}
-
-// keep effect live while swiping
-if(pplTabs){
-  pplTabs.addEventListener("scroll", ()=>{
-    updateCarousel3DEffect();
-  }, {passive:true});
-}
-
-  // iPhone Safari: lock horizontal swipes to the carousel (stop background/page dragging)
-if(pplTabs){
-  let sx = 0, sy = 0;
-
-  pplTabs.addEventListener("touchstart", (e)=>{
-    const t = e.touches && e.touches[0];
-    if(!t) return;
-    sx = t.clientX;
-    sy = t.clientY;
-  }, {passive:true});
-
-  pplTabs.addEventListener("touchmove", (e)=>{
-  // ✅ ONLY preventDefault if the carousel can actually scroll horizontally
-  if(pplTabs.scrollWidth <= pplTabs.clientWidth) return;
-
-  const t = e.touches && e.touches[0];
-  if(!t) return;
-
-  const dx = t.clientX - sx;
-  const dy = t.clientY - sy;
-
-  // if it's mostly horizontal, stop Safari from moving the page
-  if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 6){
-    e.preventDefault();
-  }
-}, {passive:false});
-
-
 
 function renderPPL(){
   renderDayTabs();
