@@ -169,6 +169,22 @@ textarea{
 html{
   -webkit-text-size-adjust: 100%;
 }
+/* iPhone Safari: stop horizontal rubber-band + “wider than phone” layout */
+html, body{
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;           /* Safari 16+ */
+  overscroll-behavior-x: none;
+  position: relative;
+}
+
+@supports not (overflow: clip){
+  html, body{ overflow-x: hidden; }  /* fallback */
+}
+
+/* Anything that might exceed viewport gets clamped */
+*{ max-width: 100%; }
+img, svg, canvas{ max-width: 100%; height: auto; }
 
 /* Visual-only: prevent nested scrolling in Exercise Picker */
 #exPickModal > div{
@@ -614,13 +630,25 @@ main > *{
    DAY CAROUSEL (Routine)
 =========================== */
 .dayCarousel{
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+
   scroll-snap-type: x mandatory;
+  scroll-padding: 12px;
+
+  /* Safari gesture handling */
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+
   padding: 6px 0 10px;
   margin-top: 8px;
-  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+
+  /* iOS-friendly fade edges */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+          mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
 }
 
 .dayCarousel::-webkit-scrollbar{ display:none; }
@@ -4184,6 +4212,31 @@ if(pplTabs){
   pplTabs.addEventListener("scroll", ()=>{
     updateCarousel3DEffect();
   }, {passive:true});
+}
+
+  // iPhone Safari: lock horizontal swipes to the carousel (stop background/page dragging)
+if(pplTabs){
+  let sx = 0, sy = 0;
+
+  pplTabs.addEventListener("touchstart", (e)=>{
+    const t = e.touches && e.touches[0];
+    if(!t) return;
+    sx = t.clientX;
+    sy = t.clientY;
+  }, {passive:true});
+
+  pplTabs.addEventListener("touchmove", (e)=>{
+    const t = e.touches && e.touches[0];
+    if(!t) return;
+
+    const dx = t.clientX - sx;
+    const dy = t.clientY - sy;
+
+    // If user is swiping mostly sideways, prevent page scroll/rubber-band
+    if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 6){
+      e.preventDefault();
+    }
+  }, {passive:false});
 }
 
 
