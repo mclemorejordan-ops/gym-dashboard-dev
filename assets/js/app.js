@@ -21,7 +21,20 @@ window.addEventListener("error", (e)=>{
    Global dependency check
    - Delay until DOM + scripts are loaded
 ---------------------------- */
-document.addEventListener("DOMContentLoaded", ()=>{
+let __booted = false;
+
+function bootOnce() {
+  if (__booted) return;
+  __booted = true;
+  init();
+}
+
+// If DOMContentLoaded already happened, run immediately
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootOnce, { once: true });
+} else {
+  bootOnce();
+}
   const required = [
     "LS",
     "KEY_PROFILE",
