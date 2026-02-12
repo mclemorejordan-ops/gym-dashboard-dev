@@ -2043,12 +2043,23 @@ header{
 
       <div class="row" style="margin-top:8px;">
         <label>Metric (Graph)
-          <select id="liftMetric">
-            <option value="top" selected>Top Weight</option>
-            <option value="e1rm">Estimated 1RM (Epley)</option>
-            <option value="vol">Volume</option>
-          </select>
-        </label>
+  <select id="liftMetric">
+    <!-- Strength -->
+    <option value="top" selected>Top Weight</option>
+    <option value="e1rm">Estimated 1RM (Epley)</option>
+    <option value="vol">Volume</option>
+
+    <!-- Cardio -->
+    <option value="cardio_duration">Cardio: Duration</option>
+    <option value="cardio_distance">Cardio: Distance</option>
+    <option value="cardio_pace">Cardio: Pace</option>
+
+    <!-- Core -->
+    <option value="core_reps">Core: Top Reps</option>
+    <option value="core_time">Core: Top Hold (sec)</option>
+  </select>
+</label>
+
 
         <label>Rows (Table)
           <select id="liftLimit">
@@ -4165,11 +4176,30 @@ ensureLiftCompatibility();
 }
 migrateCanonicalNames();
 
-function liftStatsForExercise(exName){
-  const n = normExName(exName);
-  const exLifts = lifts.filter(x=> (x.exNorm || normExName(x.ex)) === n);
+function normalizeLiftType(t){
+  const v = String(t||"strength").toLowerCase();
+  if(v === "cardio") return "cardio";
+  if(v === "core") return "core";
+  return "strength";
+}
 
-  const life = exLifts.length ? Math.max(...exLifts.map(x=>Number(x.weight)||0)) : null;
+function getExerciseEntries(exName, type=null){
+  const n = normExName(exName);
+  let arr = lifts.filter(x => (x.exNorm || normExName(x.ex)) === n);
+
+  if(type){
+    const want = normalizeLiftType(type);
+    arr = arr.filter(x => normalizeLiftType(x.type) === want);
+  }
+
+  // newest first
+  arr.sort((a,b)=>b.date.localeCompare(a.date));
+  return arr;
+}
+
+function liftStatsForExercise(exName, type="strength"){
+  const t = normalizeLiftType(type);
+  const exLifts = getExerciseEntries(exName, t);
 
   const thisWeekStart = new Date(); thisWeekStart.setDate(thisWeekStart.getDate()-7);
   const lastWeekStart = new Date(); lastWeekStart.setDate(lastWeekStart.getDate()-14);
@@ -4180,11 +4210,21 @@ function liftStatsForExercise(exName){
     return d >= lastWeekStart && d < thisWeekStart;
   });
 
-  const thisWeekMax = thisWeek.length ? Math.max(...thisWeek.map(x=>Number(x.weight)||0)) : null;
-  const lastWeekMax = lastWeek.length ? Math.max(...lastWeek.map(x=>Number(x.weight)||0)) : null;
+  // Strength: compare by weight (existing behavior)
+  if(t === "strength"){
+    const life = exLifts.length ? Math.max(...exLifts.map(x=>Number(x.weight)||0)) : null;
+    const thisWeekMax = thisWeek.length ? Math.max(...thisWeek.map(x=>Number(x.weight)||0)) : null;
+    const lastWeekMax = lastWeek.length ? Math.max(...lastWeek.map(x=>Number(x.weight)||0)) : null;
+    return { type:t, life, thisWeekMax, lastWeekMax, thisWeekPRs:0, lastWeekPRs:0 };
+  }
 
-  return { life, thisWeekMax, lastWeekMax };
+  // Cardio/Core: PR is per-entry (pr:true). We'll show PR counts + last entry.
+  const thisWeekPRs = thisWeek.filter(x=>!!x.pr).length;
+  const lastWeekPRs = lastWeek.filter(x=>!!x.pr).length;
+
+  return { type:t, life:null, thisWeekMax:null, lastWeekMax:null, thisWeekPRs, lastWeekPRs };
 }
+
 
 function getLastLiftForExercise(exName, type=null){
   const n = normExName(exName);
@@ -4720,45 +4760,102 @@ renderDayTabs(); // ✅ ADD THIS LINE
     return;
   }
 
-  list.forEach(item=>{
-    const ex = item.name;
-    const {life, thisWeekMax, lastWeekMax} = liftStatsForExercise(ex);
+list.forEach(item=>{
+  const ex = item.name;
+  const exType = normalizeLiftType(item.type || "strength");
 
+  const stats = liftStatsForExercise(ex, exType);
+
+  // Use last entry (type-specific) for right-side display
+  const lastEntry = getExerciseEntries(ex, exType)[0] || null;
+
+  let rightLines = "";
+  let prBadge = "";
+
+  if(exType === "strength"){
+    const {life, thisWeekMax, lastWeekMax} = stats;
     const isPRThisWeek = (life !== null && thisWeekMax !== null && thisWeekMax === life);
-    const prBadge = isPRThisWeek ? `<span class="badge">🏆 PR (this week)</span>` : ``;
+    prBadge = isPRThisWeek ? `<span class="badge">🏆 PR (this week)</span>` : ``;
 
-    const card = document.createElement("div");
-    card.className = "exerciseItem";
-    card.innerHTML = `
-      <div class="left">
-        <div class="title">${escHTML(ex)}</div>
-        <div class="meta">
-          <span>${item.sets || "—"} sets</span>
-          <span>•</span>
-          <span>${item.reps || "—"} reps</span>
-          ${item.notes ? `<span class="badge">${item.notes}</span>` : ""}
-        </div>
-      </div>
-      <div class="right">
-        <div class="line2">This week: <span class="mono">${thisWeekMax===null?"—":thisWeekMax}</span> lbs</div>
-        <div class="line2">Last week: <span class="mono">${lastWeekMax===null?"—":lastWeekMax}</span> lbs</div>
-        <div class="line2">Lifetime max: <span class="mono">${life===null?"—":life}</span> lbs</div>
-        <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
-          ${prBadge}
-          <button type="button" data-log="${ex}">Log Sets</button>
-        </div>
-      </div>
+    rightLines = `
+      <div class="line2">This week: <span class="mono">${thisWeekMax===null?"—":thisWeekMax}</span> lbs</div>
+      <div class="line2">Last week: <span class="mono">${lastWeekMax===null?"—":lastWeekMax}</span> lbs</div>
+      <div class="line2">Lifetime max: <span class="mono">${life===null?"—":life}</span> lbs</div>
     `;
+  }
+  else if(exType === "cardio"){
+    const dur = lastEntry ? (typeof formatDurationSec === "function" ? formatDurationSec(lastEntry.durationSec||0) : (lastEntry.durationSec||0)+"s") : "—";
+    const dist = lastEntry ? ((Number(lastEntry.distance)||0).toFixed(2) + " mi") : "—";
+    const pace = lastEntry && typeof formatPace === "function"
+      ? formatPace(lastEntry.pace || 0)
+      : (lastEntry && lastEntry.pace ? lastEntry.pace : "—");
 
-    const logBtn = card.querySelector('button[data-log]');
-    if(logBtn){
-      logBtn.addEventListener("click", ()=>{
-        openLogModal(ex, Number(item.sets)||3, ar, dayKey, activeDayIndex);
-      });
+    prBadge = lastEntry && lastEntry.pr ? `<span class="badge">🏆 PR</span>` : ``;
+
+    rightLines = `
+      <div class="line2">Last: <span class="mono">${dur}</span> • <span class="mono">${dist}</span></div>
+      <div class="line2">Pace: <span class="mono">${pace}</span></div>
+      <div class="line2">PRs this week: <span class="mono">${stats.thisWeekPRs||0}</span></div>
+    `;
+  }
+  else { // core
+    const mode = lastEntry ? String(lastEntry.coreMode||"reps") : "reps";
+    const aw = lastEntry ? Number(lastEntry.addedWeight)||0 : 0;
+    const awTxt = aw>0 ? ` (+${aw}lb)` : "";
+    prBadge = lastEntry && lastEntry.pr ? `<span class="badge">🏆 PR</span>` : ``;
+
+    if(lastEntry){
+      if(mode === "time"){
+        rightLines = `
+          <div class="line2">Last: <span class="mono">${Number(lastEntry.seconds)||0}</span>s${awTxt}</div>
+          <div class="line2">PRs this week: <span class="mono">${stats.thisWeekPRs||0}</span></div>
+        `;
+      } else {
+        rightLines = `
+          <div class="line2">Last: <span class="mono">${Number(lastEntry.reps)||0}</span> reps${awTxt}</div>
+          <div class="line2">PRs this week: <span class="mono">${stats.thisWeekPRs||0}</span></div>
+        `;
+      }
+    } else {
+      rightLines = `
+        <div class="line2">Last: <span class="mono">—</span></div>
+        <div class="line2">PRs this week: <span class="mono">${stats.thisWeekPRs||0}</span></div>
+      `;
     }
+  }
 
-    pplList.appendChild(card);
-  });
+  const card = document.createElement("div");
+  card.className = "exerciseItem";
+  card.innerHTML = `
+    <div class="left">
+      <div class="title">${escHTML(ex)}</div>
+      <div class="meta">
+        <span class="badge">${exType === "strength" ? "Weightlifting" : (exType === "cardio" ? "Cardio" : "Core")}</span>
+        <span>${item.sets || "—"} sets</span>
+        <span>•</span>
+        <span>${item.reps || "—"} reps</span>
+        ${item.notes ? `<span class="badge">${item.notes}</span>` : ""}
+      </div>
+    </div>
+    <div class="right">
+      ${rightLines}
+      <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
+        ${prBadge}
+        <button type="button" data-log="${ex}">${exType==="cardio"?"Log Cardio":(exType==="core"?"Log Core":"Log Sets")}</button>
+      </div>
+    </div>
+  `;
+
+  const logBtn = card.querySelector('button[data-log]');
+  if(logBtn){
+    logBtn.addEventListener("click", ()=>{
+      openLogModal(ex, Number(item.sets)||3, ar, dayKey, activeDayIndex);
+    });
+  }
+
+  pplList.appendChild(card);
+});
+
 
   renderLiftSearchDropdown();
 }
@@ -5351,24 +5448,64 @@ const weekSeparatorsPlugin = {
   }
 };
 
+function liftValueForMetric(x, metric){
+  const t = normalizeLiftType(x.type);
+
+  // Strength metrics
+  if(metric === "top"){
+    if(t !== "strength"){
+      // fallback: show a sensible number if someone graphs "Top Weight" for non-strength
+      if(t === "cardio") return Number(x.distance)||0;
+      if(t === "core") return Number(x.coreMode)==="time" ? (Number(x.seconds)||0) : (Number(x.reps)||0);
+      return 0;
+    }
+    return Number(x.weight)||0;
+  }
+  if(metric === "e1rm"){
+    return (t === "strength") ? estEpley1RM(x.weight, x.reps) : 0;
+  }
+  if(metric === "vol"){
+    return (t === "strength") ? calcVolume(x) : 0;
+  }
+
+  // Cardio metrics
+  if(metric === "cardio_duration") return (t === "cardio") ? Number(x.durationSec)||0 : 0;
+  if(metric === "cardio_distance") return (t === "cardio") ? Number(x.distance)||0 : 0;
+  if(metric === "cardio_pace") return (t === "cardio") ? Number(x.pace)||0 : 0;
+
+  // Core metrics
+  if(metric === "core_reps") return (t === "core") ? Number(x.reps)||0 : 0;
+  if(metric === "core_time") return (t === "core") ? Number(x.seconds)||0 : 0;
+
+  return 0;
+}
+
+function liftYLabel(metric){
+  if(metric === "e1rm") return "Est. 1RM (lbs)";
+  if(metric === "vol") return "Volume";
+  if(metric === "top") return "Top Weight (lbs)";
+
+  if(metric === "cardio_duration") return "Duration (sec)";
+  if(metric === "cardio_distance") return "Distance (miles)";
+  if(metric === "cardio_pace") return "Pace (sec/mi)";
+
+  if(metric === "core_reps") return "Top Reps";
+  if(metric === "core_time") return "Top Hold (sec)";
+
+  return "Value";
+}
+
 function renderLiftsGraph(){
   const visible = getLiftFilteredData()
-    .slice() // copy
+    .slice()
     .sort((a,b)=>a.date.localeCompare(b.date)); // oldest -> newest
 
   const labels = visible.map(x=>x.date);
 
   const metric = appliedLiftFilters.metric || "top";
-  const data = visible.map(x=>{
-    if(metric === "e1rm") return estEpley1RM(x.weight, x.reps);
-    if(metric === "vol") return calcVolume(x);
-    return Number(x.weight)||0; // top
-  });
+  const data = visible.map(x=> liftValueForMetric(x, metric));
 
-  const yLabel =
-    metric === "e1rm" ? "Est. 1RM (lbs)" :
-    metric === "vol" ? "Volume" :
-    "Top Weight (lbs)";
+  const yLabel = liftYLabel(metric);
 
   const ctx = document.getElementById("liftChart");
   if(liftChart) liftChart.destroy();
@@ -5398,12 +5535,8 @@ function renderLiftsGraph(){
     },
     plugins:[weekSeparatorsPlugin]
   });
-
-  // If no data, show a friendly message
-  if(labels.length === 0){
-    // chart will just be empty; that's fine
-  }
 }
+
 
 function setLiftView(next){
   liftView = next;
