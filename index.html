@@ -4289,20 +4289,19 @@ card.innerHTML = `
 
 
     // tap to select
-   card.addEventListener("click", ()=>{
-  activeDayIndex = idx;
-  renderPPL();
-});
+    card.addEventListener("click", ()=>{
+      activeDayIndex = idx;
+      snapCarouselToActive();
+      renderPPL();
+    });
 
     r3dCarousel.appendChild(card);
     r3dCards.push(card);
   });
 
- // start angle so active is centered (no snap function)
-r3dAngle = -(activeDayIndex * r3dStep);
-r3dVelocity = 0;
-updateCarouselTransforms();
-
+  // start angle so active is centered
+  snapCarouselToActive(true);
+  updateCarouselTransforms();
 }
 
 function updateCarouselTransforms(){
@@ -4323,6 +4322,15 @@ card.style.filter = isActive ? "none" : "brightness(.82) blur(.3px)";
 card.style.opacity = isActive ? "1" : ".85";
   });
 }
+
+function snapCarouselToActive(instant=false){
+  const target = -(activeDayIndex * r3dStep);
+
+  if(instant){
+    r3dAngle = target;
+    r3dVelocity = 0;
+    return;
+  }
 
   // softer + longer (glide feel)
   const start = r3dAngle;
@@ -4391,12 +4399,13 @@ updateCarouselTransforms();
 
       if(Math.abs(r3dVelocity) > 0.015 && (t - start) < 1200){
         requestAnimationFrame(momentum);
-     }else{
-  // no snap — just pick the closest day when motion stops
-  const nearest = Math.round((-r3dAngle) / r3dStep);
-  activeDayIndex = (nearest % 7 + 7) % 7;
-  renderPPL();
-}
+      }else{
+        // snap to nearest day
+        const nearest = Math.round((-r3dAngle) / r3dStep);
+        activeDayIndex = (nearest % 7 + 7) % 7;
+        snapCarouselToActive();
+        renderPPL();
+      }
     }
     requestAnimationFrame(momentum);
   };
