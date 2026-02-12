@@ -4890,10 +4890,11 @@ function renderExercisePickerList(){
   if(rawQ){
     const exists = all.some(n => normExName(n) === normExName(rawQ));
     if(!exists){
-      const create = document.createElement("div");
+           const create = document.createElement("div");
       create.className = "exPickItem";
-            // ✅ BUG FIX: never inject raw user input into innerHTML (prevents broken markup / XSS)
+      // ✅ BUG FIX: never inject raw user input into innerHTML (prevents broken markup / XSS)
       create.innerHTML = ""; // clear
+
       const row = document.createElement("div");
       row.className = "exPickRow";
 
@@ -4910,63 +4911,86 @@ function renderExercisePickerList(){
 
       create.appendChild(row);
 
-     create.addEventListener("click", ()=>{
-  const created = addCustomExercise(rawQ);
-  if(!created) return;
+      // ✅ NEW: type toggle + (core) mode toggle + explicit Create button
+      const metaRow = document.createElement("div");
+      metaRow.style.display = "flex";
+      metaRow.style.flexWrap = "wrap";
+      metaRow.style.gap = "8px";
+      metaRow.style.marginTop = "10px";
+      metaRow.style.alignItems = "center";
 
-  if(exPickMulti){
-    // MULTI: add to selected list, stay open
-    exPickSelectedSet.add(created);
-    renderExercisePickerList();
-    return;
-  }
+      const typeWrap = document.createElement("label");
+      typeWrap.style.display = "flex";
+      typeWrap.style.alignItems = "center";
+      typeWrap.style.gap = "8px";
+      typeWrap.textContent = "Type";
 
-  // SINGLE: create + immediately select + confirm + close
-  exPickSelected = created;
+      const typeSel = document.createElement("select");
+      typeSel.innerHTML = `
+        <option value="strength">Strength</option>
+        <option value="cardio">Cardio</option>
+        <option value="core">Core</option>
+      `;
+      typeWrap.appendChild(typeSel);
 
-  if(typeof exPickOnConfirm === "function"){
-    exPickOnConfirm(exPickSelected);
-  }
+      const coreModeWrap = document.createElement("label");
+      coreModeWrap.style.display = "none"; // hidden unless type === core
+      coreModeWrap.style.alignItems = "center";
+      coreModeWrap.style.gap = "8px";
+      coreModeWrap.textContent = "Core Mode";
 
-  closeExercisePicker();
-});
+      const coreModeSel = document.createElement("select");
+      coreModeSel.innerHTML = `
+        <option value="reps">Reps</option>
+        <option value="time">Time</option>
+      `;
+      coreModeWrap.appendChild(coreModeSel);
+
+      const createBtn = document.createElement("button");
+      createBtn.className = "tap";
+      createBtn.type = "button";
+      createBtn.textContent = "Create";
+
+      typeSel.addEventListener("change", ()=>{
+        const t = String(typeSel.value || "strength").toLowerCase();
+        coreModeWrap.style.display = (t === "core") ? "flex" : "none";
+      });
+
+      createBtn.addEventListener("click", (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+
+        const t = String(typeSel.value || "strength").toLowerCase();
+        const cm = (t === "core") ? String(coreModeSel.value || "reps").toLowerCase() : null;
+
+        const created = addCustomExercise(rawQ, t, cm);
+        if(!created) return;
+
+        if(exPickMulti){
+          // MULTI: add to selected list, stay open
+          exPickSelectedSet.add(created);
+          renderExercisePickerList();
+          return;
+        }
+
+        // SINGLE: create + immediately select + confirm + close
+        exPickSelected = created;
+
+        if(typeof exPickOnConfirm === "function"){
+          exPickOnConfirm(exPickSelected);
+        }
+
+        closeExercisePicker();
+      });
+
+      metaRow.appendChild(typeWrap);
+      metaRow.appendChild(coreModeWrap);
+      metaRow.appendChild(createBtn);
+
+      create.appendChild(metaRow);
+
       exPickList.appendChild(create);
-    }
-  }
 
-  if(filtered.length === 0){
-    if(!rawQ){
-      exPickList.innerHTML = `<div class="notice">No matches.</div>`;
-    }
-    return;
-  }
-
-  filtered.forEach(name=>{
-    const isActive = exPickMulti ? exPickSelectedSet.has(name) : (name === exPickSelected);
-
-    const div = document.createElement("div");
-    div.className = "exPickItem" + (isActive ? " active" : "");
-
-    div.innerHTML = `
-      <div class="exPickRow">
-        ${exPickMulti ? `<span class="exPickCheck">${isActive ? "✓" : ""}</span>` : ``}
-                <span>${escHTML(name)}</span>
-      </div>
-    `;
-
-    div.addEventListener("click", ()=>{
-      if(exPickMulti){
-        if(exPickSelectedSet.has(name)) exPickSelectedSet.delete(name);
-        else exPickSelectedSet.add(name);
-        renderExercisePickerList();
-      } else {
-        exPickSelected = name;
-        [...exPickList.querySelectorAll(".exPickItem")].forEach(x=>x.classList.remove("active"));
-        div.classList.add("active");
-      }
-    });
-
-    exPickList.appendChild(div);
   });
 }
 
