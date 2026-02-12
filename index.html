@@ -4576,7 +4576,7 @@ renderDayTabs(); // ✅ ADD THIS LINE
     const restCard = document.createElement("div");
     restCard.className = "notice";
     restCard.innerHTML = `
-      <div><strong>${dayKey}</strong> is marked as a Rest Day.</div>
+            <div><strong>${escHTML(dayKey)}</strong> is marked as a Rest Day.</div>
       <div class="small muted">Exercises are stored but hidden. Toggle rest off in the Routine Editor.</div>
     `;
     pplList.appendChild(restCard);
