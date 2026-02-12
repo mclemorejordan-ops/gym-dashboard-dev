@@ -3305,12 +3305,10 @@ function loadCustomExercises(){
 
   return deduped;
 }
-
 function saveCustomExercises(arr){
   // Expect v2 format [{name,type,coreMode}]
   LS.set(KEY_CUSTOM_EX, Array.isArray(arr) ? arr : []);
 }
-
 function addCustomExercise(name, type="strength", coreMode=null){
   const cleaned = cleanExerciseName(name);
   if(!cleaned) return "";
@@ -3332,6 +3330,7 @@ function addCustomExercise(name, type="strength", coreMode=null){
 
   return cleaned;
 }
+
 
 
   /* ---------------------------
@@ -3452,7 +3451,7 @@ const EXERCISE_LIBRARY = [
   "Burpees"
 ];
 
-  /* ---------------------------
+   /* ---------------------------
    Exercise Metadata (Type + Core Mode)
    - Used to render correct logging UI later
 ---------------------------- */
@@ -3473,7 +3472,7 @@ const EXERCISE_META = (() => {
     "Bicycle Crunch",
     "Russian Twist",
     "Ab Wheel Rollout",
-    "Mountain Climbers"
+    "Mountain Climbers",
   ];
   CORE_LIST.forEach(n => {
     const key = canonicalExerciseName(n);
@@ -3483,7 +3482,7 @@ const EXERCISE_META = (() => {
   // Core holds (time-based)
   const CORE_TIME = [
     "Plank",
-    "Side Plank"
+    "Side Plank",
   ];
   CORE_TIME.forEach(n => {
     const key = canonicalExerciseName(n);
@@ -3503,7 +3502,7 @@ const EXERCISE_META = (() => {
     "Kettlebell Swings",
     "Sled Push / Pull",
     "Box Jumps",
-    "Burpees"
+    "Burpees",
   ];
   CARDIO_LIST.forEach(n => {
     const key = canonicalExerciseName(n);
@@ -3517,6 +3516,7 @@ function getDefaultExerciseMeta(exName){
   const key = canonicalExerciseName(exName || "");
   return EXERCISE_META[key] || null;
 }
+
 
   
 /* ---------------------------
@@ -4803,7 +4803,7 @@ function collectAllExerciseNames(){
   EXERCISE_LIBRARY.forEach(n => set.add(canonicalExerciseName(n)));
 
   // 1.5️⃣ Custom exercises created by you
-loadCustomExercises().forEach(o => set.add(canonicalExerciseName(o.name)));
+  loadCustomExercises().forEach(o => { if(o?.name) set.add(canonicalExerciseName(o.name)); });
 
   // 2️⃣ Routine exercises
   routines.forEach(r=>{
@@ -4892,7 +4892,9 @@ function renderExercisePickerList(){
     if(!exists){
       const create = document.createElement("div");
       create.className = "exPickItem";
-      create.innerHTML = ""; // never inject rawQ into innerHTML
+
+      // ✅ never inject raw user input into innerHTML (prevents broken markup / XSS)
+      create.innerHTML = "";
 
       const row = document.createElement("div");
       row.className = "exPickRow";
@@ -4907,21 +4909,17 @@ function renderExercisePickerList(){
       const label = document.createElement("span");
       label.textContent = `➕ Create "${rawQ}"`;
       row.appendChild(label);
-
       create.appendChild(row);
 
-      // ✅ NEW: type toggle + (core) mode toggle + explicit Create button
+      // meta row (type + core subtype)
       const metaRow = document.createElement("div");
-      metaRow.style.display = "flex";
-      metaRow.style.flexWrap = "wrap";
+      metaRow.className = "row";
       metaRow.style.gap = "8px";
-      metaRow.style.marginTop = "10px";
-      metaRow.style.alignItems = "center";
+      metaRow.style.alignItems = "end";
+      metaRow.style.marginTop = "8px";
 
       const typeWrap = document.createElement("label");
-      typeWrap.style.display = "flex";
-      typeWrap.style.alignItems = "center";
-      typeWrap.style.gap = "8px";
+      typeWrap.style.flex = "1 1 160px";
       typeWrap.textContent = "Type";
 
       const typeSel = document.createElement("select");
@@ -4933,17 +4931,16 @@ function renderExercisePickerList(){
       typeWrap.appendChild(typeSel);
 
       const coreModeWrap = document.createElement("label");
-      coreModeWrap.style.display = "none"; // only when type === core
-      coreModeWrap.style.alignItems = "center";
-      coreModeWrap.style.gap = "8px";
+      coreModeWrap.style.flex = "1 1 180px";
       coreModeWrap.textContent = "Core Mode";
 
       const coreModeSel = document.createElement("select");
       coreModeSel.innerHTML = `
-        <option value="reps">Reps</option>
-        <option value="time">Time</option>
+        <option value="reps">Reps-based</option>
+        <option value="time">Time-based</option>
       `;
       coreModeWrap.appendChild(coreModeSel);
+      coreModeWrap.style.display = "none";
 
       const createBtn = document.createElement("button");
       createBtn.className = "tap";
@@ -4990,12 +4987,47 @@ function renderExercisePickerList(){
       metaRow.appendChild(typeWrap);
       metaRow.appendChild(coreModeWrap);
       metaRow.appendChild(createBtn);
-
       create.appendChild(metaRow);
 
       exPickList.appendChild(create);
     }
   }
+
+  if(filtered.length === 0){
+    if(!rawQ){
+      exPickList.innerHTML = `<div class="notice">No matches.</div>`;
+    }
+    return;
+  }
+
+  filtered.forEach(name=>{
+    const isActive = exPickMulti ? exPickSelectedSet.has(name) : (name === exPickSelected);
+
+    const div = document.createElement("div");
+    div.className = "exPickItem" + (isActive ? " active" : "");
+
+    div.innerHTML = `
+      <div class="exPickRow">
+        ${exPickMulti ? `<span class="exPickCheck">${isActive ? "✓" : ""}</span>` : ``}
+        <span>${escHTML(name)}</span>
+      </div>
+    `;
+
+    div.addEventListener("click", ()=>{
+      if(exPickMulti){
+        if(exPickSelectedSet.has(name)) exPickSelectedSet.delete(name);
+        else exPickSelectedSet.add(name);
+        renderExercisePickerList();
+      } else {
+        exPickSelected = name;
+        [...exPickList.querySelectorAll(".exPickItem")].forEach(x=>x.classList.remove("active"));
+        div.classList.add("active");
+      }
+    });
+
+    exPickList.appendChild(div);
+  });
+}
 
 
 
