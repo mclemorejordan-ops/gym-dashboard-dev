@@ -4551,7 +4551,8 @@ renderDayTabs(); // ✅ ADD THIS LINE
 
   const ar = getActiveRoutine();
   const dayKey = DAY_KEYS[activeDayIndex];
-  const day = ar.days[dayKey];
+  const day = (ar && ar.days && ar.days[dayKey]) ? ar.days[dayKey] : {};
+
 
   pplList.innerHTML = "";
 
