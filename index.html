@@ -5647,7 +5647,7 @@ function renderRtDayTabs(){
     b.className = "tab" + (idx===editDayIndex ? " active" : "");
     b.innerHTML = `
       <span>${k}</span>
-      ${label ? `<span class="badge">${label}</span>` : ""}
+      ${label ? `<span class="badge">${escHTML(label)}</span>` : ""}
       ${rest ? `<span class="badge">Rest</span>` : ""}
     `;
     b.addEventListener("click", ()=>{
