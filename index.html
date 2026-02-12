@@ -2472,6 +2472,188 @@ header{
 (function(){
 'use strict';
 
+  /* ==========================================
+   CARDIO SUPPORT (fields, defaults, helpers)
+========================================== */
+
+// Your cardio list (canonical names)
+const CARDIO_EXERCISES = new Set([
+  "Treadmill Walk / Run",
+  "Incline Treadmill Walk",
+  "Stair Climber",
+  "Stationary Bike",
+  "Elliptical",
+  "Rowing Machine",
+  "Jump Rope",
+  "Battle Ropes",
+  "Kettlebell Swings",
+  "Sled Push / Pull",
+  "Box Jumps",
+  "Burpees"
+]);
+
+// Field definitions per cardio exercise
+// - "required" means: we should show these first + validate in Batch Add
+// - "optional" means: nice-to-have fields
+const CARDIO_SPECS = {
+  "Treadmill Walk / Run": {
+    required: [
+      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" },
+      { key:"distanceMi",  label:"Distance (mi)",  type:"number", placeholder:"2.0" }
+    ],
+    optional: [
+      { key:"pace",       label:"Pace (optional)",      type:"text",   placeholder:"10:00/mi" },
+      { key:"inclinePct", label:"Incline % (optional)", type:"number", placeholder:"1" }
+    ]
+  },
+
+  "Incline Treadmill Walk": {
+    required: [
+      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" },
+      { key:"distanceMi",  label:"Distance (mi)",  type:"number", placeholder:"2.0" },
+      { key:"inclinePct",  label:"Incline %",      type:"number", placeholder:"10" }
+    ],
+    optional: []
+  },
+
+  "Stair Climber": {
+    required: [
+      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"15" },
+      { key:"level",       label:"Level",          type:"number", placeholder:"6" }
+    ],
+    optional: [
+      { key:"floors", label:"Floors/Steps (optional)", type:"text", placeholder:"30 floors" }
+    ]
+  },
+
+  "Stationary Bike": {
+    required: [
+      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" },
+      { key:"level",       label:"Resistance/Level", type:"number", placeholder:"8" }
+    ],
+    optional: [
+      { key:"distanceMi", label:"Distance (optional)", type:"number", placeholder:"5.0" }
+    ]
+  },
+
+  "Elliptical": {
+    required: [
+      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" },
+      { key:"level",       label:"Resistance",     type:"number", placeholder:"10" }
+    ],
+    optional: [
+      { key:"distanceMi", label:"Distance (optional)", type:"number", placeholder:"2.5" }
+    ]
+  },
+
+  "Rowing Machine": {
+    required: [
+      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"15" },
+      { key:"meters",      label:"Distance (meters)", type:"number", placeholder:"2000" }
+    ],
+    optional: [
+      { key:"splitPace", label:"Split pace (optional)", type:"text", placeholder:"2:10/500m" }
+    ]
+  },
+
+  "Jump Rope": {
+    required: [
+      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"10" }
+    ],
+    optional: [
+      { key:"rounds", label:"Rounds (optional)", type:"number", placeholder:"5" }
+    ]
+  },
+
+  "Battle Ropes": {
+    required: [
+      { key:"rounds",   label:"Rounds",   type:"number", placeholder:"8" },
+      { key:"workRest", label:"Work/Rest", type:"text", placeholder:"30s/30s" }
+    ],
+    optional: []
+  },
+
+  "Kettlebell Swings": {
+    required: [
+      { key:"rounds",   label:"Rounds",   type:"number", placeholder:"6" }
+    ],
+    optional: [
+      { key:"workRest",  label:"Work/Rest (optional)", type:"text", placeholder:"30s/30s" },
+      { key:"repsRound", label:"Reps/Round (optional)", type:"number", placeholder:"15" },
+      { key:"kbWeight",  label:"KB Weight (optional)", type:"number", placeholder:"35" }
+    ]
+  },
+
+  "Sled Push / Pull": {
+    required: [
+      { key:"rounds",     label:"Rounds",            type:"number", placeholder:"6" },
+      { key:"distancePer",label:"Distance/Round",    type:"text",   placeholder:"20 yd" }
+    ],
+    optional: [
+      { key:"sledWeight", label:"Weight (optional)", type:"number", placeholder:"90" }
+    ]
+  },
+
+  "Box Jumps": {
+    required: [
+      { key:"rounds", label:"Rounds", type:"number", placeholder:"6" }
+    ],
+    optional: [
+      { key:"repsRound", label:"Reps/Round (optional)", type:"number", placeholder:"10" },
+      { key:"workRest",  label:"Work/Rest (optional)", type:"text", placeholder:"20s/40s" },
+      { key:"boxHeight", label:"Box Height (optional)", type:"text", placeholder:"24 in" }
+    ]
+  },
+
+  "Burpees": {
+    required: [
+      { key:"rounds", label:"Rounds", type:"number", placeholder:"6" }
+    ],
+    optional: [
+      { key:"repsRound", label:"Reps/Round (optional)", type:"number", placeholder:"12" },
+      { key:"workRest",  label:"Work/Rest (optional)", type:"text", placeholder:"20s/40s" }
+    ]
+  }
+};
+
+function isCardioName(name){
+  const n = canonicalExerciseName(String(name||""));
+  return CARDIO_EXERCISES.has(n);
+}
+
+function cardioBlankFor(name){
+  const n = canonicalExerciseName(String(name||""));
+  const spec = CARDIO_SPECS[n];
+  const obj = {};
+  if(!spec) return obj;
+  [...spec.required, ...spec.optional].forEach(f => obj[f.key] = "");
+  return obj;
+}
+
+// Creates the correct shape for Routine exercises[]
+function makeRoutineExerciseFromName(name){
+  const n = canonicalExerciseName(String(name||"").trim());
+  if(!n) return null;
+
+  if(isCardioName(n)){
+    return {
+      name: n,
+      type: "cardio",
+      cardio: cardioBlankFor(n),
+      notes: ""
+    };
+  }
+
+  // default strength shape
+  return {
+    name: n,
+    type: "strength",
+    sets: 3,
+    reps: "8–10",
+    notes: ""
+  };
+}
+
 /* ---------------------------
    Storage helpers
 ---------------------------- */
@@ -4986,7 +5168,7 @@ const batchAddCancelBtn = document.getElementById("batchAddCancelBtn");
 const batchAddConfirmBtn = document.getElementById("batchAddConfirmBtn");
 const batchAddList = document.getElementById("batchAddList");
 
-let batchAddItems = []; // [{name, sets, reps}]
+let batchAddItems = []; // [{name, type, sets, reps, cardio:{...}}]
 
 function openBatchAddModal(names){
   // ✅ normalize: accept array OR single string
@@ -4994,11 +5176,26 @@ function openBatchAddModal(names){
     ? names
     : (typeof names === "string" && names.trim() ? [names.trim()] : []);
 
-  batchAddItems = arr.map(n=>({
-    name: canonicalExerciseName(n),
+ batchAddItems = arr.map(n=>{
+  const name = canonicalExerciseName(n);
+  const isC = isCardioName(name);
+
+  if(isC){
+    return {
+      name,
+      type: "cardio",
+      cardio: cardioBlankFor(name)
+    };
+  }
+
+  return {
+    name,
+    type: "strength",
     sets: "",
     reps: ""
-  }));
+  };
+});
+
 
   renderBatchAddList();
   lockBodyScroll();                 // ✅ ADD
@@ -5021,29 +5218,62 @@ function renderBatchAddList(){
     card.style.background = "#0f0f10";
     card.style.padding = "10px";
 
+    const isCardio = it.type === "cardio" || isCardioName(it.name);
+
+    // cardio fields
+    let cardioHTML = "";
+    if(isCardio){
+      const spec = CARDIO_SPECS[canonicalExerciseName(it.name)];
+      const fields = spec ? [...spec.required, ...spec.optional] : [];
+      cardioHTML = `
+        <div class="row" style="margin-top:10px; align-items:end; flex-wrap:wrap;">
+          ${fields.map(f=>`
+            <label style="flex:1 1 180px;">
+              ${f.label}
+              <input
+                data-bcfield="${f.key}"
+                data-idx="${idx}"
+                type="${f.type || "text"}"
+                value="${(it.cardio?.[f.key] ?? "")}"
+                placeholder="${f.placeholder || ""}"
+              />
+            </label>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    // strength fields
+    const strengthHTML = `
+      <label style="flex:0 0 120px;">Sets
+        <input type="number" min="1" value="${it.sets}" data-bsets="${idx}" placeholder="3" />
+      </label>
+
+      <label style="flex:1 1 160px;">Reps
+        <input value="${it.reps}" data-breps="${idx}" placeholder="8–10" />
+      </label>
+    `;
+
     card.innerHTML = `
       <div class="row" style="align-items:end;">
         <div style="flex:2 1 220px;">
           <div class="small muted">Exercise</div>
           <div style="font-weight:700; margin-top:4px;">${it.name}</div>
+          <div class="small muted" style="margin-top:2px;">${isCardio ? "Cardio" : "Strength"}</div>
         </div>
 
-        <label style="flex:0 0 120px;">Sets
-          <input type="number" min="1" value="${it.sets}" data-bsets="${idx}" placeholder="3" />
-        </label>
-
-        <label style="flex:1 1 160px;">Reps
-          <input value="${it.reps}" data-breps="${idx}" placeholder="8–10" />
-        </label>
+        ${isCardio ? "" : strengthHTML}
 
         <button type="button" class="miniBtn danger" data-bremove="${idx}">Remove</button>
       </div>
+
+      ${isCardio ? cardioHTML : ""}
     `;
 
     batchAddList.appendChild(card);
   });
 
-  // wire inputs
+  // strength wiring
   batchAddList.querySelectorAll("[data-bsets]").forEach(inp=>{
     inp.addEventListener("input", ()=>{
       const i = Number(inp.getAttribute("data-bsets"));
@@ -5058,6 +5288,17 @@ function renderBatchAddList(){
     });
   });
 
+  // cardio wiring
+  batchAddList.querySelectorAll("[data-bcfield]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const idx = Number(inp.getAttribute("data-idx"));
+      const key = inp.getAttribute("data-bcfield");
+      if(!batchAddItems[idx].cardio) batchAddItems[idx].cardio = {};
+      batchAddItems[idx].cardio[key] = inp.value;
+    });
+  });
+
+  // remove wiring
   batchAddList.querySelectorAll("[data-bremove]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const i = Number(btn.getAttribute("data-bremove"));
@@ -5065,31 +5306,15 @@ function renderBatchAddList(){
       renderBatchAddList();
     });
   });
-  // auto-focus first sets input
-setTimeout(()=>{
-  batchAddList.querySelector("input[data-bsets]")?.focus();
-}, 0);
+
+  // autofocus: first meaningful field
+  setTimeout(()=>{
+    const firstStrength = batchAddList.querySelector("input[data-bsets]");
+    const firstCardio = batchAddList.querySelector("input[data-bcfield]");
+    (firstStrength || firstCardio)?.focus();
+  }, 0);
 }
 
-[batchAddCloseBtn, batchAddCancelBtn].forEach(btn=>{
-  btn?.addEventListener("click", closeBatchAddModal);
-});
-batchAddModal?.addEventListener("click", (e)=>{ if(e.target === batchAddModal) closeBatchAddModal(); });
-
-batchAddConfirmBtn?.addEventListener("click", ()=>{
-  // validate
-  for(const it of batchAddItems){
-    const sets = Number(it.sets);
-    const reps = String(it.reps || "").trim();
-    if(!sets || sets <= 0){
-      alert(`Enter sets for: ${it.name}`);
-      return;
-    }
-    if(!reps){
-      alert(`Enter reps for: ${it.name}`);
-      return;
-    }
-  }
 
   // add to current draft day
   const k = DAY_KEYS[editDayIndex];
@@ -5771,92 +5996,203 @@ function renderRtDayPanel(){
     return;
   }
 
-  list.forEach((ex, idx)=>{
-    const wrap = document.createElement("div");
-    wrap.className = "rtExCard";
+ list.forEach((ex, idx)=>{
+  const wrap = document.createElement("div");
+  wrap.className = "rtExCard";
 
-    wrap.innerHTML = `
-      <div class="rtExTop">
-        <div class="rtExName">${ex.name || "Exercise"}</div>
-        <span class="badge">${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps</span>
-      </div>
+  const exName = ex?.name || "Exercise";
+  const isCardio = (ex?.type === "cardio") || isCardioName(exName);
 
+  // ensure shape is correct if old data exists
+  if(isCardio){
+    ex.type = "cardio";
+    if(!ex.cardio) ex.cardio = cardioBlankFor(exName);
+  } else {
+    ex.type = "strength";
+    if(typeof ex.sets !== "number") ex.sets = Number(ex.sets)||0;
+    if(typeof ex.reps !== "string") ex.reps = String(ex.reps||"");
+  }
+
+  // badge text
+  let badgeText = "—";
+  if(isCardio){
+    const spec = CARDIO_SPECS[canonicalExerciseName(exName)];
+    if(spec){
+      // show the first 2 required fields in the badge for quick glance
+      const parts = spec.required.slice(0,2).map(f=>{
+        const v = (ex.cardio?.[f.key] ?? "");
+        return v ? `${v}` : "—";
+      });
+      badgeText = parts.join(" • ");
+    } else {
+      badgeText = "Cardio";
+    }
+  } else {
+    badgeText = `${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps`;
+  }
+
+  // build cardio fields UI (required + optional)
+  let cardioFieldsHTML = "";
+  if(isCardio){
+    const spec = CARDIO_SPECS[canonicalExerciseName(exName)];
+    const fields = spec ? [...spec.required, ...spec.optional] : [];
+    cardioFieldsHTML = `
       <div class="row" style="margin-top:10px; align-items:end;">
-        <label style="flex:2 1 240px;">Name
-          <input data-field="name" value="${ex.name || ""}" />
-        </label>
-
-        <label style="flex:0 0 120px;">Sets
-          <input data-field="sets" type="number" min="1" value="${ex.sets || ""}" />
-        </label>
-
-        <label style="flex:1 1 160px;">Reps
-          <input data-field="reps" value="${ex.reps || ""}" />
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:8px;">
-        <label style="flex:1 1 100%;">Notes
-          <textarea data-field="notes" placeholder="optional">${ex.notes || ""}</textarea>
-        </label>
-      </div>
-
-      <div class="rtActions">
-        <button type="button" class="miniBtn" data-up="${idx}">↑ Up</button>
-        <button type="button" class="miniBtn" data-down="${idx}">↓ Down</button>
-        <button type="button" class="miniBtn" data-swap="${idx}">Swap</button>
-        <button type="button" class="miniBtn danger" data-remove="${idx}">Remove</button>
+        ${fields.map(f=>`
+          <label style="flex:1 1 180px;">
+            ${f.label}
+            <input
+              data-cfield="${f.key}"
+              type="${f.type || "text"}"
+              value="${(ex.cardio?.[f.key] ?? "")}"
+              placeholder="${f.placeholder || ""}"
+            />
+          </label>
+        `).join("")}
       </div>
     `;
+  }
 
-    // keep the rest of your event listeners EXACTLY as-is below
+  // strength fields UI
+  const strengthFieldsHTML = `
+    <div class="row" style="margin-top:10px; align-items:end;">
+      <label style="flex:2 1 240px;">Name
+        <input data-field="name" value="${exName}" />
+      </label>
 
-    wrap.querySelectorAll("[data-field]").forEach(inp=>{
-      inp.addEventListener("input", ()=>{
-        const field = inp.getAttribute("data-field");
-        if(field === "sets"){
-          day.exercises[idx][field] = Number(inp.value)||0;
-        }else{
-          day.exercises[idx][field] = inp.value;
+      <label style="flex:0 0 120px;">Sets
+        <input data-field="sets" type="number" min="1" value="${ex.sets || ""}" />
+      </label>
+
+      <label style="flex:1 1 160px;">Reps
+        <input data-field="reps" value="${ex.reps || ""}" />
+      </label>
+    </div>
+  `;
+
+  wrap.innerHTML = `
+    <div class="rtExTop">
+      <div class="rtExName">${exName}</div>
+      <span class="badge">${badgeText}</span>
+    </div>
+
+    <!-- Name always editable -->
+    <div class="row" style="margin-top:10px;">
+      <label style="flex:1 1 100%;">Name
+        <input data-field="name" value="${exName}" />
+      </label>
+    </div>
+
+    ${isCardio ? cardioFieldsHTML : strengthFieldsHTML}
+
+    <div class="row" style="margin-top:8px;">
+      <label style="flex:1 1 100%;">Notes
+        <textarea data-field="notes" placeholder="optional">${ex.notes || ""}</textarea>
+      </label>
+    </div>
+
+    <div class="rtActions">
+      <button type="button" class="miniBtn" data-up="${idx}">↑ Up</button>
+      <button type="button" class="miniBtn" data-down="${idx}">↓ Down</button>
+      <button type="button" class="miniBtn" data-swap="${idx}">Swap</button>
+      <button type="button" class="miniBtn danger" data-remove="${idx}">Remove</button>
+    </div>
+  `;
+
+  // name + notes + sets/reps (same pattern as your existing listener)
+  wrap.querySelectorAll("[data-field]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const field = inp.getAttribute("data-field");
+
+      // if name changes, auto-convert between strength/cardio shapes
+      if(field === "name"){
+        const newName = canonicalExerciseName(inp.value);
+        day.exercises[idx].name = newName;
+
+        if(isCardioName(newName)){
+          day.exercises[idx].type = "cardio";
+          if(!day.exercises[idx].cardio) day.exercises[idx].cardio = cardioBlankFor(newName);
+          delete day.exercises[idx].sets;
+          delete day.exercises[idx].reps;
+        } else {
+          day.exercises[idx].type = "strength";
+          day.exercises[idx].sets = Number(day.exercises[idx].sets)||3;
+          day.exercises[idx].reps = String(day.exercises[idx].reps||"8–10");
+          delete day.exercises[idx].cardio;
         }
-      });
-    });
 
-    wrap.querySelector("[data-up]")?.addEventListener("click", ()=>{
-      if(idx<=0) return;
-      const tmp = day.exercises[idx-1];
-      day.exercises[idx-1] = day.exercises[idx];
-      day.exercises[idx] = tmp;
-      renderRtDayPanel();
-    });
+        renderRtDayPanel();
+        return;
+      }
 
-    wrap.querySelector("[data-down]")?.addEventListener("click", ()=>{
-      if(idx>=day.exercises.length-1) return;
-      const tmp = day.exercises[idx+1];
-      day.exercises[idx+1] = day.exercises[idx];
-      day.exercises[idx] = tmp;
-      renderRtDayPanel();
+      if(field === "sets"){
+        day.exercises[idx][field] = Number(inp.value)||0;
+      }else{
+        day.exercises[idx][field] = inp.value;
+      }
     });
-
-    wrap.querySelector("[data-remove]")?.addEventListener("click", ()=>{
-      day.exercises.splice(idx,1);
-      renderRtDayPanel();
-    });
-
-    wrap.querySelector("[data-swap]")?.addEventListener("click", ()=>{
-  const cur = day.exercises[idx]?.name || "";
-  openExercisePicker({
-    title: "Swap exercise",
-    initial: cur,
-    onConfirm: (picked)=>{
-    day.exercises[idx].name = canonicalExerciseName(picked);
-      renderRtDayPanel();
-    }
   });
+
+  // cardio field listeners
+  wrap.querySelectorAll("[data-cfield]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const key = inp.getAttribute("data-cfield");
+      if(!day.exercises[idx].cardio) day.exercises[idx].cardio = {};
+      day.exercises[idx].cardio[key] = inp.value;
+    });
+  });
+
+  wrap.querySelector("[data-up]")?.addEventListener("click", ()=>{
+    if(idx<=0) return;
+    const tmp = day.exercises[idx-1];
+    day.exercises[idx-1] = day.exercises[idx];
+    day.exercises[idx] = tmp;
+    renderRtDayPanel();
+  });
+
+  wrap.querySelector("[data-down]")?.addEventListener("click", ()=>{
+    if(idx>=day.exercises.length-1) return;
+    const tmp = day.exercises[idx+1];
+    day.exercises[idx+1] = day.exercises[idx];
+    day.exercises[idx] = tmp;
+    renderRtDayPanel();
+  });
+
+  wrap.querySelector("[data-remove]")?.addEventListener("click", ()=>{
+    day.exercises.splice(idx,1);
+    renderRtDayPanel();
+  });
+
+  // SWAP: when swapped, also fix type + fields
+  wrap.querySelector("[data-swap]")?.addEventListener("click", ()=>{
+    const cur = day.exercises[idx]?.name || "";
+    openExercisePicker({
+      title: "Swap exercise",
+      initial: cur,
+      onConfirm: (picked)=>{
+        const nn = canonicalExerciseName(picked);
+        day.exercises[idx].name = nn;
+
+        if(isCardioName(nn)){
+          day.exercises[idx].type = "cardio";
+          day.exercises[idx].cardio = cardioBlankFor(nn);
+          delete day.exercises[idx].sets;
+          delete day.exercises[idx].reps;
+        } else {
+          day.exercises[idx].type = "strength";
+          day.exercises[idx].sets = 3;
+          day.exercises[idx].reps = "8–10";
+          delete day.exercises[idx].cardio;
+        }
+
+        renderRtDayPanel();
+      }
+    });
+  });
+
+  rtExList.appendChild(wrap);
 });
 
-    rtExList.appendChild(wrap);
-  });
 }
 
 rtDayLabel.addEventListener("input", ()=>{
@@ -5886,14 +6222,39 @@ rtAddExBtn.addEventListener("click", ()=>{
   const day = draftRoutine.days[k];
 
   const name = canonicalExerciseName(String(rtAddExName.value||"").trim());
+  if(!name) return alert("Enter an exercise name.");
+
+  // CARDIO: add cardio shape (no sets/reps validation)
+  if(isCardioName(name)){
+    const exObj = makeRoutineExerciseFromName(name);
+    day.exercises.push(exObj);
+
+    // clear inputs
+    rtAddExName.value = "";
+    rtAddExSets.value = "";
+    rtAddExReps.value = "";
+
+    renderRtDayPanel();
+    buildRoutineExerciseSuggestions();
+    renderLiftSearchDropdown();
+    return;
+  }
+
+  // STRENGTH: keep your existing validation
   const sets = Number(rtAddExSets.value)||0;
   const reps = String(rtAddExReps.value||"").trim();
 
-  if(!name) return alert("Enter an exercise name.");
   if(!sets || sets <= 0) return alert("Enter sets (number).");
   if(!reps) return alert("Enter reps (e.g., 8–10).");
 
-  day.exercises.push({name, sets, reps, notes:""});
+  day.exercises.push({
+    name,
+    type: "strength",
+    sets,
+    reps,
+    notes: ""
+  });
+
   rtAddExName.value = "";
   rtAddExSets.value = "";
   rtAddExReps.value = "";
