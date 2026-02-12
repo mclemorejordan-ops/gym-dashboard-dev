@@ -4606,7 +4606,7 @@ renderDayTabs(); // ✅ ADD THIS LINE
     card.className = "exerciseItem";
     card.innerHTML = `
       <div class="left">
-        <div class="title">${ex}</div>
+        <div class="title">${escHTML(ex)}</div>
         <div class="meta">
           <span>${item.sets || "—"} sets</span>
           <span>•</span>
