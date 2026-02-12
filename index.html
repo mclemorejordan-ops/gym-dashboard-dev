@@ -5221,29 +5221,6 @@ function setExPickType(t){
 exPickTypeStrengthBtn?.addEventListener("click", ()=> setExPickType("strength"));
 exPickTypeCardioBtn?.addEventListener("click", ()=> setExPickType("cardio"));
 
-
-  // 🔹 Picker type state
-const exPickTypeStrength = document.getElementById("exPickTypeStrength");
-const exPickTypeCardio   = document.getElementById("exPickTypeCardio");
-
-let exPickType = "strength"; // default
-
-function setExPickType(next){
-  exPickType = next === "cardio" ? "cardio" : "strength";
-
-  if(exPickType === "cardio"){
-    exPickTypeCardio.classList.remove("ghost");
-    exPickTypeStrength.classList.add("ghost");
-  } else {
-    exPickTypeStrength.classList.remove("ghost");
-    exPickTypeCardio.classList.add("ghost");
-  }
-}
-
-exPickTypeStrength?.addEventListener("click", ()=> setExPickType("strength"));
-exPickTypeCardio?.addEventListener("click", ()=> setExPickType("cardio"));
-
-
 let exPickSelected = "";                 // single mode selected
 let exPickSelectedSet = new Set();       // multi mode selected set
 let exPickMulti = false;                 // are we in multi mode?
