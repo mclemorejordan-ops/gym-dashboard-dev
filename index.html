@@ -4291,7 +4291,6 @@ card.innerHTML = `
     // tap to select
     card.addEventListener("click", ()=>{
       activeDayIndex = idx;
-      snapCarouselToActive();
       renderPPL();
     });
 
@@ -4300,7 +4299,6 @@ card.innerHTML = `
   });
 
   // start angle so active is centered
-  snapCarouselToActive(true);
   updateCarouselTransforms();
 }
 
@@ -4322,15 +4320,6 @@ card.style.filter = isActive ? "none" : "brightness(.82) blur(.3px)";
 card.style.opacity = isActive ? "1" : ".85";
   });
 }
-
-function snapCarouselToActive(instant=false){
-  const target = -(activeDayIndex * r3dStep);
-
-  if(instant){
-    r3dAngle = target;
-    r3dVelocity = 0;
-    return;
-  }
 
   // softer + longer (glide feel)
   const start = r3dAngle;
@@ -4401,9 +4390,7 @@ updateCarouselTransforms();
         requestAnimationFrame(momentum);
       }else{
         // snap to nearest day
-        const nearest = Math.round((-r3dAngle) / r3dStep);
         activeDayIndex = (nearest % 7 + 7) % 7;
-        snapCarouselToActive();
         renderPPL();
       }
     }
