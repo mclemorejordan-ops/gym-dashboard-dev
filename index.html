@@ -6405,6 +6405,10 @@ function showUpdateResultPopup(result){
   const l5 = document.getElementById("uResLine5");
   const l6 = document.getElementById("uResLine6");
 
+  // ✅ BUG FIX: avoid hard crash if any result lines are missing
+  if(!l1 || !l2 || !l3 || !l4 || !l5 || !l6) return;
+
+
   const ok = !!result?.ok;
 
   l1.textContent = ok ? "✅ Update Successful" : "⚠️ Update Failed";
