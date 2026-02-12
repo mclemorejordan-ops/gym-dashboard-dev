@@ -4936,7 +4936,15 @@ function renderLiftSearchDropdown(){
     liftSearch.appendChild(opt);
   });
   liftSearch.value = items.includes(prev) ? prev : "";
+
+  // keep Metric dropdown consistent with selected exercise
+  syncLiftMetricToSelectedExercise();
 }
+  liftSearch.addEventListener("change", ()=>{
+  syncLiftMetricToSelectedExercise();
+});
+
+
 /* ---------------------------
    Exercise Picker (Add + Swap)
 ---------------------------- */
@@ -5243,7 +5251,71 @@ batchAddConfirmBtn?.addEventListener("click", ()=>{
 [exPickCloseBtn, exPickCancelBtn].forEach(btn=>btn.addEventListener("click", closeExercisePicker));
 exPickModal.addEventListener("click", (e)=>{ if(e.target === exPickModal) closeExercisePicker(); });
 
-function renderLiftRoutineDropdown(){
+function progressExerciseType(exName){
+  const ex = String(exName || "").trim();
+  if(!ex) return ""; // no filter selected
+
+  const n = normExName(ex);
+
+  // 1) Prefer last logged entry type
+  const last = lifts
+    .filter(x => (x.exNorm || normExName(x.ex)) === n)
+    .sort((a,b)=>b.date.localeCompare(a.date))[0];
+
+  if(last && last.type) return normalizeLiftType(last.type);
+
+  // 2) Fallback: look in routines (type on exercise row)
+  for(const r of routines){
+    for(const k of DAY_KEYS){
+      const list = r.days?.[k]?.exercises || [];
+      const found = list.find(e => normExName(canonicalExerciseName(e.name||"")) === n);
+      if(found) return normalizeLiftType(found.type || "strength");
+    }
+  }
+
+  // default
+  return "strength";
+}
+
+function metricGroupForType(type){
+  const t = normalizeLiftType(type || "strength");
+  if(t === "cardio") return new Set(["cardio_duration","cardio_distance","cardio_pace"]);
+  if(t === "core") return new Set(["core_reps","core_time"]);
+  return new Set(["top","e1rm","vol"]);
+}
+
+function defaultMetricForType(type){
+  const t = normalizeLiftType(type || "strength");
+  if(t === "cardio") return "cardio_distance";
+  if(t === "core") return "core_reps";
+  return "top";
+}
+
+function syncLiftMetricToSelectedExercise(){
+  const ex = String(liftSearch.value || "").trim();
+
+  // If "All exercises", enable everything and don't force metric changes.
+  if(!ex){
+    [...liftMetric.options].forEach(o => o.disabled = false);
+    return;
+  }
+
+  const t = progressExerciseType(ex);
+  const allowed = metricGroupForType(t);
+
+  // Disable non-matching options (if they exist in the dropdown)
+  [...liftMetric.options].forEach(o=>{
+    o.disabled = !allowed.has(o.value);
+  });
+
+  // If current metric isn't allowed, switch to default for that type
+  if(!allowed.has(liftMetric.value)){
+    liftMetric.value = defaultMetricForType(t);
+  }
+}
+
+  
+  function renderLiftRoutineDropdown(){
   const prev = liftRoutine.value || "";
   liftRoutine.innerHTML = "";
 
@@ -5263,6 +5335,9 @@ function renderLiftRoutineDropdown(){
 }
 
 function applyLiftFiltersFromUI(){
+  // Ensure metric matches the selected exercise type before applying
+  syncLiftMetricToSelectedExercise();
+
   appliedLiftFilters = {
     ex: (liftSearch.value || "").trim(),
     routineId: (liftRoutine.value || "").trim(),
@@ -5273,14 +5348,20 @@ function applyLiftFiltersFromUI(){
   };
 }
 
+
 function clearLiftFiltersUI(){
   liftSearch.value = "";
   liftRoutine.value = "";
   liftFrom.value = "";
   liftTo.value = "";
+
+  // reset metric + re-enable all metric options
   liftMetric.value = "top";
+  [...liftMetric.options].forEach(o => o.disabled = false);
+
   liftLimit.value = "25";
 }
+
 
 function getLiftFilteredData(){
   let arr = [...lifts];
