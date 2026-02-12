@@ -2825,6 +2825,20 @@ const CARDIO_SPECS = {
   }
 };
 
+  // ✅ Generic fallback fields for ANY custom cardio exercise
+const GENERIC_CARDIO_SPECS = {
+  required: [
+    { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" }
+  ],
+  optional: [
+    { key:"distanceMi",  label:"Distance (mi) (optional)", type:"number", placeholder:"2.0" },
+    { key:"calories",    label:"Calories (optional)",      type:"number", placeholder:"200" },
+    { key:"pace",        label:"Pace (optional)",          type:"text",   placeholder:"10:00/mi" },
+    { key:"inclinePct",  label:"Incline % (optional)",     type:"number", placeholder:"1" }
+  ]
+};
+
+  
 function isCardioName(name){
   const n = canonicalExerciseName(String(name||""));
 
@@ -2839,9 +2853,12 @@ function isCardioName(name){
 
 function cardioBlankFor(name){
   const n = canonicalExerciseName(String(name||""));
-  const spec = CARDIO_SPECS[n];
+  // Use real spec if it exists, otherwise use generic fields IF this is cardio
+  const spec = CARDIO_SPECS[n] || (isCardioName(n) ? GENERIC_CARDIO_SPECS : null);
+
   const obj = {};
   if(!spec) return obj;
+
   [...spec.required, ...spec.optional].forEach(f => obj[f.key] = "");
   return obj;
 }
@@ -5770,8 +5787,9 @@ function renderBatchAddList(){
     // cardio fields
     let cardioHTML = "";
     if(isCardio){
-      const spec = CARDIO_SPECS[canonicalExerciseName(it.name)];
-      const fields = spec ? [...spec.required, ...spec.optional] : [];
+      const canon = canonicalExerciseName(it.name);
+const spec = CARDIO_SPECS[canon] || (isCardioName(canon) ? GENERIC_CARDIO_SPECS : null);
+const fields = spec ? [...spec.required, ...spec.optional] : [];
       cardioHTML = `
         <div class="row" style="margin-top:10px; align-items:end; flex-wrap:wrap;">
           ${fields.map(f=>`
