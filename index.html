@@ -808,8 +808,55 @@ main > *{
   color: rgba(255,255,255,.55);
 }
 
-/* hide old tab row (we still keep it in DOM if you want fallback) */
-#pplTabs{ display:none !important; }
+/* ===========================
+   ROUTINE — DAY ROW (under 3D carousel)
+=========================== */
+#pplTabs{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:8px;
+  margin: 10px 0 12px;
+}
+
+#pplTabs .dayChip{
+  border:1px solid var(--line);
+  border-radius: 12px;
+  padding:10px 0;
+  text-align:center;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.6px;
+  color: var(--muted);
+  background:#0f0f10;
+  cursor:pointer;
+  user-select:none;
+}
+
+#pplTabs .dayChip.active{
+  color: var(--text);
+  border-color: rgba(124,252,0,.35);
+  box-shadow:
+    0 0 0 1px rgba(124,252,0,.18),
+    0 10px 24px rgba(0,0,0,.35);
+}
+
+#pplTabs .dayChip.rest{
+  opacity:.45;
+}
+
+#pplTabs .dayChip .miniDot{
+  display:block;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  margin:6px auto 0;
+  background: rgba(255,255,255,.22);
+}
+
+#pplTabs .dayChip.active .miniDot{
+  background: var(--good);
+}
+
 
     
     .badge{
@@ -4453,31 +4500,37 @@ updateCarouselTransforms();
 bindCarouselGestures();
 
 function renderDayTabs(){
+  if(!pplTabs) return;
+
   pplTabs.innerHTML = "";
   const ar = getActiveRoutine();
 
   DAY_KEYS.forEach((k, idx)=>{
-    const day = ar.days[k];
-    const label = (day.label || "").trim();
-    const rest = !!day.rest;
+    const day = ar.days[k] || {};
+    const isRest = !!day.rest;
 
     const b = document.createElement("div");
-    b.className = "tab" + (idx===activeDayIndex ? " active" : "");
+    b.className = "dayChip" + (idx===activeDayIndex ? " active" : "") + (isRest ? " rest" : "");
+    b.title = isRest ? "Rest Day" : "Training Day";
     b.innerHTML = `
-      <span>${k}</span>
-      ${label ? `<span class="badge">${label}</span>` : ""}
-      ${rest ? `<span class="badge">Rest</span>` : ""}
+      <div>${k.toUpperCase()}</div>
+      <span class="miniDot"></span>
     `;
+
     b.addEventListener("click", ()=>{
       activeDayIndex = idx;
-      renderPPL();
+      snapCarouselToActive();   // keeps carousel aligned with the tap
+      renderPPL();              // refresh list + carousel + day row
     });
+
     pplTabs.appendChild(b);
   });
 }
 
+
 function renderPPL(){
 renderRoutineCarousel();
+renderDayTabs(); // ✅ ADD THIS LINE
 
   const ar = getActiveRoutine();
   const dayKey = DAY_KEYS[activeDayIndex];
