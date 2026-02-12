@@ -5105,7 +5105,7 @@ function renderLiftsTable(){
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="mono">${x.date}</td>
-      <td><span class="clickEx" data-hist="${x.ex}">${x.ex}</span></td>
+            <td><span class="clickEx" data-hist="${escHTML(x.ex)}">${escHTML(x.ex)}</span></td>
       <td class="mono">${topSet}</td>
       <td class="mono">${x.sets ?? "—"}</td>
       <td>${x.pr ? '<span class="badge">🏆</span>' : ''}</td>
