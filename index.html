@@ -6562,6 +6562,37 @@ async function tryUpdateServiceWorker(){
     console.log("tryUpdateServiceWorker error:", e);
   }
 }
+  
+function nukeServiceWorkersAndCachesOnce(){
+  // Runs once per build to prevent old SW/cache from serving stale JS/HTML
+  const KEY = "sw_cache_nuked_build_71";
+  try{
+    if(localStorage.getItem(KEY) === "1") return false;
+
+    // Mark first so we don't loop if anything throws
+    localStorage.setItem(KEY, "1");
+
+    // Unregister all service workers (if any)
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.getRegistrations()
+        .then(regs => Promise.all(regs.map(r => r.unregister())))
+        .catch(()=>{});
+    }
+
+    // Clear CacheStorage (if any)
+    if("caches" in window){
+      caches.keys()
+        .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+        .catch(()=>{});
+    }
+
+    // Hard reload the page so the latest index file is definitely used
+    setTimeout(()=> location.reload(), 100);
+    return true;
+  }catch(e){
+    return false;
+  }
+}
 
 let _versionPollTimer = null;
 let _autoReloadTimer = null;
@@ -7122,6 +7153,9 @@ document.addEventListener("click", (e)=>{
    Init (single pass)
 ---------------------------- */
 function init(){
+  // ✅ Ensure we're not running a stale cached build (SW / CacheStorage)
+  if(nukeServiceWorkersAndCachesOnce()) return;
+
   // Load core state
   profile = loadProfile();
 
