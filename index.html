@@ -6273,10 +6273,14 @@ rtAddExBtn.addEventListener("click", ()=>{
   const name = canonicalExerciseName(String(rtAddExName.value||"").trim());
   if(!name) return alert("Enter an exercise name.");
 
-  // CARDIO: add cardio shape (no sets/reps validation)
+  // ✅ CARDIO: no sets/reps required, store cardio shape
   if(isCardioName(name)){
-    const exObj = makeRoutineExerciseFromName(name);
-    day.exercises.push(exObj);
+    day.exercises.push({
+      name,
+      type: "cardio",
+      cardio: cardioBlankFor(name),
+      notes: ""
+    });
 
     // clear inputs
     rtAddExName.value = "";
@@ -6289,7 +6293,7 @@ rtAddExBtn.addEventListener("click", ()=>{
     return;
   }
 
-  // STRENGTH: keep your existing validation
+  // ✅ STRENGTH: keep sets/reps validation
   const sets = Number(rtAddExSets.value)||0;
   const reps = String(rtAddExReps.value||"").trim();
 
@@ -6312,6 +6316,7 @@ rtAddExBtn.addEventListener("click", ()=>{
   buildRoutineExerciseSuggestions();
   renderLiftSearchDropdown();
 });
+
 
   rtAddMultiBtn?.addEventListener("click", ()=>{
   openExercisePicker({
