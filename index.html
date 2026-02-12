@@ -6127,22 +6127,19 @@ function renderRtDayPanel(){
     `;
   }
 
-  // strength fields UI
-  const strengthFieldsHTML = `
-    <div class="row" style="margin-top:10px; align-items:end;">
-      <label style="flex:2 1 240px;">Name
-        <input data-field="name" value="${exName}" />
-      </label>
+// strength fields UI (✅ no duplicate Name)
+const strengthFieldsHTML = `
+  <div class="row" style="margin-top:10px; align-items:end;">
+    <label style="flex:0 0 120px;">Sets
+      <input data-field="sets" type="number" min="1" value="${ex.sets || ""}" />
+    </label>
 
-      <label style="flex:0 0 120px;">Sets
-        <input data-field="sets" type="number" min="1" value="${ex.sets || ""}" />
-      </label>
+    <label style="flex:1 1 160px;">Reps
+      <input data-field="reps" value="${ex.reps || ""}" />
+    </label>
+  </div>
+`;
 
-      <label style="flex:1 1 160px;">Reps
-        <input data-field="reps" value="${ex.reps || ""}" />
-      </label>
-    </div>
-  `;
 
   wrap.innerHTML = `
     <div class="rtExTop">
