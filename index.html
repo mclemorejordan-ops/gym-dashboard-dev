@@ -3893,6 +3893,12 @@ const GENERIC_CARDIO_SPEC = {
   optional: ["distance", "calories", "pace", "incline"]
 };
 
+  // ✅ Fallback for ANY custom cardio exercise
+const GENERIC_CARDIO_SPEC = {
+  required: ["durationMin"],
+  optional: ["distance", "calories", "pace", "incline"]
+};
+
 
 function getCardioSpec(exName){
   const canon = canonicalExerciseName(exName);
