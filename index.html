@@ -4332,26 +4332,26 @@ function snapCarouselToActive(instant=false){
     return;
   }
 
+  // softer + longer (glide feel)
   const start = r3dAngle;
   const delta = target - start;
   const t0 = performance.now();
-  const dur = 260;
+  const dur = 420;
 
-  function easeOutBack(p){
-    const c1 = 1.70158;
-    const c3 = c1 + 1;
-    return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2);
+  function easeOutCubic(p){
+    return 1 - Math.pow(1 - p, 3);
   }
 
   function tick(t){
     const p = Math.min(1, (t - t0) / dur);
-    r3dAngle = start + delta * easeOutBack(p);
+    r3dAngle = start + delta * easeOutCubic(p);
     updateCarouselTransforms();
     if(p < 1) requestAnimationFrame(tick);
   }
 
   requestAnimationFrame(tick);
 }
+
 
 
 function bindCarouselGestures(){
@@ -4370,14 +4370,18 @@ function bindCarouselGestures(){
     const dx = clientX - r3dLastX;
     r3dLastX = clientX;
 
-    // sensitivity toned down
-    r3dAngle += dx * 0.28;
+// smoother drag (less sensitive)
+r3dAngle += dx * 0.16;
 
-    const dt = Math.max(16, now - r3dLastT);
-    r3dLastT = now;
-    r3dVelocity = (dx / dt) * 18;
+const dt = Math.max(16, now - r3dLastT);
+r3dLastT = now;
 
-    updateCarouselTransforms();
+// compute raw velocity, then smooth it (glide)
+const v = (dx / dt) * 14;
+r3dVelocity = (r3dVelocity * 0.80) + (v * 0.20);
+
+updateCarouselTransforms();
+
   };
 
   const onUp = ()=>{
@@ -4386,14 +4390,14 @@ function bindCarouselGestures(){
 
     // apply momentum
     const start = performance.now();
-    const friction = 0.92;
+    const friction = 0.972; // was 0.92 (more glide)
 
     function momentum(t){
       r3dVelocity *= friction;
-      r3dAngle += r3dVelocity * 0.20;
+      r3dAngle += r3dVelocity * 0.18; // slightly slower drift
       updateCarouselTransforms();
 
-      if(Math.abs(r3dVelocity) > 0.03 && (t - start) < 650){
+      if(Math.abs(r3dVelocity) > 0.015 && (t - start) < 1200){
         requestAnimationFrame(momentum);
       }else{
         // snap to nearest day
