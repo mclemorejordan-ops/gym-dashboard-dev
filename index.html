@@ -2188,16 +2188,6 @@ header{
     </div>
   </section>
 
-  <!-- Custom Exercises -->
-<section class="card">
-  <h2>Custom Exercises</h2>
-  <div id="customExerciseList" style="margin-top:10px; display:grid; gap:8px;"></div>
-
-  <div class="small muted" style="margin-top:8px;">
-    Deleting removes the exercise from routines and logs.
-  </div>
-</section>
-
     <!-- Updates -->
   <section class="card" id="updatesCard">
     <h2>Updates</h2>
@@ -5217,83 +5207,6 @@ let exPickType = "strength"; // "strength" | "cardio"
 
 // ✅ NEW: persist custom exercise type (so cardio stays cardio forever)
 const KEY_CUSTOM_EX_TYPES = "gym_custom_ex_types_v1";
-let customExerciseTypes = loadCustomExerciseTypes();
-function renderCustomExerciseSettings(){
-  const wrap = document.getElementById("customExerciseList");
-  if(!wrap) return;
-
-  const customs = loadCustomExercises();
-  wrap.innerHTML = "";
-
-  if(!customs.length){
-    wrap.innerHTML = `<div class="notice">No custom exercises created.</div>`;
-    return;
-  }
-
-  customs.forEach(name=>{
-    const row = document.createElement("div");
-    row.className = "row";
-    row.style.justifyContent = "space-between";
-    row.style.alignItems = "center";
-
-    row.innerHTML = `
-      <span>${name}</span>
-      <button class="miniBtn danger">Delete</button>
-    `;
-
-    row.querySelector("button").addEventListener("click", ()=>{
-      const ok = confirm(`Delete custom exercise "${name}"?\n\nThis removes it from routines and logs.`);
-      if(!ok) return;
-
-      deleteCustomExercise(name);
-    });
-
-    wrap.appendChild(row);
-  });
-}
-
-  function deleteCustomExercise(name){
-  const canon = canonicalExerciseName(name);
-
-  // 1️⃣ Remove from custom exercise list
-  let customs = loadCustomExercises().filter(n => canonicalExerciseName(n) !== canon);
-  LS.set("gym_custom_exercises_v1", customs);
-
-  // 2️⃣ Remove stored custom type
-  delete customExerciseTypes[canon];
-  saveCustomExerciseTypes(customExerciseTypes);
-
-  // 3️⃣ Remove from routines
-  routines.forEach(r=>{
-    DAY_KEYS.forEach(k=>{
-      const day = r.days?.[k];
-      if(!day?.exercises) return;
-
-      day.exercises = day.exercises.filter(ex =>
-        canonicalExerciseName(ex.name) !== canon
-      );
-    });
-  });
-  saveRoutines();
-
-  // 4️⃣ Remove from lift logs
-  lifts = lifts.filter(x =>
-    canonicalExerciseName(x.ex) !== canon
-  );
-  saveLifts();
-
-  // 5️⃣ Re-render everything
-  renderCustomExerciseSettings();
-  renderRoutineDropdown();
-  renderPPL();
-  renderLiftRoutineDropdown();
-  renderLiftSearchDropdown();
-  renderRoutineCarousel();
-
-  alert("Exercise deleted.");
-}
-
-
 
 function loadCustomExerciseTypes(){
   return LS.get(KEY_CUSTOM_EX_TYPES, {}); // { "My Exercise": "cardio" }
@@ -7556,9 +7469,6 @@ function init(){
 
   // Route LAST (this calls showScreen which renders what’s needed)
   routeInitialScreen();
-  // ensure settings list loads when page loads
-renderCustomExerciseSettings();
-
 }
 
 window.addEventListener("DOMContentLoaded", init);
