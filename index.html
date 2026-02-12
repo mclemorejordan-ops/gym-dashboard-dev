@@ -2505,6 +2505,13 @@ const KEY_CORE_LOGS = "gym_core_logs_v1";
 const KEY_CARDIO_LOGS = "gym_cardio_logs_v1";
 const KEY_TARGETS = "gym_targets_v1";
 
+// ---------------------------
+// Load persisted data
+// ---------------------------
+let lifts = LS.get(KEY_LIFTS, []);
+let coreLogs = LS.get(KEY_CORE_LOGS, []);
+let cardioLogs = LS.get(KEY_CARDIO_LOGS, []);
+
 
 const KEY_ROUTINES = "gym_routines_v1";
 const KEY_ACTIVE_ROUTINE = "gym_active_routine_id_v1";
@@ -4079,10 +4086,6 @@ document.getElementById("pSaveBtn")?.addEventListener("click", ()=>{
 /* ---------------------------
    Lifts + PR helpers
 ---------------------------- */
-lifts = LS.get(KEY_LIFTS, []);
-coreLogs = LS.get(KEY_CORE_LOGS, []);
-cardioLogs = LS.get(KEY_CARDIO_LOGS, []);
-
 function ensureLiftCompatibility(){
   lifts = (Array.isArray(lifts) ? lifts : []).map(x=>{
     const ex = String(x.ex || x.exercise || "");
