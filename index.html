@@ -5176,7 +5176,7 @@ function openBatchAddModal(names){
     ? names
     : (typeof names === "string" && names.trim() ? [names.trim()] : []);
 
- batchAddItems = arr.map(n=>{
+batchAddItems = arr.map(n=>{
   const name = canonicalExerciseName(n);
   const isC = isCardioName(name);
 
@@ -5314,19 +5314,67 @@ function renderBatchAddList(){
     (firstStrength || firstCardio)?.focus();
   }, 0);
 }
+// close / cancel
+[batchAddCloseBtn, batchAddCancelBtn].forEach(btn=>{
+  btn?.addEventListener("click", closeBatchAddModal);
+});
+batchAddModal?.addEventListener("click", (e)=>{
+  if(e.target === batchAddModal) closeBatchAddModal();
+});
 
+// ✅ CONFIRM (this was missing in your file)
+batchAddConfirmBtn?.addEventListener("click", ()=>{
+  // validate
+  for(const it of batchAddItems){
+    const isCardio = it.type === "cardio" || isCardioName(it.name);
+
+    if(isCardio){
+      const spec = CARDIO_SPECS[canonicalExerciseName(it.name)];
+      const req = spec ? spec.required : [];
+      for(const f of req){
+        const v = String(it.cardio?.[f.key] ?? "").trim();
+        if(!v){
+          alert(`Enter ${f.label} for: ${it.name}`);
+          return;
+        }
+      }
+    } else {
+      const sets = Number(it.sets);
+      const reps = String(it.reps || "").trim();
+      if(!sets || sets <= 0){
+        alert(`Enter sets for: ${it.name}`);
+        return;
+      }
+      if(!reps){
+        alert(`Enter reps for: ${it.name}`);
+        return;
+      }
+    }
+  }
 
   // add to current draft day
   const k = DAY_KEYS[editDayIndex];
   const day = draftRoutine.days[k];
 
   batchAddItems.forEach(it=>{
-    day.exercises.push({
-      name: canonicalExerciseName(it.name),
-      sets: Number(it.sets),
-      reps: String(it.reps).trim(),
-      notes: ""
-    });
+    const isCardio = it.type === "cardio" || isCardioName(it.name);
+
+    if(isCardio){
+      day.exercises.push({
+        name: canonicalExerciseName(it.name),
+        type: "cardio",
+        cardio: { ...(it.cardio || {}) },
+        notes: ""
+      });
+    } else {
+      day.exercises.push({
+        name: canonicalExerciseName(it.name),
+        type: "strength",
+        sets: Number(it.sets),
+        reps: String(it.reps).trim(),
+        notes: ""
+      });
+    }
   });
 
   closeBatchAddModal();
