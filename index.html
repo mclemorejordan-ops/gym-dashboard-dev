@@ -744,6 +744,12 @@ main > *{
   margin-top: 4px;
 }
 
+.r3dMeta{
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+    
 .r3dBadges{
   display:flex;
   gap:6px;
@@ -4254,21 +4260,30 @@ function renderRoutineCarousel(){
     card.className = "r3dCard";
     card.dataset.idx = String(idx);
 
-    card.innerHTML = `
-      <div class="r3dCardInner">
-        <div class="r3dTop">
-          <div>
-            <div class="r3dDay">${r3dDayText(k)}</div>
-            <div class="r3dLabel">${label ? label : "—"}</div>
-          </div>
+    const items = (ar.days[k] && Array.isArray(ar.days[k].items)) ? ar.days[k].items : [];
+    const exCount = items.length;
+    const isRest = rest || exCount === 0;
 
-          <div class="r3dBadges">
-            ${rest ? `<span class="r3dBadge rest">Rest</span>` : ``}
-            ${idx === activeDayIndex ? `<span class="r3dBadge">Active</span>` : ``}
-          </div>
-        </div>
+    
+card.innerHTML = `
+  <div class="r3dCardInner">
+    <div class="r3dTop">
+      <div>
+        <div class="r3dDay">${r3dDayText(k)}</div>
+        <div class="r3dLabel">${label ? label : "—"}</div>
+        <div class="r3dMeta">${exCount} ${exCount === 1 ? "exercise" : "exercises"}</div>
       </div>
-    `;
+
+      <div class="r3dBadges">
+        <span class="r3dBadge ${isRest ? "rest" : ""}">
+          ${isRest ? "Rest Day" : "Training Day"}
+        </span>
+        ${idx === activeDayIndex ? `<span class="r3dBadge">Active</span>` : ``}
+      </div>
+    </div>
+  </div>
+`;
+
 
     // tap to select
     card.addEventListener("click", ()=>{
