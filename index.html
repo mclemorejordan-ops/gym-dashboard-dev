@@ -5912,6 +5912,30 @@ const rtAddExName = document.getElementById("rtAddExName");
 const rtAddExSets = document.getElementById("rtAddExSets");
 const rtAddExReps = document.getElementById("rtAddExReps");
 const rtAddExBtn = document.getElementById("rtAddExBtn");
+
+  // ✅ Routine Editor "Add Exercise" — toggle strength fields when cardio is selected
+const rtAddSetsLabel = rtAddExSets?.closest("label");
+const rtAddRepsLabel = rtAddExReps?.closest("label");
+
+function syncRtAddUI(){
+  const name = canonicalExerciseName(String(rtAddExName?.value || "").trim());
+  const isC = name && isCardioName(name);
+
+  if(rtAddSetsLabel) rtAddSetsLabel.style.display = isC ? "none" : "";
+  if(rtAddRepsLabel) rtAddRepsLabel.style.display = isC ? "none" : "";
+
+  // optional: clear strength fields when cardio is picked (prevents confusion)
+  if(isC){
+    if(rtAddExSets) rtAddExSets.value = "";
+    if(rtAddExReps) rtAddExReps.value = "";
+  }
+}
+
+  // when typing/selecting a name
+rtAddExName?.addEventListener("input", syncRtAddUI);
+rtAddExName?.addEventListener("change", syncRtAddUI);
+
+  
 const rtExList = document.getElementById("rtExList");
 const rtAddMultiBtn = document.getElementById("rtAddMultiBtn");
 const rtExSuggestions = document.getElementById("rtExSuggestions");
@@ -5930,6 +5954,7 @@ const rtExSuggestions = document.getElementById("rtExSuggestions");
     initial: rtAddExName.value,
     onConfirm: (picked)=>{
       rtAddExName.value = picked;
+      syncRtAddUI(); // ✅ add this line
 
       // ✅ restore modal scroll after pick
       setTimeout(()=>{
@@ -6241,6 +6266,8 @@ function renderRtDayPanel(){
 
   rtExList.appendChild(wrap);
 });
+    // ✅ Make Add Exercise box reflect current selection
+  syncRtAddUI();
 
 }
 
