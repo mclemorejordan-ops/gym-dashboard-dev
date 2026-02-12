@@ -2395,9 +2395,18 @@ header{
           <div class="hint">Tap to choose from your library</div>
         </div>
 
-        <label style="width:110px;">Sets
-          <input id="rtAddExSets" type="number" min="1" placeholder="3" />
-        </label>
+       <label style="width:160px;">Type
+  <select id="rtAddExType">
+    <option value="strength">Weightlifting</option>
+    <option value="cardio">Cardio</option>
+    <option value="core">Core</option>
+  </select>
+</label>
+
+<label style="width:110px;">Sets
+  <input id="rtAddExSets" type="number" min="1" placeholder="3" />
+</label>
+
 
         <label style="width:140px;">Reps
           <input id="rtAddExReps" placeholder="8–10" />
@@ -3665,8 +3674,11 @@ function loadRoutines(){
       if(!Array.isArray(r.days[k].exercises)) r.days[k].exercises = [];
       if(typeof r.days[k].rest !== "boolean") r.days[k].rest = !!r.days[k].rest;
       if(typeof r.days[k].label !== "string") r.days[k].label = String(r.days[k].label||"");
-      r.days[k].exercises = r.days[k].exercises.map(e=>({
+    r.days[k].exercises = r.days[k].exercises.map(e=>({
         name: String(e.name||e.ex||""),
+        type: (String(e.type||"strength").toLowerCase()==="cardio"
+          ? "cardio"
+          : (String(e.type||"strength").toLowerCase()==="core" ? "core" : "strength")),
         sets: Number(e.sets)||0,
         reps: String(e.reps||""),
         notes: String(e.notes||"")
@@ -5544,6 +5556,7 @@ const rtDayRestNotice = document.getElementById("rtDayRestNotice");
 const rtAddExName = document.getElementById("rtAddExName");
 const rtAddExSets = document.getElementById("rtAddExSets");
 const rtAddExReps = document.getElementById("rtAddExReps");
+const rtAddExType = document.getElementById("rtAddExType");
 const rtAddExBtn = document.getElementById("rtAddExBtn");
 const rtExList = document.getElementById("rtExList");
 const rtAddMultiBtn = document.getElementById("rtAddMultiBtn");
@@ -5593,6 +5606,13 @@ rtAddExName.addEventListener("focus", (e)=>{
 let editRoutineId = null;
 let editDayIndex = 0;
 let draftRoutine = null;
+
+  function exTypeLabel(t){
+  const v = String(t||"strength").toLowerCase();
+  if(v === "cardio") return "Cardio";
+  if(v === "core") return "Core";
+  return "Weightlifting";
+}
 
 function buildRoutineExerciseSuggestions(){
   const list = collectAllExerciseNames();
@@ -5682,25 +5702,34 @@ function renderRtDayPanel(){
     const wrap = document.createElement("div");
     wrap.className = "rtExCard";
 
-    wrap.innerHTML = `
-      <div class="rtExTop">
-        <div class="rtExName">${escHTML(ex.name || "Exercise")}</div>
-        <span class="badge">${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps</span>
-      </div>
+wrap.innerHTML = `
+  <div class="rtExTop">
+    <div class="rtExName">${escHTML(ex.name || "Exercise")}</div>
+    <span class="badge">${exTypeLabel(ex.type)} • ${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps</span>
+  </div>
 
-      <div class="row" style="margin-top:10px; align-items:end;">
-        <label style="flex:2 1 240px;">Name
-          <input data-field="name" value="${ex.name || ""}" />
-        </label>
+  <div class="row" style="margin-top:10px; align-items:end;">
+    <label style="flex:2 1 240px;">Name
+      <input data-field="name" value="${ex.name || ""}" />
+    </label>
 
-        <label style="flex:0 0 120px;">Sets
-          <input data-field="sets" type="number" min="1" value="${ex.sets || ""}" />
-        </label>
+    <label style="flex:0 0 160px;">Type
+      <select data-field="type">
+        <option value="strength" ${ex.type==="strength"?"selected":""}>Weightlifting</option>
+        <option value="cardio" ${ex.type==="cardio"?"selected":""}>Cardio</option>
+        <option value="core" ${ex.type==="core"?"selected":""}>Core</option>
+      </select>
+    </label>
 
-        <label style="flex:1 1 160px;">Reps
-          <input data-field="reps" value="${ex.reps || ""}" />
-        </label>
-      </div>
+    <label style="flex:0 0 120px;">Sets
+      <input data-field="sets" type="number" min="1" value="${ex.sets || ""}" />
+    </label>
+
+    <label style="flex:1 1 160px;">Reps
+      <input data-field="reps" value="${ex.reps || ""}" />
+    </label>
+  </div>
+
 
       <div class="row" style="margin-top:8px;">
         <label style="flex:1 1 100%;">Notes
@@ -5718,16 +5747,20 @@ function renderRtDayPanel(){
 
     // keep the rest of your event listeners EXACTLY as-is below
 
-    wrap.querySelectorAll("[data-field]").forEach(inp=>{
-      inp.addEventListener("input", ()=>{
-        const field = inp.getAttribute("data-field");
-        if(field === "sets"){
-          day.exercises[idx][field] = Number(inp.value)||0;
-        }else{
-          day.exercises[idx][field] = inp.value;
-        }
-      });
-    });
+wrap.querySelectorAll("[data-field]").forEach(inp=>{
+  inp.addEventListener("input", ()=>{
+    const field = inp.getAttribute("data-field");
+    if(field === "sets"){
+      day.exercises[idx][field] = Number(inp.value)||0;
+    }else if(field === "type"){
+      const v = String(inp.value||"strength").toLowerCase();
+      day.exercises[idx][field] = (v==="cardio") ? "cardio" : (v==="core" ? "core" : "strength");
+    }else{
+      day.exercises[idx][field] = inp.value;
+    }
+  });
+});
+
 
     wrap.querySelector("[data-up]")?.addEventListener("click", ()=>{
       if(idx<=0) return;
@@ -5795,20 +5828,25 @@ rtAddExBtn.addEventListener("click", ()=>{
   const name = canonicalExerciseName(String(rtAddExName.value||"").trim());
   const sets = Number(rtAddExSets.value)||0;
   const reps = String(rtAddExReps.value||"").trim();
+  const type = (String(rtAddExType?.value||"strength").toLowerCase()==="cardio")
+    ? "cardio"
+    : (String(rtAddExType?.value||"strength").toLowerCase()==="core" ? "core" : "strength");
 
   if(!name) return alert("Enter an exercise name.");
   if(!sets || sets <= 0) return alert("Enter sets (number).");
   if(!reps) return alert("Enter reps (e.g., 8–10).");
 
-  day.exercises.push({name, sets, reps, notes:""});
+  day.exercises.push({name, type, sets, reps, notes:""});
   rtAddExName.value = "";
   rtAddExSets.value = "";
   rtAddExReps.value = "";
+  if(rtAddExType) rtAddExType.value = "strength";
 
   renderRtDayPanel();
   buildRoutineExerciseSuggestions();
   renderLiftSearchDropdown();
 });
+
 
   rtAddMultiBtn?.addEventListener("click", ()=>{
   openExercisePicker({
