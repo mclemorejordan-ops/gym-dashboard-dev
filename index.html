@@ -4202,7 +4202,7 @@ function renderRoutineDropdown(forceId){
   }
 }
   
-routineSelect.addEventListener("change", ()=>{
+routineSelect?.addEventListener("change", ()=>{
   const val = routineSelect.value;
 
   // If they picked a template -> convert it into a REAL saved routine
@@ -4242,7 +4242,7 @@ routineSelect.addEventListener("change", ()=>{
 });
 
 
-newRoutineBtn.addEventListener("click", ()=>{
+newRoutineBtn?.addEventListener("click", ()=>{
   const base = defaultRoutine();
   base.name = `New Routine ${routines.length+1}`;
   base.source = "user";
@@ -4259,7 +4259,7 @@ newRoutineBtn.addEventListener("click", ()=>{
   openRoutineEditor(base.id);
 });
 
-dupRoutineBtn.addEventListener("click", ()=>{
+dupRoutineBtn?.addEventListener("click", ()=>{
   const ar = getActiveRoutine();
   const copy = JSON.parse(JSON.stringify(ar));
   copy.source = "user";
@@ -4273,7 +4273,7 @@ dupRoutineBtn.addEventListener("click", ()=>{
   renderLiftRoutineDropdown();
 });
 
-delRoutineBtn.addEventListener("click", ()=>{
+delRoutineBtn?.addEventListener("click", ()=>{
   if(routines.length <= 1){
     alert("You must keep at least one routine.");
     return;
@@ -4289,7 +4289,7 @@ delRoutineBtn.addEventListener("click", ()=>{
   renderLiftRoutineDropdown();
 });
 
-editRoutineBtn.addEventListener("click", ()=>{
+editRoutineBtn?.addEventListener("click", ()=>{
   openRoutineEditor(getActiveRoutine().id);
 });
 
