@@ -3400,6 +3400,93 @@ const EXERCISE_LIBRARY = [
   "Box Jumps",
   "Burpees"
 ];
+  /* ---------------------------
+   Cardio Defaults (type + fields)
+   - keyed by CANONICAL exercise name
+---------------------------- */
+const CARDIO_DEFAULTS = {
+  "Treadmill Walk / Run": {
+    type: "cardio",
+    subtype: "machine",
+    required: ["durationMin"],
+    optional: ["distance", "pace", "incline"]
+  },
+  "Incline Treadmill Walk": {
+    type: "cardio",
+    subtype: "machine",
+    required: ["durationMin", "incline"],
+    optional: ["distance", "pace"]
+  },
+  "Stair Climber": {
+    type: "cardio",
+    subtype: "machine",
+    required: ["durationMin", "level"],
+    optional: ["floors", "steps", "calories", "avgHr"]
+  },
+  "Stationary Bike": {
+    type: "cardio",
+    subtype: "machine",
+    required: ["durationMin", "level"],
+    optional: ["distance", "calories", "avgHr"]
+  },
+  "Elliptical": {
+    type: "cardio",
+    subtype: "machine",
+    required: ["durationMin", "level"],
+    optional: ["distance", "calories", "avgHr"]
+  },
+  "Rowing Machine": {
+    type: "cardio",
+    subtype: "machine",
+    required: ["durationMin"],
+    optional: ["distance", "meters", "splitPace", "calories", "avgHr"]
+  },
+  "Jump Rope": {
+    type: "cardio",
+    subtype: "skill",
+    required: ["durationMin"],
+    optional: ["rounds"]
+  },
+  "Battle Ropes": {
+    type: "cardio",
+    subtype: "interval",
+    required: ["rounds", "workSec"],
+    optional: ["restSec"]
+  },
+  "Kettlebell Swings": {
+    type: "cardio",
+    subtype: "interval",
+    required: ["rounds", "workSec"],
+    optional: ["restSec", "repsPerRound", "kbWeight"]
+  },
+  "Sled Push / Pull": {
+    type: "cardio",
+    subtype: "interval",
+    required: ["rounds", "distancePerRound"],
+    optional: ["sledWeight", "restSec"]
+  },
+  "Box Jumps": {
+    type: "cardio",
+    subtype: "hiit",
+    required: ["rounds"],
+    optional: ["repsPerRound", "workSec", "restSec", "boxHeight"]
+  },
+  "Burpees": {
+    type: "cardio",
+    subtype: "hiit",
+    required: ["rounds"],
+    optional: ["repsPerRound", "workSec", "restSec"]
+  }
+};
+
+function getCardioSpec(exName){
+  const canon = canonicalExerciseName(exName);
+  return CARDIO_DEFAULTS[canon] || null;
+}
+
+function isCardioExercise(exName){
+  return !!getCardioSpec(exName);
+}
 /* ---------------------------
    UID helper
 ---------------------------- */
@@ -4567,46 +4654,93 @@ renderDayTabs(); // ✅ ADD THIS LINE
   }
 
   list.forEach(item=>{
-    const ex = item.name;
-    const {life, thisWeekMax, lastWeekMax} = liftStatsForExercise(ex);
+  const ex = item.name;
+  const cardioSpec = getCardioSpec(ex);
+  const isCardio = !!cardioSpec;
 
-    const isPRThisWeek = (life !== null && thisWeekMax !== null && thisWeekMax === life);
-    const prBadge = isPRThisWeek ? `<span class="badge">🏆 PR (this week)</span>` : ``;
+  // Strength stats (only meaningful for strength)
+  const {life, thisWeekMax, lastWeekMax} = isCardio
+    ? {life:null, thisWeekMax:null, lastWeekMax:null}
+    : liftStatsForExercise(ex);
 
-    const card = document.createElement("div");
-    card.className = "exerciseItem";
-    card.innerHTML = `
-      <div class="left">
-        <div class="title">${ex}</div>
-        <div class="meta">
-          <span>${item.sets || "—"} sets</span>
-          <span>•</span>
-          <span>${item.reps || "—"} reps</span>
-          ${item.notes ? `<span class="badge">${item.notes}</span>` : ""}
-        </div>
-      </div>
-      <div class="right">
-        <div class="line2">This week: <span class="mono">${thisWeekMax===null?"—":thisWeekMax}</span> lbs</div>
-        <div class="line2">Last week: <span class="mono">${lastWeekMax===null?"—":lastWeekMax}</span> lbs</div>
-        <div class="line2">Lifetime max: <span class="mono">${life===null?"—":life}</span> lbs</div>
-        <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
-          ${prBadge}
-          <button type="button" data-log="${ex}">Log Sets</button>
-        </div>
+  const isPRThisWeek = (!isCardio && life !== null && thisWeekMax !== null && thisWeekMax === life);
+  const prBadge = isPRThisWeek ? `<span class="badge">🏆 PR (this week)</span>` : ``;
+
+  // Build cardio “fields” text from your defaults
+  let cardioFieldsLine = "";
+  if(isCardio){
+    const req = (cardioSpec.required || []).join(", ");
+    const opt = (cardioSpec.optional || []).join(", ");
+    cardioFieldsLine = `
+      <div class="meta">
+        <span>Cardio</span>
+        <span>•</span>
+        <span class="mono">Required:</span> <span>${req || "—"}</span>
+        ${opt ? `<span>•</span><span class="mono">Optional:</span> <span>${opt}</span>` : ""}
       </div>
     `;
+  }
 
-    const logBtn = card.querySelector('button[data-log]');
-    if(logBtn){
-      logBtn.addEventListener("click", ()=>{
-        openLogModal(ex, Number(item.sets)||3, ar, dayKey, activeDayIndex);
-      });
-    }
+  const card = document.createElement("div");
+  card.className = "exerciseItem";
 
-    pplList.appendChild(card);
-  });
+  // Strength meta (existing)
+  const strengthMeta = `
+    <div class="meta">
+      <span>${item.sets || "—"} sets</span>
+      <span>•</span>
+      <span>${item.reps || "—"} reps</span>
+      ${item.notes ? `<span class="badge">${item.notes}</span>` : ""}
+    </div>
+  `;
 
-  renderLiftSearchDropdown();
+  card.innerHTML = `
+    <div class="left">
+      <div class="title">${ex}</div>
+      ${isCardio ? cardioFieldsLine : strengthMeta}
+    </div>
+
+    <div class="right">
+      ${
+        isCardio
+          ? `
+            <div class="line2 small muted">Cardio logging UI is next (we’ll add a Cardio Log modal).</div>
+            <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
+              <button type="button" data-logcardio="${ex}">Log Cardio</button>
+            </div>
+          `
+          : `
+            <div class="line2">This week: <span class="mono">${thisWeekMax===null?"—":thisWeekMax}</span> lbs</div>
+            <div class="line2">Last week: <span class="mono">${lastWeekMax===null?"—":lastWeekMax}</span> lbs</div>
+            <div class="line2">Lifetime max: <span class="mono">${life===null?"—":life}</span> lbs</div>
+            <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
+              ${prBadge}
+              <button type="button" data-log="${ex}">Log Sets</button>
+            </div>
+          `
+      }
+    </div>
+  `;
+
+  // Strength: existing behavior
+  const logBtn = card.querySelector('button[data-log]');
+  if(logBtn){
+    logBtn.addEventListener("click", ()=>{
+      openLogModal(ex, Number(item.sets)||3, ar, dayKey, activeDayIndex);
+    });
+  }
+
+  // Cardio: placeholder (next step will be a real modal)
+  const cardioBtn = card.querySelector('button[data-logcardio]');
+  if(cardioBtn){
+    cardioBtn.addEventListener("click", ()=>{
+      alert(`Cardio logging coming next for: ${canonicalExerciseName(ex)}`);
+    });
+  }
+
+  pplList.appendChild(card);
+});
+
 }
 
 document.getElementById("startTodayBtn").addEventListener("click", ()=>{
