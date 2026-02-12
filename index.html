@@ -1,3 +1,4 @@
+
 <!doctype html>
 
 
@@ -1628,79 +1629,6 @@ header{
 
 }
 
-/* ===========================
-   SETTINGS: Glass Dropdown (Custom Exercises)
-=========================== */
-.glassDrop{
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 16px;
-  overflow: hidden;
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.glassSummary{
-  list-style: none;
-  cursor: pointer;
-  padding: 12px 12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-.glassSummary::-webkit-details-marker{ display:none; }
-
-.glassBody{
-  padding: 12px 12px 14px;
-  border-top: 1px solid rgba(255,255,255,.08);
-}
-
-.glassList{ display:grid; gap:8px; }
-
-.glassItem{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding: 10px 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.08);
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-.glassItem .left{ min-width:0; }
-.glassItem .name{
-  font-weight:700;
-  letter-spacing:.2px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.glassItem .meta{
-  margin-top:2px;
-  font-size:12px;
-  color: var(--muted);
-}
-
-.xBtn{
-  width:34px;
-  height:34px;
-  border-radius:12px;
-  border: 1px solid rgba(255,107,107,.45);
-  background: rgba(255,107,107,.08);
-  color: var(--bad);
-  font-size:18px;
-  line-height:1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  flex: 0 0 auto;
-}
-.xBtn:active{ transform: scale(.98); }
-
 
     
   </style>
@@ -2095,12 +2023,6 @@ header{
         </div>
       </div>
 
-      <div class="row" style="gap:6px; margin-top:6px;">
-  <button id="liftTypeStrengthBtn" class="miniBtn">Strength</button>
-  <button id="liftTypeCardioBtn" class="miniBtn ghost">Cardio</button>
-</div>
-
-
       <div class="row">
         <label>Exercise
           <select id="liftSearch"></select>
@@ -2170,249 +2092,188 @@ header{
     </section>
   </section>
 
- <!-- SETTINGS SCREEN -->
+  <!-- SETTINGS SCREEN -->
 <section id="screen-settings" class="screen">
   <div class="screenTop">
     <button class="ghost" type="button" data-home>← Back</button>
     <h2 style="margin:0;">Settings</h2>
   </div>
 
-  <!-- Profile (Glass Dropdown) -->
+  <!-- Profile -->
   <section class="card">
-    <details id="profileDropdown" class="glassDrop">
-      <summary class="glassSummary">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <h2 style="margin:0;">Profile</h2>
-        </div>
-        <span class="muted small">Tap to expand</span>
-      </summary>
+    <h2>Profile</h2>
+    <div class="row">
+      <label>Name (optional)
+        <input id="setName" placeholder="e.g., Jordan" />
+      </label>
 
-      <div class="glassBody">
-        <div class="row">
-          <label>Name (optional)
-            <input id="setName" placeholder="e.g., Jordan" />
-          </label>
+      <label>Units
+        <select id="setUnits">
+          <option value="lbs" selected>lbs</option>
+        </select>
+      </label>
 
-          <label>Units
-            <select id="setUnits">
-              <option value="lbs" selected>lbs</option>
-            </select>
-          </label>
+      <label>Protein Goal (g)
+        <input id="setProteinGoal" type="number" min="0" placeholder="240" />
+      </label>
 
-          <label>Protein Goal (g)
-            <input id="setProteinGoal" type="number" min="0" placeholder="240" />
-          </label>
+      <label>Week Starts On
+        <select id="setWeekStart">
+          <option value="mon" selected>Monday</option>
+          <option value="sun">Sunday</option>
+        </select>
+      </label>
 
-          <label>Week Starts On
-            <select id="setWeekStart">
-              <option value="mon" selected>Monday</option>
-              <option value="sun">Sunday</option>
-            </select>
-          </label>
+      <label>Hide Rest Days
+        <select id="setHideRest">
+          <option value="1" selected>ON</option>
+          <option value="0">OFF</option>
+        </select>
+      </label>
 
-          <label>Hide Rest Days
-            <select id="setHideRest">
-              <option value="1" selected>ON</option>
-              <option value="0">OFF</option>
-            </select>
-          </label>
-
-          <button id="saveProfileBtn">Save Profile</button>
-        </div>
-      </div>
-    </details>
+      <button id="saveProfileBtn">Save Profile</button>
+    </div>
   </section>
 
-  <!-- Import / Backup (Glass Dropdown) -->
+  <!-- Import / Backup -->
   <section class="card">
-    <details id="importBackupDropdown" class="glassDrop">
-      <summary class="glassSummary">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <h2 style="margin:0;">Import / Backup</h2>
-          <span class="pill">
-            <span class="muted">Last Backup:</span>
-            <strong class="mono" id="lastBackupText">—</strong>
-          </span>
-        </div>
-        <span class="muted small">Tap to expand</span>
-      </summary>
+    <h2>Import / Backup</h2>
+    <div class="row" style="gap:6px;">
+      <button class="miniBtn" id="settingsImportBtn">Import</button>
+      <input id="settingsImportFile" type="file" accept="application/json" style="display:none;" />
 
-      <div class="glassBody">
-        <div class="row" style="gap:6px;">
-          <button class="miniBtn" id="settingsImportBtn">Import</button>
-          <input id="settingsImportFile" type="file" accept="application/json" style="display:none;" />
+      <button class="miniBtn" id="backupNowBtn">Backup Now</button>
 
-          <button class="miniBtn" id="backupNowBtn">Backup Now</button>
-        </div>
+      <span class="pill">
+        <span class="muted">Last Backup:</span>
+        <strong class="mono" id="lastBackupText">—</strong>
+      </span>
+    </div>
 
-        <div class="notice" style="margin-top:10px;">
-          <div><strong>Storage</strong></div>
-          <div class="small muted" id="storageInfo">—</div>
-          <div class="small warn" id="storageWarn" style="display:none;">Storage is getting large — consider backing up.</div>
-        </div>
-      </div>
-    </details>
+    <div class="notice" style="margin-top:10px;">
+      <div><strong>Storage</strong></div>
+      <div class="small muted" id="storageInfo">—</div>
+      <div class="small warn" id="storageWarn" style="display:none;">Storage is getting large — consider backing up.</div>
+    </div>
   </section>
 
-  <!-- Refresh (Glass Dropdown) -->
+  <!-- Refresh -->
   <section class="card">
-    <details id="refreshDropdown" class="glassDrop">
-      <summary class="glassSummary">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <h2 style="margin:0;">Refresh</h2>
-        </div>
-        <span class="muted small">Tap to expand</span>
-      </summary>
+    <h2>Refresh</h2>
+    <div class="notice">Choose what to refresh (useful after an import or manual edits).</div>
 
-      <div class="glassBody">
-        <div class="notice">Choose what to refresh (useful after an import or manual edits).</div>
+    <div class="row" style="margin-top:10px;">
+      <label><span class="muted">Routine</span>
+        <select id="rfRoutine"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Progress</span>
+        <select id="rfLifts"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Weight</span>
+        <select id="rfWeight"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Attendance</span>
+        <select id="rfAttendance"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
+      <label><span class="muted">Protein</span>
+        <select id="rfProtein"><option value="1" selected>Yes</option><option value="0">No</option></select>
+      </label>
 
-        <div class="row" style="margin-top:10px;">
-          <label><span class="muted">Routine</span>
-            <select id="rfRoutine"><option value="1" selected>Yes</option><option value="0">No</option></select>
-          </label>
-          <label><span class="muted">Progress</span>
-            <select id="rfLifts"><option value="1" selected>Yes</option><option value="0">No</option></select>
-          </label>
-          <label><span class="muted">Weight</span>
-            <select id="rfWeight"><option value="1" selected>Yes</option><option value="0">No</option></select>
-          </label>
-          <label><span class="muted">Attendance</span>
-            <select id="rfAttendance"><option value="1" selected>Yes</option><option value="0">No</option></select>
-          </label>
-          <label><span class="muted">Protein</span>
-            <select id="rfProtein"><option value="1" selected>Yes</option><option value="0">No</option></select>
-          </label>
-
-          <button id="runRefreshBtn">Refresh Selected</button>
-        </div>
-      </div>
-    </details>
+      <button id="runRefreshBtn">Refresh Selected</button>
+    </div>
   </section>
 
-  <!-- Custom Exercises (Glass Dropdown) -->
-  <section class="card">
-    <details id="customExerciseDropdown" class="glassDrop">
-      <summary class="glassSummary">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <h2 style="margin:0;">Custom Exercises</h2>
-          <span class="pill"><span class="muted">Count:</span> <strong class="mono" id="customExerciseCount">0</strong></span>
-        </div>
-        <span class="muted small">Tap to expand</span>
-      </summary>
-
-      <div class="glassBody">
-        <div class="glassList" id="customExerciseList"></div>
-        <div class="notice" style="margin-top:10px;">
-          Deleting a custom exercise removes it from all routines and all lift logs.
-        </div>
-      </div>
-    </details>
-  </section>
-
-  <!-- Updates (Glass Dropdown) -->
+    <!-- Updates -->
   <section class="card" id="updatesCard">
-    <details id="updatesDropdown" class="glassDrop">
-      <summary class="glassSummary">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <h2 style="margin:0;">Updates</h2>
-        </div>
-        <span class="muted small">Tap to expand</span>
-      </summary>
+    <h2>Updates</h2>
 
-      <div class="glassBody">
-        <div class="updatesGroupTitle">Version</div>
-        <div class="updatesPills">
-          <div class="pillRow" id="upCurVer">🧾 Current Version: —</div>
-          <div class="pillRow" id="upPrevVer">🕘 Previous Version: —</div>
-          <div class="pillRow" id="upLatestVer">⬆️ Latest Available: —</div>
-        </div>
+    <div class="updatesGroupTitle">Version</div>
+    <div class="updatesPills">
+      <div class="pillRow" id="upCurVer">🧾 Current Version: —</div>
+      <div class="pillRow" id="upPrevVer">🕘 Previous Version: —</div>
+      <div class="pillRow" id="upLatestVer">⬆️ Latest Available: —</div>
+    </div>
 
-        <div class="updatesGroupTitle" style="margin-top:12px;">Status</div>
-        <div class="updatesPills">
-          <div class="pillRow" id="upConn">🌐 Connection: —</div>
-          <div class="pillRow" id="upStatus">✅ Update Status: —</div>
-          <div class="pillRow" id="upChecked">🕒 Last Checked: —</div>
-        </div>
+    <div class="updatesGroupTitle" style="margin-top:12px;">Status</div>
+    <div class="updatesPills">
+      <div class="pillRow" id="upConn">🌐 Connection: —</div>
+      <div class="pillRow" id="upStatus">✅ Update Status: —</div>
+      <div class="pillRow" id="upChecked">🕒 Last Checked: —</div>
+    </div>
 
-        <div class="updatesGroupTitle" style="margin-top:12px;">Build</div>
-        <div class="updatesPills">
-          <div class="pillRow" id="upBuild">🧱 Build: —</div>
-          <div class="pillRow" id="upSW">🧩 Service Worker: —</div>
-        </div>
+    <div class="updatesGroupTitle" style="margin-top:12px;">Build</div>
+    <div class="updatesPills">
+      <div class="pillRow" id="upBuild">🧱 Build: —</div>
+      <div class="pillRow" id="upSW">🧩 Service Worker: —</div>
+    </div>
 
-        <div class="updatesGroupTitle" style="margin-top:12px;">Actions</div>
-        <div class="updatesActions">
-          <button id="upCheckNowBtn" class="tap">🔍 Check Now</button>
-          <button id="upUpdateNowBtn" class="tap">♻️ Update Now (Full Wipe & Reload)</button>
-        </div>
+    <div class="updatesGroupTitle" style="margin-top:12px;">Actions</div>
+    <div class="updatesActions">
+      <button id="upCheckNowBtn" class="tap">🔍 Check Now</button>
+      <button id="upUpdateNowBtn" class="tap">♻️ Update Now (Full Wipe & Reload)</button>
+    </div>
 
-        <div class="updatesGroupTitle" style="margin-top:12px;">Advanced</div>
-        <div class="updatesActions">
-          <button id="upClearCacheBtn" class="tap ghost">🧹 Clear Cache & Reload</button>
-          <button id="upShowResultBtn" class="tap ghost">📋 Show Last Update Result</button>
-          <button id="upDiagBtn" class="tap ghost">📈 Update Diagnostics</button>
-        </div>
-
-        <!-- Inline dropdown panels (instead of popup) -->
-        <div id="upResultPanel" class="updatesDropPanel" style="display:none;">
-          <div class="updatesDropHead">
-            <div class="updatesDropTitle">Update Result</div>
-            <button id="upResultHideBtn" class="tap ghost" type="button">Hide</button>
-          </div>
-          <div class="updatesPills" style="margin-top:8px;">
-            <div class="pillRow" id="uResLine1">—</div>
-            <div class="pillRow" id="uResLine2">—</div>
-            <div class="pillRow" id="uResLine3">—</div>
-            <div class="pillRow" id="uResLine4">—</div>
-            <div class="pillRow" id="uResLine5">—</div>
-            <div class="pillRow" id="uResLine6"></div>
-          </div>
-          <div class="btnRow" style="margin-top:10px; justify-content:flex-end;">
-            <button id="uModalTryAgain" class="tap" type="button" style="display:none;">Try Again</button>
-          </div>
-        </div>
-
-        <div id="upDiagPanel" class="updatesDropPanel" style="display:none;">
-          <div class="updatesDropHead">
-            <div class="updatesDropTitle">Update Diagnostics</div>
-            <button id="upDiagHideBtn" class="tap ghost" type="button">Hide</button>
-          </div>
-          <div class="updatesPills" style="margin-top:8px;">
-            <div class="pillRow" id="uDiag1">—</div>
-            <div class="pillRow" id="uDiag2">—</div>
-            <div class="pillRow" id="uDiag3">—</div>
-            <div class="pillRow" id="uDiag4">—</div>
-            <div class="pillRow" id="uDiag5">—</div>
-          </div>
-        </div>
+    <div class="updatesGroupTitle" style="margin-top:12px;">Advanced</div>
+    <div class="updatesActions">
+      <button id="upClearCacheBtn" class="tap ghost">🧹 Clear Cache & Reload</button>
+      <button id="upShowResultBtn" class="tap ghost">📋 Show Last Update Result</button>
+      <button id="upDiagBtn" class="tap ghost">📈 Update Diagnostics</button>
+    </div>
+  
+    <!-- Inline dropdown panels (instead of popup) -->
+    <div id="upResultPanel" class="updatesDropPanel" style="display:none;">
+      <div class="updatesDropHead">
+        <div class="updatesDropTitle">Update Result</div>
+        <button id="upResultHideBtn" class="tap ghost" type="button">Hide</button>
       </div>
-    </details>
+      <div class="updatesPills" style="margin-top:8px;">
+        <div class="pillRow" id="uResLine1">—</div>
+        <div class="pillRow" id="uResLine2">—</div>
+        <div class="pillRow" id="uResLine3">—</div>
+        <div class="pillRow" id="uResLine4">—</div>
+        <div class="pillRow" id="uResLine5">—</div>
+        <div class="pillRow" id="uResLine6"></div>
+      </div>
+      <div class="btnRow" style="margin-top:10px; justify-content:flex-end;">
+        <button id="uModalTryAgain" class="tap" type="button" style="display:none;">Try Again</button>
+      </div>
+    </div>
+
+    <div id="upDiagPanel" class="updatesDropPanel" style="display:none;">
+      <div class="updatesDropHead">
+        <div class="updatesDropTitle">Update Diagnostics</div>
+        <button id="upDiagHideBtn" class="tap ghost" type="button">Hide</button>
+      </div>
+      <div class="updatesPills" style="margin-top:8px;">
+        <div class="pillRow" id="uDiag1">—</div>
+        <div class="pillRow" id="uDiag2">—</div>
+        <div class="pillRow" id="uDiag3">—</div>
+        <div class="pillRow" id="uDiag4">—</div>
+        <div class="pillRow" id="uDiag5">—</div>
+      </div>
+    </div>
+
   </section>
 
-  <!-- Reset (Glass Dropdown) -->
+
+      
+
+
+
+  <!-- Reset -->
   <section class="card">
-    <details id="resetDropdown" class="glassDrop">
-      <summary class="glassSummary">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <h2 style="margin:0;">Reset</h2>
-        </div>
-        <span class="muted small">Tap to expand</span>
-      </summary>
+    <h2>Reset</h2>
+    <div class="notice">
+      This clears everything on this device/browser.
+      <div class="small muted">Tip: Backup first.</div>
+    </div>
 
-      <div class="glassBody">
-        <div class="notice">
-          This clears everything on this device/browser.
-          <div class="small muted">Tip: Backup first.</div>
-        </div>
-
-        <div class="btnRow">
-          <button id="settingsResetBtn" class="danger">Reset ALL Data</button>
-        </div>
-      </div>
-    </details>
+    <div class="btnRow">
+      <button id="settingsResetBtn" class="danger">Reset ALL Data</button>
+    </div>
   </section>
 </section>
+
 
   <!-- ✅ KEEP YOUR MODALS EXACTLY AS-IS BELOW -->
   <!-- LOG SETS MODAL -->
@@ -2542,9 +2403,8 @@ header{
           <input id="rtAddExReps" placeholder="8–10" />
         </label>
 
-        <button id="rtAddExBtn" class="tap" type="button">Add</button>
+        <button id="rtAddExBtn" class="tap">Add</button>
         <button id="rtAddMultiBtn" class="ghost tap" type="button">Add Multiple</button>
-
       </div>
 
       <div id="rtExList" style="margin-top:12px; display:grid; gap:10px;"></div>
@@ -2563,7 +2423,7 @@ header{
   </div>
 </div>
 
-<!-- EXERCISE PICKER MODAL -->
+  <!-- EXERCISE PICKER MODAL -->
 <div id="exPickModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
   <div style="max-width:520px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
     <div class="topRight">
@@ -2571,35 +2431,13 @@ header{
       <button id="exPickCloseBtn">Close</button>
     </div>
 
-    <!-- Search (ONLY ONCE) -->
     <div class="row" style="margin-top:10px;">
       <label style="min-width:220px; flex:1 1 220px;">Search
         <input id="exPickSearch" placeholder="Type to filter..." />
       </label>
     </div>
 
-    <!-- ✅ Create-only type picker (HIDDEN unless Create is possible) -->
-    <div id="exPickCreateTypeWrap" style="display:none; margin-top:10px;">
-      <div class="small muted" style="margin-bottom:6px;">
-        New exercise type (used only when you press “Create”)
-      </div>
-
-      <div class="row" style="gap:8px;">
-        <button id="exPickTypeStrength" type="button" class="tap" style="flex:1; border-radius:999px;">
-          Strength
-        </button>
-        <button id="exPickTypeCardio" type="button" class="tap ghost" style="flex:1; border-radius:999px;">
-          Cardio
-        </button>
-      </div>
-
-      <div class="small muted" style="margin-top:6px;">
-        Strength = sets/reps/weight • Cardio = duration/distance/etc
-      </div>
-    </div>
-
-    <!-- Results list (ONLY ONCE) -->
-    <div id="exPickList" style="margin-top:10px;"></div>
+    <div id="exPickList"></div>
 
     <div class="btnRow">
       <button id="exPickConfirmBtn">Confirm</button>
@@ -2607,7 +2445,6 @@ header{
     </div>
   </div>
 </div>
-
 
   <!-- BATCH ADD MODAL (Multi-add sets/reps screen) -->
 <div id="batchAddModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
@@ -2634,195 +2471,6 @@ header{
 <script>
 (function(){
 'use strict';
-
-  /* ==========================================
-   CARDIO SUPPORT (fields, defaults, helpers)
-========================================== */
-
-// Your cardio list (canonical names)
-const CARDIO_EXERCISES = new Set([
-  "Treadmill Walk / Run",
-  "Incline Treadmill Walk",
-  "Stair Climber",
-  "Stationary Bike",
-  "Elliptical",
-  "Rowing Machine",
-  "Jump Rope",
-  "Battle Ropes",
-  "Kettlebell Swings",
-  "Sled Push / Pull",
-  "Box Jumps",
-  "Burpees"
-]);
-
-// Field definitions per cardio exercise
-// - "required" means: we should show these first + validate in Batch Add
-// - "optional" means: nice-to-have fields
-const CARDIO_SPECS = {
-  "Treadmill Walk / Run": {
-    required: [
-      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" },
-      { key:"distanceMi",  label:"Distance (mi)",  type:"number", placeholder:"2.0" }
-    ],
-    optional: [
-      { key:"pace",       label:"Pace (optional)",      type:"text",   placeholder:"10:00/mi" },
-      { key:"inclinePct", label:"Incline % (optional)", type:"number", placeholder:"1" }
-    ]
-  },
-
-  "Incline Treadmill Walk": {
-    required: [
-      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" },
-      { key:"distanceMi",  label:"Distance (mi)",  type:"number", placeholder:"2.0" },
-      { key:"inclinePct",  label:"Incline %",      type:"number", placeholder:"10" }
-    ],
-    optional: []
-  },
-
-  "Stair Climber": {
-    required: [
-      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"15" },
-      { key:"level",       label:"Level",          type:"number", placeholder:"6" }
-    ],
-    optional: [
-      { key:"floors", label:"Floors/Steps (optional)", type:"text", placeholder:"30 floors" }
-    ]
-  },
-
-  "Stationary Bike": {
-    required: [
-      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" },
-      { key:"level",       label:"Resistance/Level", type:"number", placeholder:"8" }
-    ],
-    optional: [
-      { key:"distanceMi", label:"Distance (optional)", type:"number", placeholder:"5.0" }
-    ]
-  },
-
-  "Elliptical": {
-    required: [
-      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" },
-      { key:"level",       label:"Resistance",     type:"number", placeholder:"10" }
-    ],
-    optional: [
-      { key:"distanceMi", label:"Distance (optional)", type:"number", placeholder:"2.5" }
-    ]
-  },
-
-  "Rowing Machine": {
-    required: [
-      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"15" },
-      { key:"meters",      label:"Distance (meters)", type:"number", placeholder:"2000" }
-    ],
-    optional: [
-      { key:"splitPace", label:"Split pace (optional)", type:"text", placeholder:"2:10/500m" }
-    ]
-  },
-
-  "Jump Rope": {
-    required: [
-      { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"10" }
-    ],
-    optional: [
-      { key:"rounds", label:"Rounds (optional)", type:"number", placeholder:"5" }
-    ]
-  },
-
-  "Battle Ropes": {
-    required: [
-      { key:"rounds",   label:"Rounds",   type:"number", placeholder:"8" },
-      { key:"workRest", label:"Work/Rest", type:"text", placeholder:"30s/30s" }
-    ],
-    optional: []
-  },
-
-  "Kettlebell Swings": {
-    required: [
-      { key:"rounds",   label:"Rounds",   type:"number", placeholder:"6" }
-    ],
-    optional: [
-      { key:"workRest",  label:"Work/Rest (optional)", type:"text", placeholder:"30s/30s" },
-      { key:"repsRound", label:"Reps/Round (optional)", type:"number", placeholder:"15" },
-      { key:"kbWeight",  label:"KB Weight (optional)", type:"number", placeholder:"35" }
-    ]
-  },
-
-  "Sled Push / Pull": {
-    required: [
-      { key:"rounds",     label:"Rounds",            type:"number", placeholder:"6" },
-      { key:"distancePer",label:"Distance/Round",    type:"text",   placeholder:"20 yd" }
-    ],
-    optional: [
-      { key:"sledWeight", label:"Weight (optional)", type:"number", placeholder:"90" }
-    ]
-  },
-
-  "Box Jumps": {
-    required: [
-      { key:"rounds", label:"Rounds", type:"number", placeholder:"6" }
-    ],
-    optional: [
-      { key:"repsRound", label:"Reps/Round (optional)", type:"number", placeholder:"10" },
-      { key:"workRest",  label:"Work/Rest (optional)", type:"text", placeholder:"20s/40s" },
-      { key:"boxHeight", label:"Box Height (optional)", type:"text", placeholder:"24 in" }
-    ]
-  },
-
-  "Burpees": {
-    required: [
-      { key:"rounds", label:"Rounds", type:"number", placeholder:"6" }
-    ],
-    optional: [
-      { key:"repsRound", label:"Reps/Round (optional)", type:"number", placeholder:"12" },
-      { key:"workRest",  label:"Work/Rest (optional)", type:"text", placeholder:"20s/40s" }
-    ]
-  }
-};
-
-function isCardioName(name){
-  const n = canonicalExerciseName(String(name||""));
-
-  // 1) built-in cardio list
-  if(CARDIO_EXERCISES.has(n)) return true;
-
-  // 2) custom type overrides (manual toggle)
-  const t = customExerciseTypes?.[n];
-  return t === "cardio";
-}
-
-
-function cardioBlankFor(name){
-  const n = canonicalExerciseName(String(name||""));
-  const spec = CARDIO_SPECS[n];
-  const obj = {};
-  if(!spec) return obj;
-  [...spec.required, ...spec.optional].forEach(f => obj[f.key] = "");
-  return obj;
-}
-
-// Creates the correct shape for Routine exercises[]
-function makeRoutineExerciseFromName(name){
-  const n = canonicalExerciseName(String(name||"").trim());
-  if(!n) return null;
-
-  if(isCardioName(n)){
-    return {
-      name: n,
-      type: "cardio",
-      cardio: cardioBlankFor(n),
-      notes: ""
-    };
-  }
-
-  // default strength shape
-  return {
-    name: n,
-    type: "strength",
-    sets: 3,
-    reps: "8–10",
-    notes: ""
-  };
-}
 
 /* ---------------------------
    Storage helpers
@@ -3498,26 +3146,16 @@ const onEnterScreen = {
   },
 
   lifts: () => {
-  // 🔹 initialize toggle + metrics first
-  renderLiftMetricOptions();
-  setLiftType("strength");
-
-  // 🔹 then render dropdowns
-  renderLiftSearchDropdown();
-  renderLiftRoutineDropdown();
-
-  // 🔹 then render data
-  applyLiftFiltersFromUI();
-  renderLifts();
-},
-
+    renderLiftSearchDropdown();
+    renderLiftRoutineDropdown();
+    renderLifts();
+  },
 
   settings: () => {
     hydrateSettingsUI();
     renderStorageInfo();
     renderLastBackup();
-    renderCustomExerciseSettings();
-}
+  }
 };
 
 function showScreen(name){
@@ -3762,93 +3400,6 @@ const EXERCISE_LIBRARY = [
   "Box Jumps",
   "Burpees"
 ];
-  /* ---------------------------
-   Cardio Defaults (type + fields)
-   - keyed by CANONICAL exercise name
----------------------------- */
-const CARDIO_DEFAULTS = {
-  "Treadmill Walk / Run": {
-    type: "cardio",
-    subtype: "machine",
-    required: ["durationMin"],
-    optional: ["distance", "pace", "incline"]
-  },
-  "Incline Treadmill Walk": {
-    type: "cardio",
-    subtype: "machine",
-    required: ["durationMin", "incline"],
-    optional: ["distance", "pace"]
-  },
-  "Stair Climber": {
-    type: "cardio",
-    subtype: "machine",
-    required: ["durationMin", "level"],
-    optional: ["floors", "steps", "calories", "avgHr"]
-  },
-  "Stationary Bike": {
-    type: "cardio",
-    subtype: "machine",
-    required: ["durationMin", "level"],
-    optional: ["distance", "calories", "avgHr"]
-  },
-  "Elliptical": {
-    type: "cardio",
-    subtype: "machine",
-    required: ["durationMin", "level"],
-    optional: ["distance", "calories", "avgHr"]
-  },
-  "Rowing Machine": {
-    type: "cardio",
-    subtype: "machine",
-    required: ["durationMin"],
-    optional: ["distance", "meters", "splitPace", "calories", "avgHr"]
-  },
-  "Jump Rope": {
-    type: "cardio",
-    subtype: "skill",
-    required: ["durationMin"],
-    optional: ["rounds"]
-  },
-  "Battle Ropes": {
-    type: "cardio",
-    subtype: "interval",
-    required: ["rounds", "workSec"],
-    optional: ["restSec"]
-  },
-  "Kettlebell Swings": {
-    type: "cardio",
-    subtype: "interval",
-    required: ["rounds", "workSec"],
-    optional: ["restSec", "repsPerRound", "kbWeight"]
-  },
-  "Sled Push / Pull": {
-    type: "cardio",
-    subtype: "interval",
-    required: ["rounds", "distancePerRound"],
-    optional: ["sledWeight", "restSec"]
-  },
-  "Box Jumps": {
-    type: "cardio",
-    subtype: "hiit",
-    required: ["rounds"],
-    optional: ["repsPerRound", "workSec", "restSec", "boxHeight"]
-  },
-  "Burpees": {
-    type: "cardio",
-    subtype: "hiit",
-    required: ["rounds"],
-    optional: ["repsPerRound", "workSec", "restSec"]
-  }
-};
-
-function getCardioSpec(exName){
-  const canon = canonicalExerciseName(exName);
-  return CARDIO_DEFAULTS[canon] || null;
-}
-
-function isCardioExercise(exName){
-  return !!getCardioSpec(exName);
-}
 /* ---------------------------
    UID helper
 ---------------------------- */
@@ -4489,15 +4040,10 @@ function ensureLiftCompatibility(){
   lifts = lifts.map(x=>{
     const ex = String(x.ex || x.exercise || "");
     const exNorm = x.exNorm || normExName(ex);
-
-    const canon = canonicalExerciseName(ex);
-    const inferredType = x.type || (isCardioName(canon) ? "cardio" : "strength");
-
     return {
       ...x,
-      ex: canon,
+      ex,
       exNorm,
-      type: inferredType,                 // ✅ NEW
       routineId: x.routineId || "",
       routineName: x.routineName || "",
       dayKey: x.dayKey || ""
@@ -4505,7 +4051,6 @@ function ensureLiftCompatibility(){
   });
   LS.set(KEY_LIFTS, lifts);
 }
-
 ensureLiftCompatibility();
   migrateCanonicalNames();
 
@@ -5022,93 +4567,46 @@ renderDayTabs(); // ✅ ADD THIS LINE
   }
 
   list.forEach(item=>{
-  const ex = item.name;
-  const cardioSpec = getCardioSpec(ex);
-  const isCardio = !!cardioSpec;
+    const ex = item.name;
+    const {life, thisWeekMax, lastWeekMax} = liftStatsForExercise(ex);
 
-  // Strength stats (only meaningful for strength)
-  const {life, thisWeekMax, lastWeekMax} = isCardio
-    ? {life:null, thisWeekMax:null, lastWeekMax:null}
-    : liftStatsForExercise(ex);
+    const isPRThisWeek = (life !== null && thisWeekMax !== null && thisWeekMax === life);
+    const prBadge = isPRThisWeek ? `<span class="badge">🏆 PR (this week)</span>` : ``;
 
-  const isPRThisWeek = (!isCardio && life !== null && thisWeekMax !== null && thisWeekMax === life);
-  const prBadge = isPRThisWeek ? `<span class="badge">🏆 PR (this week)</span>` : ``;
-
-  // Build cardio “fields” text from your defaults
-  let cardioFieldsLine = "";
-  if(isCardio){
-    const req = (cardioSpec.required || []).join(", ");
-    const opt = (cardioSpec.optional || []).join(", ");
-    cardioFieldsLine = `
-      <div class="meta">
-        <span>Cardio</span>
-        <span>•</span>
-        <span class="mono">Required:</span> <span>${req || "—"}</span>
-        ${opt ? `<span>•</span><span class="mono">Optional:</span> <span>${opt}</span>` : ""}
+    const card = document.createElement("div");
+    card.className = "exerciseItem";
+    card.innerHTML = `
+      <div class="left">
+        <div class="title">${ex}</div>
+        <div class="meta">
+          <span>${item.sets || "—"} sets</span>
+          <span>•</span>
+          <span>${item.reps || "—"} reps</span>
+          ${item.notes ? `<span class="badge">${item.notes}</span>` : ""}
+        </div>
+      </div>
+      <div class="right">
+        <div class="line2">This week: <span class="mono">${thisWeekMax===null?"—":thisWeekMax}</span> lbs</div>
+        <div class="line2">Last week: <span class="mono">${lastWeekMax===null?"—":lastWeekMax}</span> lbs</div>
+        <div class="line2">Lifetime max: <span class="mono">${life===null?"—":life}</span> lbs</div>
+        <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
+          ${prBadge}
+          <button type="button" data-log="${ex}">Log Sets</button>
+        </div>
       </div>
     `;
-  }
 
-  const card = document.createElement("div");
-  card.className = "exerciseItem";
+    const logBtn = card.querySelector('button[data-log]');
+    if(logBtn){
+      logBtn.addEventListener("click", ()=>{
+        openLogModal(ex, Number(item.sets)||3, ar, dayKey, activeDayIndex);
+      });
+    }
 
-  // Strength meta (existing)
-  const strengthMeta = `
-    <div class="meta">
-      <span>${item.sets || "—"} sets</span>
-      <span>•</span>
-      <span>${item.reps || "—"} reps</span>
-      ${item.notes ? `<span class="badge">${item.notes}</span>` : ""}
-    </div>
-  `;
+    pplList.appendChild(card);
+  });
 
-  card.innerHTML = `
-    <div class="left">
-      <div class="title">${ex}</div>
-      ${isCardio ? cardioFieldsLine : strengthMeta}
-    </div>
-
-    <div class="right">
-      ${
-        isCardio
-          ? `
-            <div class="line2 small muted">Cardio logging UI is next (we’ll add a Cardio Log modal).</div>
-            <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
-              <button type="button" data-logcardio="${ex}">Log Cardio</button>
-            </div>
-          `
-          : `
-            <div class="line2">This week: <span class="mono">${thisWeekMax===null?"—":thisWeekMax}</span> lbs</div>
-            <div class="line2">Last week: <span class="mono">${lastWeekMax===null?"—":lastWeekMax}</span> lbs</div>
-            <div class="line2">Lifetime max: <span class="mono">${life===null?"—":life}</span> lbs</div>
-            <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
-              ${prBadge}
-              <button type="button" data-log="${ex}">Log Sets</button>
-            </div>
-          `
-      }
-    </div>
-  `;
-
-  // Strength: existing behavior
-  const logBtn = card.querySelector('button[data-log]');
-  if(logBtn){
-    logBtn.addEventListener("click", ()=>{
-      openLogModal(ex, Number(item.sets)||3, ar, dayKey, activeDayIndex);
-    });
-  }
-
-  // Cardio: placeholder (next step will be a real modal)
-  const cardioBtn = card.querySelector('button[data-logcardio]');
-  if(cardioBtn){
-    cardioBtn.addEventListener("click", ()=>{
-      alert(`Cardio logging coming next for: ${canonicalExerciseName(ex)}`);
-    });
-  }
-
-  pplList.appendChild(card);
-});
-
+  renderLiftSearchDropdown();
 }
 
 document.getElementById("startTodayBtn").addEventListener("click", ()=>{
@@ -5129,12 +4627,6 @@ const liftFrom = document.getElementById("liftFrom");
 const liftTo = document.getElementById("liftTo");
 const liftMetric = document.getElementById("liftMetric");
 const liftLimit = document.getElementById("liftLimit");
-// ✅ NEW: Strength/Cardio toggle
-const liftTypeStrengthBtn = document.getElementById("liftTypeStrengthBtn");
-const liftTypeCardioBtn   = document.getElementById("liftTypeCardioBtn");
-
-let liftType = "strength"; // "strength" | "cardio"
-
 
 const liftSearchBtn = document.getElementById("liftSearchBtn");
 const liftClearBtn = document.getElementById("liftClearBtn");
@@ -5148,7 +4640,6 @@ const liftGraphWrap = document.getElementById("liftGraphWrap");
 
 let liftView = "table"; // "table" | "graph"
 let appliedLiftFilters = {
-  type: "strength",   // ✅ NEW
   ex: "",
   routineId: "",
   from: "",
@@ -5157,132 +4648,6 @@ let appliedLiftFilters = {
   limit: 25
 };
 
-  function isStrengthName(name){
-  const n = canonicalExerciseName(name);
-  return !isCardioName(n);
-}
-
-function collectExerciseNamesByType(type){
-  const all = collectAllExerciseNames(); // your existing function
-  if(type === "cardio") return all.filter(isCardioName);
-  return all.filter(isStrengthName);
-}
-
-function renderLiftMetricOptions(){
-  const prev = liftMetric.value || "";
-
-  liftMetric.innerHTML = "";
-
-  if(liftType === "cardio"){
-    [
-      {v:"distance", t:"Distance"},
-      {v:"duration", t:"Duration"},
-      {v:"pace",     t:"Pace (if logged)"}
-    ].forEach(o=>{
-      const opt = document.createElement("option");
-      opt.value = o.v;
-      opt.textContent = o.t;
-      liftMetric.appendChild(opt);
-    });
-
-    // keep prev if possible, else default to distance
-    liftMetric.value = ["distance","duration","pace"].includes(prev) ? prev : "distance";
-    return;
-  }
-
-  // strength
-  [
-    {v:"top",  t:"Top Weight"},
-    {v:"e1rm", t:"Estimated 1RM (Epley)"},
-    {v:"vol",  t:"Volume"}
-  ].forEach(o=>{
-    const opt = document.createElement("option");
-    opt.value = o.v;
-    opt.textContent = o.t;
-    liftMetric.appendChild(opt);
-  });
-
-  liftMetric.value = ["top","e1rm","vol"].includes(prev) ? prev : "top";
-}
-
-  function setLiftTableHeader(){
-  const theadRow = document.querySelector("#liftTableWrap thead tr");
-  if(!theadRow) return;
-
-  if(liftType === "cardio"){
-    theadRow.innerHTML = `
-      <th>Date</th>
-      <th>Exercise</th>
-      <th>Cardio</th>
-      <th>Routine</th>
-      <th></th>
-    `;
-  } else {
-    theadRow.innerHTML = `
-      <th>Date</th>
-      <th>Exercise</th>
-      <th>Top Set</th>
-      <th>Sets</th>
-      <th>PR</th>
-      <th></th>
-    `;
-  }
-}
-
-  function setLiftType(next){
-  liftType = (next === "cardio") ? "cardio" : "strength";
-
-  // button UI
-  if(liftTypeStrengthBtn && liftTypeCardioBtn){
-    if(liftType === "cardio"){
-      liftTypeCardioBtn.classList.remove("ghost");
-      liftTypeStrengthBtn.classList.add("ghost");
-    } else {
-      liftTypeStrengthBtn.classList.remove("ghost");
-      liftTypeCardioBtn.classList.add("ghost");
-    }
-  }
-
-  // update dropdowns + metrics + applied filters
-  renderLiftMetricOptions();
-  renderLiftSearchDropdown();
-  applyLiftFiltersFromUI();
-
-  // rerender
-  renderLifts();
-}
-
-liftTypeStrengthBtn?.addEventListener("click", ()=> setLiftType("strength"));
-liftTypeCardioBtn?.addEventListener("click", ()=> setLiftType("cardio"));
-
-
-function formatCardioSummary(cardio){
-  if(!cardio || typeof cardio !== "object") return "—";
-
-  const parts = [];
-  const add = (label, key)=>{
-    const v = String(cardio[key] ?? "").trim();
-    if(v) parts.push(`${label}: ${v}`);
-  };
-
-  add("Duration", "duration");
-  add("Distance", "distance");
-  add("Incline", "incline");
-  add("Pace", "pace");
-  add("Level", "level");
-  add("Resistance", "resistance");
-  add("Meters", "meters");
-  add("Rounds", "rounds");
-  add("Work", "work");
-  add("Rest", "rest");
-  add("Reps", "reps");
-  add("Weight", "weight");
-  add("Height", "height");
-
-  return parts.length ? parts.join(" • ") : "—";
-}
-
-  
 function collectAllExerciseNames(){
   const set = new Set();
 
@@ -5311,7 +4676,7 @@ loadCustomExercises().forEach(n => set.add(canonicalExerciseName(n)));
 
 function renderLiftSearchDropdown(){
   const prev = liftSearch.value || "";
-const items = ["", ...collectExerciseNamesByType(liftType)];
+  const items = ["", ...collectAllExerciseNames()];
   liftSearch.innerHTML = "";
   items.forEach(v=>{
     const opt = document.createElement("option");
@@ -5331,146 +4696,6 @@ const exPickCancelBtn = document.getElementById("exPickCancelBtn");
 const exPickConfirmBtn = document.getElementById("exPickConfirmBtn");
 const exPickSearch = document.getElementById("exPickSearch");
 const exPickList = document.getElementById("exPickList");
-const exPickCreateTypeWrap = document.getElementById("exPickCreateTypeWrap");
-
-  // ✅ NEW: manual picker type toggle (strength/cardio)
-const exPickTypeStrengthBtn = document.getElementById("exPickTypeStrength");
-const exPickTypeCardioBtn   = document.getElementById("exPickTypeCardio");
-
-// default selection
-let exPickType = "strength"; // "strength" | "cardio"
-
-// ✅ NEW: persist custom exercise type (so cardio stays cardio forever)
-const KEY_CUSTOM_EX_TYPES = "gym_custom_ex_types_v1";
-
-function loadCustomExerciseTypes(){
-  return LS.get(KEY_CUSTOM_EX_TYPES, {}); // { "My Exercise": "cardio" }
-}
-function saveCustomExerciseTypes(map){
-  LS.set(KEY_CUSTOM_EX_TYPES, map || {});
-}
-
-let customExerciseTypes = loadCustomExerciseTypes();
-/* ===========================
-   SETTINGS: Custom Exercises (Glass)
-   - delete custom exercises safely
-=========================== */
-
-function refreshAllUIAfterCustomExerciseChange(){
-  // routine-related
-  if(typeof renderRoutineDropdown === "function") renderRoutineDropdown();
-  if(typeof renderPPL === "function") renderPPL();
-  if(typeof buildRoutineExerciseSuggestions === "function") buildRoutineExerciseSuggestions();
-
-  // lifts-related
-  if(typeof renderLiftSearchDropdown === "function") renderLiftSearchDropdown();
-  if(typeof renderLiftRoutineDropdown === "function") renderLiftRoutineDropdown();
-  if(typeof applyLiftFiltersFromUI === "function") applyLiftFiltersFromUI();
-  if(typeof renderLifts === "function") renderLifts();
-
-  // home + any carousel UI
-  if(typeof refreshHome === "function") refreshHome();
-  if(typeof renderRoutineCarousel === "function") renderRoutineCarousel();
-}
-
-function renderCustomExerciseSettings(){
-  const wrap = document.getElementById("customExerciseList");
-  const countEl = document.getElementById("customExerciseCount");
-  if(!wrap) return;
-
-  const customs = loadCustomExercises();
-  if(countEl) countEl.textContent = String(customs.length);
-
-  wrap.innerHTML = "";
-
-  if(!customs.length){
-    wrap.innerHTML = `<div class="notice">No custom exercises created.</div>`;
-    return;
-  }
-
-  customs.forEach(name=>{
-    const canon = canonicalExerciseName(name);
-    const t = customExerciseTypes?.[canon] || "";
-
-    const row = document.createElement("div");
-    row.className = "glassItem";
-
-    row.innerHTML = `
-      <div class="left">
-        <div class="name">${name}</div>
-        ${t ? `<div class="meta">${t}</div>` : ``}
-      </div>
-      <button type="button" class="xBtn" title="Delete">×</button>
-    `;
-
-    row.querySelector(".xBtn").addEventListener("click", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-
-      const ok = confirm(
-        `Delete custom exercise "${name}"?\n\nThis will remove it from:\n• All routines\n• All lift logs\n\nThis cannot be undone (unless you re-create it).`
-      );
-      if(!ok) return;
-      deleteCustomExercise(name);
-    });
-
-    wrap.appendChild(row);
-  });
-}
-
-
-function deleteCustomExercise(name){
-  const canon = canonicalExerciseName(name);
-  const nCanon = normExName(canon);
-
-  // 1) remove from custom list
-  const nextCustoms = loadCustomExercises().filter(x => normExName(canonicalExerciseName(x)) !== nCanon);
-  saveCustomExercises(nextCustoms);
-
-  // 2) remove saved custom type override
-  if(customExerciseTypes && typeof customExerciseTypes === "object"){
-    delete customExerciseTypes[canon];
-    saveCustomExerciseTypes(customExerciseTypes);
-  }
-
-  // 3) remove from routines (all days/all routines)
-  let changedRoutines = false;
-  routines.forEach(r=>{
-    DAY_KEYS.forEach(k=>{
-      const day = r.days?.[k];
-      if(!day?.exercises || !Array.isArray(day.exercises)) return;
-
-      const beforeLen = day.exercises.length;
-      day.exercises = day.exercises.filter(ex => normExName(canonicalExerciseName(ex?.name)) !== nCanon);
-      if(day.exercises.length !== beforeLen) changedRoutines = true;
-    });
-  });
-  if(changedRoutines) saveRoutines();
-
-  // 4) remove from lift logs
-  const beforeLifts = lifts.length;
-  lifts = lifts.filter(x => normExName(canonicalExerciseName(x?.ex)) !== nCanon);
-  if(lifts.length !== beforeLifts){
-    LS.set(KEY_LIFTS, lifts);
-  }
-
-  // 5) refresh UI everywhere
-  renderCustomExerciseSettings();
-  refreshAllUIAfterCustomExerciseChange();
-
-  alert("Custom exercise deleted ✅");
-}
-
-
-function setExPickType(t){
-  exPickType = (t === "cardio") ? "cardio" : "strength";
-  exPickTypeStrengthBtn?.classList.toggle("ghost", exPickType !== "strength");
-  exPickTypeCardioBtn?.classList.toggle("ghost", exPickType !== "cardio");
-}
-
-// button wiring
-exPickTypeStrengthBtn?.addEventListener("click", ()=> setExPickType("strength"));
-exPickTypeCardioBtn?.addEventListener("click", ()=> setExPickType("cardio"));
 
 let exPickSelected = "";                 // single mode selected
 let exPickSelectedSet = new Set();       // multi mode selected set
@@ -5490,7 +4715,6 @@ function openExercisePicker({ title="Pick Exercise", initial="", onConfirm, mult
   exPickSearch.value = "";
   renderExercisePickerList();
   lockBodyScroll();                 // ✅ ADD
-  setExPickType("strength");
   exPickModal.style.display = "block";
 }
 
@@ -5508,23 +4732,6 @@ function closeExercisePicker(){
 function renderExercisePickerList(){
   const rawQ = String(exPickSearch.value || "").trim();
   const q = normExName(rawQ);
-
-  // ✅ Only show the Strength/Cardio toggle when "Create" is possible
-const canon = canonicalExerciseName(rawQ);
-const isNewCandidate =
-  !!canon &&
-  !collectAllExerciseNames().includes(canon) &&
-  !loadCustomExercises().includes(canon);
-
-// show/hide the UI block
-if(exPickCreateTypeWrap){
-  exPickCreateTypeWrap.style.display = isNewCandidate ? "block" : "none";
-  if(isNewCandidate){
-    // default selection when creating a new one
-    setExPickType("strength");
-  }
-}
-
 
   const all = collectAllExerciseNames();
   const filtered = q ? all.filter(n => normExName(n).includes(q)) : all;
@@ -5546,10 +4753,6 @@ if(exPickCreateTypeWrap){
      create.addEventListener("click", ()=>{
   const created = addCustomExercise(rawQ);
   if(!created) return;
-       // ✅ NEW: save the type (so "Create" can be cardio)
-customExerciseTypes[canonicalExerciseName(created)] = exPickType;
-saveCustomExerciseTypes(customExerciseTypes);
-
 
   if(exPickMulti){
     // MULTI: add to selected list, stay open
@@ -5649,7 +4852,7 @@ const batchAddCancelBtn = document.getElementById("batchAddCancelBtn");
 const batchAddConfirmBtn = document.getElementById("batchAddConfirmBtn");
 const batchAddList = document.getElementById("batchAddList");
 
-let batchAddItems = []; // [{name, type, sets, reps, cardio:{...}}]
+let batchAddItems = []; // [{name, sets, reps}]
 
 function openBatchAddModal(names){
   // ✅ normalize: accept array OR single string
@@ -5657,26 +4860,11 @@ function openBatchAddModal(names){
     ? names
     : (typeof names === "string" && names.trim() ? [names.trim()] : []);
 
-batchAddItems = arr.map(n=>{
-  const name = canonicalExerciseName(n);
-  const isC = isCardioName(name);
-
-  if(isC){
-    return {
-      name,
-      type: "cardio",
-      cardio: cardioBlankFor(name)
-    };
-  }
-
-  return {
-    name,
-    type: "strength",
+  batchAddItems = arr.map(n=>({
+    name: canonicalExerciseName(n),
     sets: "",
     reps: ""
-  };
-});
-
+  }));
 
   renderBatchAddList();
   lockBodyScroll();                 // ✅ ADD
@@ -5699,62 +4887,29 @@ function renderBatchAddList(){
     card.style.background = "#0f0f10";
     card.style.padding = "10px";
 
-    const isCardio = it.type === "cardio" || isCardioName(it.name);
-
-    // cardio fields
-    let cardioHTML = "";
-    if(isCardio){
-      const spec = CARDIO_SPECS[canonicalExerciseName(it.name)];
-      const fields = spec ? [...spec.required, ...spec.optional] : [];
-      cardioHTML = `
-        <div class="row" style="margin-top:10px; align-items:end; flex-wrap:wrap;">
-          ${fields.map(f=>`
-            <label style="flex:1 1 180px;">
-              ${f.label}
-              <input
-                data-bcfield="${f.key}"
-                data-idx="${idx}"
-                type="${f.type || "text"}"
-                value="${(it.cardio?.[f.key] ?? "")}"
-                placeholder="${f.placeholder || ""}"
-              />
-            </label>
-          `).join("")}
-        </div>
-      `;
-    }
-
-    // strength fields
-    const strengthHTML = `
-      <label style="flex:0 0 120px;">Sets
-        <input type="number" min="1" value="${it.sets}" data-bsets="${idx}" placeholder="3" />
-      </label>
-
-      <label style="flex:1 1 160px;">Reps
-        <input value="${it.reps}" data-breps="${idx}" placeholder="8–10" />
-      </label>
-    `;
-
     card.innerHTML = `
       <div class="row" style="align-items:end;">
         <div style="flex:2 1 220px;">
           <div class="small muted">Exercise</div>
           <div style="font-weight:700; margin-top:4px;">${it.name}</div>
-          <div class="small muted" style="margin-top:2px;">${isCardio ? "Cardio" : "Strength"}</div>
         </div>
 
-        ${isCardio ? "" : strengthHTML}
+        <label style="flex:0 0 120px;">Sets
+          <input type="number" min="1" value="${it.sets}" data-bsets="${idx}" placeholder="3" />
+        </label>
+
+        <label style="flex:1 1 160px;">Reps
+          <input value="${it.reps}" data-breps="${idx}" placeholder="8–10" />
+        </label>
 
         <button type="button" class="miniBtn danger" data-bremove="${idx}">Remove</button>
       </div>
-
-      ${isCardio ? cardioHTML : ""}
     `;
 
     batchAddList.appendChild(card);
   });
 
-  // strength wiring
+  // wire inputs
   batchAddList.querySelectorAll("[data-bsets]").forEach(inp=>{
     inp.addEventListener("input", ()=>{
       const i = Number(inp.getAttribute("data-bsets"));
@@ -5769,17 +4924,6 @@ function renderBatchAddList(){
     });
   });
 
-  // cardio wiring
-  batchAddList.querySelectorAll("[data-bcfield]").forEach(inp=>{
-    inp.addEventListener("input", ()=>{
-      const idx = Number(inp.getAttribute("data-idx"));
-      const key = inp.getAttribute("data-bcfield");
-      if(!batchAddItems[idx].cardio) batchAddItems[idx].cardio = {};
-      batchAddItems[idx].cardio[key] = inp.value;
-    });
-  });
-
-  // remove wiring
   batchAddList.querySelectorAll("[data-bremove]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const i = Number(btn.getAttribute("data-bremove"));
@@ -5787,49 +4931,29 @@ function renderBatchAddList(){
       renderBatchAddList();
     });
   });
-
-  // autofocus: first meaningful field
-  setTimeout(()=>{
-    const firstStrength = batchAddList.querySelector("input[data-bsets]");
-    const firstCardio = batchAddList.querySelector("input[data-bcfield]");
-    (firstStrength || firstCardio)?.focus();
-  }, 0);
+  // auto-focus first sets input
+setTimeout(()=>{
+  batchAddList.querySelector("input[data-bsets]")?.focus();
+}, 0);
 }
-// close / cancel
+
 [batchAddCloseBtn, batchAddCancelBtn].forEach(btn=>{
   btn?.addEventListener("click", closeBatchAddModal);
 });
-batchAddModal?.addEventListener("click", (e)=>{
-  if(e.target === batchAddModal) closeBatchAddModal();
-});
+batchAddModal?.addEventListener("click", (e)=>{ if(e.target === batchAddModal) closeBatchAddModal(); });
 
-// ✅ CONFIRM (this was missing in your file)
 batchAddConfirmBtn?.addEventListener("click", ()=>{
   // validate
   for(const it of batchAddItems){
-    const isCardio = it.type === "cardio" || isCardioName(it.name);
-
-    if(isCardio){
-      const spec = CARDIO_SPECS[canonicalExerciseName(it.name)];
-      const req = spec ? spec.required : [];
-      for(const f of req){
-        const v = String(it.cardio?.[f.key] ?? "").trim();
-        if(!v){
-          alert(`Enter ${f.label} for: ${it.name}`);
-          return;
-        }
-      }
-    } else {
-      const sets = Number(it.sets);
-      const reps = String(it.reps || "").trim();
-      if(!sets || sets <= 0){
-        alert(`Enter sets for: ${it.name}`);
-        return;
-      }
-      if(!reps){
-        alert(`Enter reps for: ${it.name}`);
-        return;
-      }
+    const sets = Number(it.sets);
+    const reps = String(it.reps || "").trim();
+    if(!sets || sets <= 0){
+      alert(`Enter sets for: ${it.name}`);
+      return;
+    }
+    if(!reps){
+      alert(`Enter reps for: ${it.name}`);
+      return;
     }
   }
 
@@ -5838,24 +4962,12 @@ batchAddConfirmBtn?.addEventListener("click", ()=>{
   const day = draftRoutine.days[k];
 
   batchAddItems.forEach(it=>{
-    const isCardio = it.type === "cardio" || isCardioName(it.name);
-
-    if(isCardio){
-      day.exercises.push({
-        name: canonicalExerciseName(it.name),
-        type: "cardio",
-        cardio: { ...(it.cardio || {}) },
-        notes: ""
-      });
-    } else {
-      day.exercises.push({
-        name: canonicalExerciseName(it.name),
-        type: "strength",
-        sets: Number(it.sets),
-        reps: String(it.reps).trim(),
-        notes: ""
-      });
-    }
+    day.exercises.push({
+      name: canonicalExerciseName(it.name),
+      sets: Number(it.sets),
+      reps: String(it.reps).trim(),
+      notes: ""
+    });
   });
 
   closeBatchAddModal();
@@ -5889,16 +5001,14 @@ function renderLiftRoutineDropdown(){
 
 function applyLiftFiltersFromUI(){
   appliedLiftFilters = {
-    type: liftType, // ✅ NEW
     ex: (liftSearch.value || "").trim(),
     routineId: (liftRoutine.value || "").trim(),
     from: (liftFrom.value || "").trim(),
     to: (liftTo.value || "").trim(),
-    metric: (liftMetric.value || (liftType==="cardio" ? "distance" : "top")),
+    metric: (liftMetric.value || "top"),
     limit: Number(liftLimit.value || 25)
   };
 }
-
 
 function clearLiftFiltersUI(){
   liftSearch.value = "";
@@ -5911,9 +5021,6 @@ function clearLiftFiltersUI(){
 
 function getLiftFilteredData(){
   let arr = [...lifts];
-  // ✅ NEW: type filter (default old entries to strength)
-arr = arr.filter(x => (x.type || "strength") === (appliedLiftFilters.type || "strength"));
-
 
   // exercise filter (normalized)
   if(appliedLiftFilters.ex){
@@ -5950,33 +5057,19 @@ arr = arr.filter(x => (x.type || "strength") === (appliedLiftFilters.type || "st
 
 function renderLiftsTable(){
   liftTable.innerHTML = "";
-  setLiftTableHeader();
-
   const visible = getLiftFilteredData();
 
   visible.forEach(x=>{
+    const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
     const tr = document.createElement("tr");
-
-    if(liftType === "cardio"){
-      tr.innerHTML = `
-        <td class="mono">${x.date}</td>
-        <td><span class="clickEx" data-hist="${x.ex}">${x.ex}</span></td>
-        <td class="mono">${formatCardioSummary(x.cardio)}</td>
-        <td class="small muted">${x.routineName || "—"}</td>
-        <td><button data-dellift="${x.id}">Delete</button></td>
-      `;
-    } else {
-      const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
-      tr.innerHTML = `
-        <td class="mono">${x.date}</td>
-        <td><span class="clickEx" data-hist="${x.ex}">${x.ex}</span></td>
-        <td class="mono">${topSet}</td>
-        <td class="mono">${x.sets ?? "—"}</td>
-        <td>${x.pr ? '<span class="badge">🏆</span>' : ''}</td>
-        <td><button data-dellift="${x.id}">Delete</button></td>
-      `;
-    }
-
+    tr.innerHTML = `
+      <td class="mono">${x.date}</td>
+      <td><span class="clickEx" data-hist="${x.ex}">${x.ex}</span></td>
+      <td class="mono">${topSet}</td>
+      <td class="mono">${x.sets ?? "—"}</td>
+      <td>${x.pr ? '<span class="badge">🏆</span>' : ''}</td>
+      <td><button data-dellift="${x.id}">Delete</button></td>
+    `;
     liftTable.appendChild(tr);
   });
 
@@ -5986,7 +5079,7 @@ function renderLiftsTable(){
       lifts = lifts.filter(x=>x.id!==id);
       LS.set(KEY_LIFTS, lifts);
       renderLiftSearchDropdown();
-      renderLifts();
+      renderLifts();   // rerun with applied filters
       renderPPL();
       buildRoutineExerciseSuggestions();
     });
@@ -5999,7 +5092,6 @@ function renderLiftsTable(){
     });
   });
 }
-
 
 /* ---- Graph helpers ---- */
 function estEpley1RM(weight, reps){
@@ -6412,30 +5504,6 @@ const rtAddExName = document.getElementById("rtAddExName");
 const rtAddExSets = document.getElementById("rtAddExSets");
 const rtAddExReps = document.getElementById("rtAddExReps");
 const rtAddExBtn = document.getElementById("rtAddExBtn");
-
-  // ✅ Routine Editor "Add Exercise" — toggle strength fields when cardio is selected
-const rtAddSetsLabel = rtAddExSets?.closest("label");
-const rtAddRepsLabel = rtAddExReps?.closest("label");
-
-function syncRtAddUI(){
-  const name = canonicalExerciseName(String(rtAddExName?.value || "").trim());
-  const isC = name && isCardioName(name);
-
-  if(rtAddSetsLabel) rtAddSetsLabel.style.display = isC ? "none" : "";
-  if(rtAddRepsLabel) rtAddRepsLabel.style.display = isC ? "none" : "";
-
-  // optional: clear strength fields when cardio is picked (prevents confusion)
-  if(isC){
-    if(rtAddExSets) rtAddExSets.value = "";
-    if(rtAddExReps) rtAddExReps.value = "";
-  }
-}
-
-  // when typing/selecting a name
-rtAddExName?.addEventListener("input", syncRtAddUI);
-rtAddExName?.addEventListener("change", syncRtAddUI);
-
-  
 const rtExList = document.getElementById("rtExList");
 const rtAddMultiBtn = document.getElementById("rtAddMultiBtn");
 const rtExSuggestions = document.getElementById("rtExSuggestions");
@@ -6454,7 +5522,6 @@ const rtExSuggestions = document.getElementById("rtExSuggestions");
     initial: rtAddExName.value,
     onConfirm: (picked)=>{
       rtAddExName.value = picked;
-      syncRtAddUI(); // ✅ add this line
 
       // ✅ restore modal scroll after pick
       setTimeout(()=>{
@@ -6570,202 +5637,92 @@ function renderRtDayPanel(){
     return;
   }
 
- list.forEach((ex, idx)=>{
-  const wrap = document.createElement("div");
-  wrap.className = "rtExCard";
+  list.forEach((ex, idx)=>{
+    const wrap = document.createElement("div");
+    wrap.className = "rtExCard";
 
-  const exName = ex?.name || "Exercise";
-  const isCardio = (ex?.type === "cardio") || isCardioName(exName);
+    wrap.innerHTML = `
+      <div class="rtExTop">
+        <div class="rtExName">${ex.name || "Exercise"}</div>
+        <span class="badge">${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps</span>
+      </div>
 
-  // ensure shape is correct if old data exists
-  if(isCardio){
-    ex.type = "cardio";
-    if(!ex.cardio) ex.cardio = cardioBlankFor(exName);
-  } else {
-    ex.type = "strength";
-    if(typeof ex.sets !== "number") ex.sets = Number(ex.sets)||0;
-    if(typeof ex.reps !== "string") ex.reps = String(ex.reps||"");
-  }
-
-  // badge text
-  let badgeText = "—";
-  if(isCardio){
-    const spec = CARDIO_SPECS[canonicalExerciseName(exName)];
-    if(spec){
-      // show the first 2 required fields in the badge for quick glance
-      const parts = spec.required.slice(0,2).map(f=>{
-        const v = (ex.cardio?.[f.key] ?? "");
-        return v ? `${v}` : "—";
-      });
-      badgeText = parts.join(" • ");
-    } else {
-      badgeText = "Cardio";
-    }
-  } else {
-    badgeText = `${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps`;
-  }
-
-  // build cardio fields UI (required + optional)
-  let cardioFieldsHTML = "";
-  if(isCardio){
-    const spec = CARDIO_SPECS[canonicalExerciseName(exName)];
-    const fields = spec ? [...spec.required, ...spec.optional] : [];
-    cardioFieldsHTML = `
       <div class="row" style="margin-top:10px; align-items:end;">
-        ${fields.map(f=>`
-          <label style="flex:1 1 180px;">
-            ${f.label}
-            <input
-              data-cfield="${f.key}"
-              type="${f.type || "text"}"
-              value="${(ex.cardio?.[f.key] ?? "")}"
-              placeholder="${f.placeholder || ""}"
-            />
-          </label>
-        `).join("")}
+        <label style="flex:2 1 240px;">Name
+          <input data-field="name" value="${ex.name || ""}" />
+        </label>
+
+        <label style="flex:0 0 120px;">Sets
+          <input data-field="sets" type="number" min="1" value="${ex.sets || ""}" />
+        </label>
+
+        <label style="flex:1 1 160px;">Reps
+          <input data-field="reps" value="${ex.reps || ""}" />
+        </label>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <label style="flex:1 1 100%;">Notes
+          <textarea data-field="notes" placeholder="optional">${ex.notes || ""}</textarea>
+        </label>
+      </div>
+
+      <div class="rtActions">
+        <button type="button" class="miniBtn" data-up="${idx}">↑ Up</button>
+        <button type="button" class="miniBtn" data-down="${idx}">↓ Down</button>
+        <button type="button" class="miniBtn" data-swap="${idx}">Swap</button>
+        <button type="button" class="miniBtn danger" data-remove="${idx}">Remove</button>
       </div>
     `;
-  }
 
-// strength fields UI (✅ no duplicate Name)
-const strengthFieldsHTML = `
-  <div class="row" style="margin-top:10px; align-items:end;">
-    <label style="flex:0 0 120px;">Sets
-      <input data-field="sets" type="number" min="1" value="${ex.sets || ""}" />
-    </label>
+    // keep the rest of your event listeners EXACTLY as-is below
 
-    <label style="flex:1 1 160px;">Reps
-      <input data-field="reps" value="${ex.reps || ""}" />
-    </label>
-  </div>
-`;
-
-
-  wrap.innerHTML = `
-    <div class="rtExTop">
-      <div class="rtExName">${exName}</div>
-      <span class="badge">${badgeText}</span>
-    </div>
-
-    <!-- Name always editable -->
-    <div class="row" style="margin-top:10px;">
-      <label style="flex:1 1 100%;">Name
-        <input data-field="name" value="${exName}" />
-      </label>
-    </div>
-
-    ${isCardio ? cardioFieldsHTML : strengthFieldsHTML}
-
-    <div class="row" style="margin-top:8px;">
-      <label style="flex:1 1 100%;">Notes
-        <textarea data-field="notes" placeholder="optional">${ex.notes || ""}</textarea>
-      </label>
-    </div>
-
-    <div class="rtActions">
-      <button type="button" class="miniBtn" data-up="${idx}">↑ Up</button>
-      <button type="button" class="miniBtn" data-down="${idx}">↓ Down</button>
-      <button type="button" class="miniBtn" data-swap="${idx}">Swap</button>
-      <button type="button" class="miniBtn danger" data-remove="${idx}">Remove</button>
-    </div>
-  `;
-
-  // name + notes + sets/reps (same pattern as your existing listener)
-  wrap.querySelectorAll("[data-field]").forEach(inp=>{
-    inp.addEventListener("input", ()=>{
-      const field = inp.getAttribute("data-field");
-
-      // if name changes, auto-convert between strength/cardio shapes
-      if(field === "name"){
-        const newName = canonicalExerciseName(inp.value);
-        day.exercises[idx].name = newName;
-
-        if(isCardioName(newName)){
-          day.exercises[idx].type = "cardio";
-          if(!day.exercises[idx].cardio) day.exercises[idx].cardio = cardioBlankFor(newName);
-          delete day.exercises[idx].sets;
-          delete day.exercises[idx].reps;
-        } else {
-          day.exercises[idx].type = "strength";
-          day.exercises[idx].sets = Number(day.exercises[idx].sets)||3;
-          day.exercises[idx].reps = String(day.exercises[idx].reps||"8–10");
-          delete day.exercises[idx].cardio;
+    wrap.querySelectorAll("[data-field]").forEach(inp=>{
+      inp.addEventListener("input", ()=>{
+        const field = inp.getAttribute("data-field");
+        if(field === "sets"){
+          day.exercises[idx][field] = Number(inp.value)||0;
+        }else{
+          day.exercises[idx][field] = inp.value;
         }
-
-        renderRtDayPanel();
-        return;
-      }
-
-      if(field === "sets"){
-        day.exercises[idx][field] = Number(inp.value)||0;
-      }else{
-        day.exercises[idx][field] = inp.value;
-      }
+      });
     });
-  });
 
-  // cardio field listeners
-  wrap.querySelectorAll("[data-cfield]").forEach(inp=>{
-    inp.addEventListener("input", ()=>{
-      const key = inp.getAttribute("data-cfield");
-      if(!day.exercises[idx].cardio) day.exercises[idx].cardio = {};
-      day.exercises[idx].cardio[key] = inp.value;
+    wrap.querySelector("[data-up]")?.addEventListener("click", ()=>{
+      if(idx<=0) return;
+      const tmp = day.exercises[idx-1];
+      day.exercises[idx-1] = day.exercises[idx];
+      day.exercises[idx] = tmp;
+      renderRtDayPanel();
     });
-  });
 
-  wrap.querySelector("[data-up]")?.addEventListener("click", ()=>{
-    if(idx<=0) return;
-    const tmp = day.exercises[idx-1];
-    day.exercises[idx-1] = day.exercises[idx];
-    day.exercises[idx] = tmp;
-    renderRtDayPanel();
-  });
-
-  wrap.querySelector("[data-down]")?.addEventListener("click", ()=>{
-    if(idx>=day.exercises.length-1) return;
-    const tmp = day.exercises[idx+1];
-    day.exercises[idx+1] = day.exercises[idx];
-    day.exercises[idx] = tmp;
-    renderRtDayPanel();
-  });
-
-  wrap.querySelector("[data-remove]")?.addEventListener("click", ()=>{
-    day.exercises.splice(idx,1);
-    renderRtDayPanel();
-  });
-
-  // SWAP: when swapped, also fix type + fields
-  wrap.querySelector("[data-swap]")?.addEventListener("click", ()=>{
-    const cur = day.exercises[idx]?.name || "";
-    openExercisePicker({
-      title: "Swap exercise",
-      initial: cur,
-      onConfirm: (picked)=>{
-        const nn = canonicalExerciseName(picked);
-        day.exercises[idx].name = nn;
-
-        if(isCardioName(nn)){
-          day.exercises[idx].type = "cardio";
-          day.exercises[idx].cardio = cardioBlankFor(nn);
-          delete day.exercises[idx].sets;
-          delete day.exercises[idx].reps;
-        } else {
-          day.exercises[idx].type = "strength";
-          day.exercises[idx].sets = 3;
-          day.exercises[idx].reps = "8–10";
-          delete day.exercises[idx].cardio;
-        }
-
-        renderRtDayPanel();
-      }
+    wrap.querySelector("[data-down]")?.addEventListener("click", ()=>{
+      if(idx>=day.exercises.length-1) return;
+      const tmp = day.exercises[idx+1];
+      day.exercises[idx+1] = day.exercises[idx];
+      day.exercises[idx] = tmp;
+      renderRtDayPanel();
     });
-  });
 
-  rtExList.appendChild(wrap);
+    wrap.querySelector("[data-remove]")?.addEventListener("click", ()=>{
+      day.exercises.splice(idx,1);
+      renderRtDayPanel();
+    });
+
+    wrap.querySelector("[data-swap]")?.addEventListener("click", ()=>{
+  const cur = day.exercises[idx]?.name || "";
+  openExercisePicker({
+    title: "Swap exercise",
+    initial: cur,
+    onConfirm: (picked)=>{
+    day.exercises[idx].name = canonicalExerciseName(picked);
+      renderRtDayPanel();
+    }
+  });
 });
-    // ✅ Make Add Exercise box reflect current selection
-  syncRtAddUI();
 
+    rtExList.appendChild(wrap);
+  });
 }
 
 rtDayLabel.addEventListener("input", ()=>{
@@ -6795,43 +5752,14 @@ rtAddExBtn.addEventListener("click", ()=>{
   const day = draftRoutine.days[k];
 
   const name = canonicalExerciseName(String(rtAddExName.value||"").trim());
-  if(!name) return alert("Enter an exercise name.");
-
-  // ✅ CARDIO: no sets/reps required, store cardio shape
-  if(isCardioName(name)){
-    day.exercises.push({
-      name,
-      type: "cardio",
-      cardio: cardioBlankFor(name),
-      notes: ""
-    });
-
-    // clear inputs
-    rtAddExName.value = "";
-    rtAddExSets.value = "";
-    rtAddExReps.value = "";
-
-    renderRtDayPanel();
-    buildRoutineExerciseSuggestions();
-    renderLiftSearchDropdown();
-    return;
-  }
-
-  // ✅ STRENGTH: keep sets/reps validation
   const sets = Number(rtAddExSets.value)||0;
   const reps = String(rtAddExReps.value||"").trim();
 
+  if(!name) return alert("Enter an exercise name.");
   if(!sets || sets <= 0) return alert("Enter sets (number).");
   if(!reps) return alert("Enter reps (e.g., 8–10).");
 
-  day.exercises.push({
-    name,
-    type: "strength",
-    sets,
-    reps,
-    notes: ""
-  });
-
+  day.exercises.push({name, sets, reps, notes:""});
   rtAddExName.value = "";
   rtAddExSets.value = "";
   rtAddExReps.value = "";
@@ -6841,17 +5769,17 @@ rtAddExBtn.addEventListener("click", ()=>{
   renderLiftSearchDropdown();
 });
 
-rtAddMultiBtn?.addEventListener("click", ()=>{
+  rtAddMultiBtn?.addEventListener("click", ()=>{
   openExercisePicker({
     title: "Pick multiple exercises",
     multi: true,
     initialMulti: [],
     onConfirm: (pickedNames)=>{
+      // pickedNames is an array when multi=true
       openBatchAddModal(pickedNames);
     }
   });
 });
-
 
 
 rtSaveBtn.addEventListener("click", ()=>{
