@@ -4495,10 +4495,22 @@ const onUp = ()=>{
   window.addEventListener("pointermove", (e)=> onMove(e.clientX));
   window.addEventListener("pointerup", onUp);
 
+  // ✅ BUG FIX: if the OS/browser cancels the pointer, we must end the gesture
+  window.addEventListener("pointercancel", onUp);
+
   // touch (mobile)
   r3dStage.addEventListener("touchstart", (e)=> onDown(e.touches[0].clientX), {passive:true});
   r3dStage.addEventListener("touchmove", (e)=> onMove(e.touches[0].clientX), {passive:true});
   r3dStage.addEventListener("touchend", onUp);
+
+  // ✅ BUG FIX: touch can also be cancelled (app switch, notif shade, gesture nav, etc.)
+  r3dStage.addEventListener("touchcancel", onUp);
+
+  // ✅ BUG FIX: if tab loses focus mid-drag, end gesture so it doesn't get stuck
+  window.addEventListener("blur", onUp);
+  document.addEventListener("visibilitychange", ()=> {
+    if(document.visibilityState !== "visible") onUp();
+  });
 }
 
 // call once
