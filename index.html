@@ -2472,6 +2472,12 @@ header{
 'use strict';
 
 /* ---------------------------
+   DOM helpers
+---------------------------- */
+const $  = (id)=>document.getElementById(id);
+const $$ = (sel, root=document)=>[...root.querySelectorAll(sel)];
+
+/* ---------------------------
    Storage helpers
 ---------------------------- */
 const LS = {
@@ -2486,17 +2492,6 @@ const LS = {
   }
 };
 
-lifts = LS.get(KEY_LIFTS, []);
-coreLogs = LS.get(KEY_CORE_LOGS, []);
-cardioLogs = LS.get(KEY_CARDIO_LOGS, []);
-
-
-  /* ---------------------------
-   DOM helpers
----------------------------- */
-const $  = (id)=>document.getElementById(id);
-const $$ = (sel, root=document)=>[...root.querySelectorAll(sel)];
-
 const KEY_BW = "gym_bw_logs_v1";
 const KEY_ATT = "gym_attendance_v1";
 const KEY_PRO = "gym_protein_v1";
@@ -2505,23 +2500,22 @@ const KEY_CORE_LOGS = "gym_core_logs_v1";
 const KEY_CARDIO_LOGS = "gym_cardio_logs_v1";
 const KEY_TARGETS = "gym_targets_v1";
 
-// ---------------------------
-// Load persisted data
-// ---------------------------
-let lifts = LS.get(KEY_LIFTS, []);
-let coreLogs = LS.get(KEY_CORE_LOGS, []);
-let cardioLogs = LS.get(KEY_CARDIO_LOGS, []);
-
-
 const KEY_ROUTINES = "gym_routines_v1";
 const KEY_ACTIVE_ROUTINE = "gym_active_routine_id_v1";
 const KEY_PROFILE = "gym_profile_v1";
 const KEY_LAST_BACKUP = "gym_last_backup_v1";
 const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
 const KEY_CUSTOM_EX = "gym_custom_ex_v1";
-const KEY_APP_VERSION = "gym_app_version_v1"; // ✅ ADD THIS
+const KEY_APP_VERSION = "gym_app_version_v1";
 const KEY_APP_LAST_RELOAD = "gym_app_last_reload_v1";
 const KEY_APP_UPDATE_DISMISSED_UNTIL = "gym_app_update_dismissed_until_v1";
+
+// ---------------------------
+// Load persisted data
+// ---------------------------
+let lifts = LS.get(KEY_LIFTS, []);
+let coreLogs = LS.get(KEY_CORE_LOGS, []);
+let cardioLogs = LS.get(KEY_CARDIO_LOGS, []);
 
 const VERSION_CHECK_INTERVAL_MS = 60 * 1000;   // 1 min
 const AUTO_REFRESH_COUNTDOWN_S = 8;            // seconds
