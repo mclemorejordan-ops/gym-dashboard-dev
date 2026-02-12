@@ -4288,17 +4288,20 @@ function renderRoutineCarousel(){
   r3dCards = [];
 
   DAY_KEYS.forEach((k, idx)=>{
-    const day = ar.days[k] || {};
-    const label = (day.label || "").trim();
-    const rest = !!day.rest;
+const day = ar.days[k] || {};
+const label = (day.label || "").trim();
 
-    const card = document.createElement("div");
-    card.className = "r3dCard";
-    card.dataset.idx = String(idx);
+const card = document.createElement("div");
+card.className = "r3dCard";
+card.dataset.idx = String(idx);
 
-    const items = (ar.days[k] && Array.isArray(ar.days[k].items)) ? ar.days[k].items : [];
-    const exCount = items.length;
-    const isRest = rest || exCount === 0;
+// ✅ Your routine model uses `day.exercises` (not `items`)
+const exercises = Array.isArray(day.exercises) ? day.exercises : [];
+const exCount = exercises.length;
+
+// ✅ Only a rest day if the routine marks it as rest
+const isRest = !!day.rest;
+
 
     
 card.innerHTML = `
