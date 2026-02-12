@@ -1639,6 +1639,7 @@ header{
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
+
 .glassSummary{
   list-style: none;
   cursor: pointer;
@@ -1649,14 +1650,14 @@ header{
   gap:12px;
 }
 .glassSummary::-webkit-details-marker{ display:none; }
+
 .glassBody{
   padding: 12px 12px 14px;
   border-top: 1px solid rgba(255,255,255,.08);
 }
-.glassList{
-  display: grid;
-  gap: 8px;
-}
+
+.glassList{ display:grid; gap:8px; }
+
 .glassItem{
   display:flex;
   align-items:center;
@@ -1669,39 +1670,37 @@ header{
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
-.glassItem .left{
-  min-width: 0;
-}
+.glassItem .left{ min-width:0; }
 .glassItem .name{
-  font-weight: 700;
-  letter-spacing: .2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight:700;
+  letter-spacing:.2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .glassItem .meta{
-  margin-top: 2px;
-  font-size: 12px;
+  margin-top:2px;
+  font-size:12px;
   color: var(--muted);
 }
+
 .xBtn{
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
+  width:34px;
+  height:34px;
+  border-radius:12px;
   border: 1px solid rgba(255,107,107,.45);
   background: rgba(255,107,107,.08);
   color: var(--bad);
-  font-size: 18px;
-  line-height: 1;
+  font-size:18px;
+  line-height:1;
   display:flex;
   align-items:center;
   justify-content:center;
   cursor:pointer;
   flex: 0 0 auto;
 }
-.xBtn:active{
-  transform: scale(.98);
-}
+.xBtn:active{ transform: scale(.98); }
+
 
     
   </style>
@@ -2262,26 +2261,26 @@ header{
     </div>
    </section>
 
-  <!-- Custom Exercises (Glass Dropdown) -->
-  <section class="card">
-    <details id="customExerciseDropdown" class="glassDrop">
-      <summary class="glassSummary">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <h2 style="margin:0;">Custom Exercises</h2>
-          <span class="pill"><span class="muted">Count:</span> <strong class="mono" id="customExerciseCount">0</strong></span>
-        </div>
-        <span class="muted small">Tap to expand</span>
-      </summary>
-
-      <div class="glassBody">
-        <div class="notice small muted" style="margin-bottom:10px;">
-          Tap <strong>×</strong> to delete. Delete removes the exercise from your routines and lift logs.
-        </div>
-
-        <div id="customExerciseList" class="glassList"></div>
+<!-- Custom Exercises (Glass Dropdown) -->
+<section class="card">
+  <details id="customExerciseDropdown" class="glassDrop">
+    <summary class="glassSummary">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <h2 style="margin:0;">Custom Exercises</h2>
+        <span class="pill"><span class="muted">Count:</span> <strong class="mono" id="customExerciseCount">0</strong></span>
       </div>
-    </details>
-  </section>
+      <span class="muted small">Tap to expand</span>
+    </summary>
+
+    <div class="glassBody">
+      <div class="glassList" id="customExerciseList"></div>
+      <div class="notice" style="margin-top:10px;">
+        Deleting a custom exercise removes it from all routines and all lift logs.
+      </div>
+    </div>
+  </details>
+</section>
+
 
 
     <!-- Updates -->
@@ -3480,7 +3479,6 @@ const onEnterScreen = {
     renderLastBackup();
     renderCustomExerciseSettings();
 }
-  }
 };
 
 function showScreen(name){
@@ -5314,7 +5312,7 @@ function saveCustomExerciseTypes(map){
 }
 
 let customExerciseTypes = loadCustomExerciseTypes();
-  /* ===========================
+/* ===========================
    SETTINGS: Custom Exercises (Glass)
    - delete custom exercises safely
 =========================== */
@@ -5380,6 +5378,7 @@ function renderCustomExerciseSettings(){
     wrap.appendChild(row);
   });
 }
+
 
 function deleteCustomExercise(name){
   const canon = canonicalExerciseName(name);
