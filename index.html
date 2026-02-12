@@ -4083,6 +4083,22 @@ lifts = LS.get(KEY_LIFTS, []);
 coreLogs = LS.get(KEY_CORE_LOGS, []);
 cardioLogs = LS.get(KEY_CARDIO_LOGS, []);
 
+function ensureLiftCompatibility(){
+  lifts = (Array.isArray(lifts) ? lifts : []).map(x=>{
+    const ex = String(x.ex || x.exercise || "");
+    const exNorm = String(x.exNorm || normExName(ex));
+    return {
+      ...x,
+      ex,
+      exNorm,
+      routineId: x.routineId || "",
+      routineName: x.routineName || "",
+      dayKey: x.dayKey || ""
+    };
+  });
+  LS.set(KEY_LIFTS, lifts);
+}
+
 function ensureCoreLogCompatibility(){
   coreLogs = (Array.isArray(coreLogs) ? coreLogs : []).map(x=>{
     const ex = String(x.ex || x.exercise || "");
@@ -4118,37 +4134,43 @@ function ensureCardioLogCompatibility(){
   });
   LS.set(KEY_CARDIO_LOGS, cardioLogs);
 }
+
+// normalize persisted data once (safe to call multiple times)
 ensureLiftCompatibility();
 ensureCoreLogCompatibility();
 ensureCardioLogCompatibility();
+
 migrateCanonicalNames();
 
-
-  function migrateCanonicalNames(){
+function migrateCanonicalNames(){
   // ---- Routines ----
   let routinesChanged = false;
 
   routines.forEach(r=>{
     DAY_KEYS.forEach(k=>{
-      const day = r.days?.[k];
+      const day = r.days[k];
       if(!day || !Array.isArray(day.exercises)) return;
 
       day.exercises.forEach(ex=>{
-        const after = canonicalExerciseName(ex.name);
-        if(after && ex.name !== after){
+        const before = ex.name || "";
+        const after = canonicalExerciseName(before);
+        if(after !== before){
           ex.name = after;
           routinesChanged = true;
         }
       });
 
-      // Remove duplicates caused by merging names
+      // de-dupe after canonicalization
       const seen = new Set();
+      const beforeLen = day.exercises.length;
       day.exercises = day.exercises.filter(ex=>{
-        const n = normExName(ex.name);
+        const n = normExName(ex.name || "");
+        if(!n) return false;
         if(seen.has(n)) return false;
         seen.add(n);
         return true;
       });
+      if(day.exercises.length !== beforeLen) routinesChanged = true;
     });
   });
 
@@ -4157,10 +4179,12 @@ migrateCanonicalNames();
   // ---- Lifts ----
   let liftsChanged = false;
 
-  lifts = lifts.map(x=>{
-    const after = canonicalExerciseName(x.ex);
+  lifts = (Array.isArray(lifts) ? lifts : []).map(x=>{
+    const before = String(x.ex || "");
+    const after = canonicalExerciseName(before);
     const afterNorm = normExName(after);
-    if(x.ex !== after || x.exNorm !== afterNorm){
+
+    if(after !== before || x.exNorm !== afterNorm){
       liftsChanged = true;
       return { ...x, ex: after, exNorm: afterNorm };
     }
@@ -4169,6 +4193,7 @@ migrateCanonicalNames();
 
   if(liftsChanged) LS.set(KEY_LIFTS, lifts);
 }
+
 migrateCanonicalNames();
 
 function liftStatsForExercise(exName){
