@@ -1482,6 +1482,64 @@ header{
   pointer-events:none;
 }
 
+    /* ==================================================
+   MOBILE ROUTINE — UNIFIED DESKTOP MATCH
+   (ONLY applies on phones)
+================================================== */
+@media (max-width: 560px){
+
+  /* Remove harsh separation feel */
+  .r3dStage{
+    border: none;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* Bring cards into desktop-like centered view */
+  .r3dCarousel{
+    top: 50% !important;
+    transform: translate(-50%, -50%) scale(.86) !important;
+  }
+
+  /* Slightly tighten card proportions for phone */
+  .r3dCard{
+    width: 210px;
+    height: 125px;
+    margin-left: -105px;
+  }
+
+  /* Make entire Routine card feel continuous */
+  #screen-routine .card{
+    background: rgba(18,18,20,.72);
+    border: 1px solid rgba(255,255,255,.06);
+  }
+
+  /* Remove hard divider feel under carousel */
+  .r3dStage::after{
+    display:none;
+  }
+
+  /* Log Sets glow */
+  .exerciseItem button{
+    background: rgba(124,252,0,.12);
+    border-color: rgba(124,252,0,.35);
+    box-shadow:
+      0 0 0 1px rgba(124,252,0,.25),
+      0 6px 18px rgba(124,252,0,.18);
+  }
+
+  .exerciseItem button:hover{
+    border-color: rgba(124,252,0,.55);
+  }
+
+  /* Slightly reduce right-side stat text size for balance */
+  .exerciseItem .right{
+    font-size:11px;
+  }
+
+}
+
 
     
   </style>
