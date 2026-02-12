@@ -4400,11 +4400,6 @@ updateCarouselTransforms();
       if(Math.abs(r3dVelocity) > 0.015 && (t - start) < 1200){
         requestAnimationFrame(momentum);
       }else{
-        // snap to nearest day
-        const nearest = Math.round((-r3dAngle) / r3dStep);
-        activeDayIndex = (nearest % 7 + 7) % 7;
-        snapCarouselToActive();
-        renderPPL();
       }
     }
     requestAnimationFrame(momentum);
