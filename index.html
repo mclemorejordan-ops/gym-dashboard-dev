@@ -4831,7 +4831,7 @@ function renderExercisePickerList(){
     div.innerHTML = `
       <div class="exPickRow">
         ${exPickMulti ? `<span class="exPickCheck">${isActive ? "✓" : ""}</span>` : ``}
-        <span>${name}</span>
+                <span>${escHTML(name)}</span>
       </div>
     `;
 
