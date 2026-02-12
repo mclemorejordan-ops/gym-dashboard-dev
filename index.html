@@ -3517,6 +3517,23 @@ function getDefaultExerciseMeta(exName){
   return EXERCISE_META[key] || null;
 }
 
+  function getExerciseMeta(exName){
+  const key = canonicalExerciseName(exName || "");
+  const nKey = normExName(key);
+
+  // Custom override first (v2 custom exercises store type + coreMode)
+  const custom = loadCustomExercises().find(o => normExName(o.name) === nKey);
+  if(custom){
+    return {
+      type: (custom.type === "cardio" || custom.type === "core" || custom.type === "strength") ? custom.type : "strength",
+      coreMode: (custom.type === "core" && (custom.coreMode === "time" || custom.coreMode === "reps")) ? custom.coreMode : null
+    };
+  }
+
+  // Default meta next
+  return getDefaultExerciseMeta(key) || { type: "strength", coreMode: null };
+}
+
 
   
 /* ---------------------------
@@ -4159,10 +4176,15 @@ function ensureLiftCompatibility(){
   lifts = lifts.map(x=>{
     const ex = String(x.ex || x.exercise || "");
     const exNorm = x.exNorm || normExName(ex);
+
+    // Infer kind if missing (strength/core/cardio)
+    const inferredKind = x.kind || (getExerciseMeta(ex)?.type || "strength");
+
     return {
       ...x,
       ex,
       exNorm,
+      kind: inferredKind,
       routineId: x.routineId || "",
       routineName: x.routineName || "",
       dayKey: x.dayKey || ""
@@ -4251,12 +4273,40 @@ function getLastLiftForExercise(exName){
 
 function formatSetsDetail(lift){
   if(!lift) return "—";
+
+  const kind = lift.kind || (getExerciseMeta(lift.ex)?.type || "strength");
+
+  if(kind === "cardio"){
+    const mins = (lift.minutes != null) ? Number(lift.minutes) : Number(lift.details?.[0]?.minutes);
+    const dist = (lift.distance != null) ? Number(lift.distance) : Number(lift.details?.[0]?.distance);
+    const minsTxt = (isFinite(mins) && mins > 0) ? `${mins} min` : "—";
+    const distTxt = (isFinite(dist) && dist > 0) ? ` • ${dist} mi` : "";
+    return `${lift.date} • ${minsTxt}${distTxt}`;
+  }
+
+  if(kind === "core"){
+    const mode = lift.coreMode || (getExerciseMeta(lift.ex)?.coreMode || null);
+
+    if(mode === "time"){
+      const secs = (lift.seconds != null) ? Number(lift.seconds) : Number(lift.details?.[0]?.secs);
+      const secsTxt = (isFinite(secs) && secs > 0) ? `${secs} sec` : "—";
+      return `${lift.date} • ${secsTxt}`;
+    }
+
+    // reps-based core
+    const reps = (lift.reps != null) ? Number(lift.reps) : Number(lift.details?.[0]?.reps);
+    const repsTxt = (isFinite(reps) && reps > 0) ? `${reps} reps` : "—";
+    return `${lift.date} • ${repsTxt}`;
+  }
+
+  // strength default (existing behavior)
   const topSet = (lift.weight && lift.reps) ? `${lift.weight} x ${lift.reps}` : "—";
   const details = Array.isArray(lift.details) && lift.details.length
     ? lift.details.map((s,i)=>`S${i+1}:${s.weight}x${s.reps}`).join("  ")
     : null;
   return `${lift.date} • Top: ${topSet}${details ? " • " + details : ""}`;
 }
+
 
 /* ---------------------------
    Routine UI
@@ -5505,6 +5555,7 @@ const logCopyLastBtn = document.getElementById("logCopyLastBtn");
 const logViewHistoryBtn = document.getElementById("logViewHistoryBtn");
 
 let modalExerciseName = null;
+let modalExerciseMeta = null;
 let modalLastLift = null;
 let modalRoutine = null;
 let modalDayKey = null;
@@ -5512,6 +5563,14 @@ let modalDayIndex = null;
 
 function openLogModal(exName, defaultSets=3, routineObj=null, dayKey="", dayIndex=0){
   modalExerciseName = canonicalExerciseName(exName);
+  modalExerciseMeta = getExerciseMeta(modalExerciseName);
+
+  // Update heading text (Log Sets vs Log)
+  const h2 = logModal.querySelector("h2");
+  if(h2){
+    h2.textContent = (modalExerciseMeta.type === "strength") ? "Log Sets" : "Log";
+  }
+
   logModalExercise.textContent = modalExerciseName;
   logRoutineLine.textContent = routineObj ? `${routineObj.name} • ${dayKey}` : "—";
   modalRoutine = routineObj;
@@ -5529,17 +5588,32 @@ function openLogModal(exName, defaultSets=3, routineObj=null, dayKey="", dayInde
     logPrevText.textContent = "—";
   }
 
+  // Configure Add button based on type
+  if(modalExerciseMeta.type === "cardio"){
+    logAddSetBtn.style.display = "none";
+  } else {
+    logAddSetBtn.style.display = "";
+    logAddSetBtn.textContent = "Add Set";
+  }
+
+  // Populate rows
   logModalSets.innerHTML = "";
-  for(let i=0;i<defaultSets;i++) addSetRow();
+
+  let seedCount = defaultSets;
+  if(modalExerciseMeta.type === "cardio") seedCount = 1;
+  if(!isFinite(seedCount) || seedCount < 1) seedCount = 1;
+
+  for(let i=0;i<seedCount;i++) addSetRow();
 
   lockBodyScroll();
   logModal.style.display = "block";
 }
 
-  function closeLogModal(){
+function closeLogModal(){
   logModal.style.display = "none";
   unlockBodyScroll();               // ✅ ADD
   modalExerciseName = null;
+  modalExerciseMeta = null;
   modalLastLift = null;
   modalRoutine = null;
   modalDayKey = null;
@@ -5553,25 +5627,63 @@ function renumberSetPills(){
   });
 }
 
-function addSetRow(weight="", reps=""){
+function addSetRow(v1="", v2=""){
   const idx = logModalSets.children.length + 1;
   const row = document.createElement("div");
   row.className = "row";
   row.style.alignItems = "end";
-  row.innerHTML = `
-    <span class="pill"><span class="muted">Set</span> <strong class="mono">${idx}</strong></span>
-    <label>Weight (lbs)
-      <input type="number" step="0.5" inputmode="decimal" class="setWeight" placeholder="e.g., 75" value="${escHTML(weight)}" />
-    </label>
-    <label>Reps
-      <input type="number" inputmode="numeric" class="setReps" placeholder="e.g., 8" value="${escHTML(reps)}" />
-    </label>
-    <button type="button" class="removeSetBtn">Remove</button>
-  `;
-  row.querySelector(".removeSetBtn").addEventListener("click", ()=>{
-    row.remove();
-    renumberSetPills();
-  });
+
+  const meta = modalExerciseMeta || { type: "strength", coreMode: null };
+
+  if(meta.type === "cardio"){
+    row.innerHTML = `
+      <span class="pill"><span class="muted">Session</span> <strong class="mono">${idx}</strong></span>
+      <label>Minutes
+        <input type="number" inputmode="numeric" class="setMinutes" placeholder="e.g., 20" value="${escHTML(v1)}" />
+      </label>
+      <label>Distance (mi) <span class="muted small">(optional)</span>
+        <input type="number" step="0.1" inputmode="decimal" class="setDistance" placeholder="e.g., 2.5" value="${escHTML(v2)}" />
+      </label>
+      <button type="button" class="removeSetBtn" style="display:none;">Remove</button>
+    `;
+  } else if(meta.type === "core" && meta.coreMode === "time"){
+    row.innerHTML = `
+      <span class="pill"><span class="muted">Set</span> <strong class="mono">${idx}</strong></span>
+      <label>Seconds
+        <input type="number" inputmode="numeric" class="setSecs" placeholder="e.g., 45" value="${escHTML(v1)}" />
+      </label>
+      <button type="button" class="removeSetBtn">Remove</button>
+    `;
+  } else if(meta.type === "core"){
+    row.innerHTML = `
+      <span class="pill"><span class="muted">Set</span> <strong class="mono">${idx}</strong></span>
+      <label>Reps
+        <input type="number" inputmode="numeric" class="setCoreReps" placeholder="e.g., 20" value="${escHTML(v1)}" />
+      </label>
+      <button type="button" class="removeSetBtn">Remove</button>
+    `;
+  } else {
+    // strength
+    row.innerHTML = `
+      <span class="pill"><span class="muted">Set</span> <strong class="mono">${idx}</strong></span>
+      <label>Weight (lbs)
+        <input type="number" step="0.5" inputmode="decimal" class="setWeight" placeholder="e.g., 75" value="${escHTML(v1)}" />
+      </label>
+      <label>Reps
+        <input type="number" inputmode="numeric" class="setReps" placeholder="e.g., 8" value="${escHTML(v2)}" />
+      </label>
+      <button type="button" class="removeSetBtn">Remove</button>
+    `;
+  }
+
+  const rm = row.querySelector(".removeSetBtn");
+  if(rm && rm.style.display !== "none"){
+    rm.addEventListener("click", ()=>{
+      row.remove();
+      renumberSetPills();
+    });
+  }
+
   logModalSets.appendChild(row);
 }
 
@@ -5581,14 +5693,41 @@ logModal.addEventListener("click", (e)=>{ if(e.target === logModal) closeLogModa
 
 logCopyLastBtn.addEventListener("click", ()=>{
   if(!modalLastLift) return;
+
+  const kind = modalLastLift.kind || (getExerciseMeta(modalExerciseName)?.type || "strength");
+
   logModalSets.innerHTML = "";
 
-  if(Array.isArray(modalLastLift.details) && modalLastLift.details.length){
-    modalLastLift.details.forEach(s=> addSetRow(String(s.weight ?? ""), String(s.reps ?? "")));
+  if(kind === "cardio"){
+    const mins = (modalLastLift.minutes != null) ? modalLastLift.minutes : (modalLastLift.details?.[0]?.minutes ?? "");
+    const dist = (modalLastLift.distance != null) ? modalLastLift.distance : (modalLastLift.details?.[0]?.distance ?? "");
+    addSetRow(String(mins ?? ""), String(dist ?? ""));
+  } else if(kind === "core"){
+    const mode = modalLastLift.coreMode || (getExerciseMeta(modalExerciseName)?.coreMode || null);
+
+    if(mode === "time"){
+      const secs = (modalLastLift.seconds != null) ? modalLastLift.seconds : (modalLastLift.details?.[0]?.secs ?? "");
+      const count = Array.isArray(modalLastLift.details) && modalLastLift.details.length ? modalLastLift.details.length : 1;
+      for(let i=0;i<count;i++){
+        const v = modalLastLift.details?.[i]?.secs ?? secs;
+        addSetRow(String(v ?? ""));
+      }
+    } else {
+      const count = Array.isArray(modalLastLift.details) && modalLastLift.details.length ? modalLastLift.details.length : 1;
+      for(let i=0;i<count;i++){
+        const v = modalLastLift.details?.[i]?.reps ?? modalLastLift.reps ?? "";
+        addSetRow(String(v ?? ""));
+      }
+    }
   } else {
-    addSetRow(String(modalLastLift.weight ?? ""), String(modalLastLift.reps ?? ""));
+    // strength
+    if(Array.isArray(modalLastLift.details) && modalLastLift.details.length){
+      modalLastLift.details.forEach(s=> addSetRow(String(s.weight ?? ""), String(s.reps ?? "")));
+    } else {
+      addSetRow(String(modalLastLift.weight ?? ""), String(modalLastLift.reps ?? ""));
+    }
+    renumberSetPills();
   }
-  renumberSetPills();
 });
 
 logViewHistoryBtn.addEventListener("click", ()=>{
@@ -5600,44 +5739,144 @@ logSaveBtn.addEventListener("click", ()=>{
   if(!modalExerciseName) return;
 
   const date = logModalDate.value || todayISO();
-  const setRows = [...logModalSets.querySelectorAll(".row")];
+  const meta = modalExerciseMeta || { type: "strength", coreMode: null };
 
-  const setsArr = [];
-  for(const r of setRows){
-    const w = Number(r.querySelector(".setWeight")?.value);
-    const reps = Number(r.querySelector(".setReps")?.value);
-    if(isFinite(w) && w > 0 && isFinite(reps) && reps > 0){
-      setsArr.push({weight:w, reps:reps});
+  // CARDIO
+  if(meta.type === "cardio"){
+    const r = logModalSets.querySelector(".row");
+    const mins = Number(r?.querySelector(".setMinutes")?.value);
+    const dist = Number(r?.querySelector(".setDistance")?.value);
+
+    if(!(isFinite(mins) && mins > 0)){
+      alert("Enter a valid cardio duration (minutes).");
+      return;
     }
+
+    lifts.push({
+      id: uid(),
+      date,
+      ex: modalExerciseName,
+      exNorm: normExName(modalExerciseName),
+      kind: "cardio",
+      minutes: mins,
+      distance: (isFinite(dist) && dist > 0) ? dist : 0,
+      sets: 1,
+      reps: 0,
+      weight: 0,
+      pr: false,
+      details: [{ minutes: mins, distance: (isFinite(dist) && dist > 0) ? dist : 0 }],
+      routineId: modalRoutine?.id || "",
+      routineName: modalRoutine?.name || "",
+      dayKey: modalDayKey || ""
+    });
+
+  // CORE
+  } else if(meta.type === "core"){
+    const setRows = [...logModalSets.querySelectorAll(".row")];
+
+    if(meta.coreMode === "time"){
+      const details = [];
+      for(const r of setRows){
+        const secs = Number(r.querySelector(".setSecs")?.value);
+        if(isFinite(secs) && secs > 0) details.push({ secs });
+      }
+      if(details.length === 0){
+        alert("Enter at least one valid set (seconds).");
+        return;
+      }
+      const top = details.reduce((a,b)=> (b.secs > a.secs ? b : a), details[0]);
+
+      lifts.push({
+        id: uid(),
+        date,
+        ex: modalExerciseName,
+        exNorm: normExName(modalExerciseName),
+        kind: "core",
+        coreMode: "time",
+        seconds: top.secs,
+        sets: details.length,
+        reps: 0,
+        weight: 0,
+        pr: false,
+        details,
+        routineId: modalRoutine?.id || "",
+        routineName: modalRoutine?.name || "",
+        dayKey: modalDayKey || ""
+      });
+
+    } else {
+      // reps-based core
+      const details = [];
+      for(const r of setRows){
+        const reps = Number(r.querySelector(".setCoreReps")?.value);
+        if(isFinite(reps) && reps > 0) details.push({ reps });
+      }
+      if(details.length === 0){
+        alert("Enter at least one valid set (reps).");
+        return;
+      }
+      const top = details.reduce((a,b)=> (b.reps > a.reps ? b : a), details[0]);
+
+      lifts.push({
+        id: uid(),
+        date,
+        ex: modalExerciseName,
+        exNorm: normExName(modalExerciseName),
+        kind: "core",
+        coreMode: "reps",
+        sets: details.length,
+        reps: top.reps,
+        weight: 0,
+        pr: false,
+        details,
+        routineId: modalRoutine?.id || "",
+        routineName: modalRoutine?.name || "",
+        dayKey: modalDayKey || ""
+      });
+    }
+
+  // STRENGTH (existing logic)
+  } else {
+    const setRows = [...logModalSets.querySelectorAll(".row")];
+
+    const setsArr = [];
+    for(const r of setRows){
+      const w = Number(r.querySelector(".setWeight")?.value);
+      const reps = Number(r.querySelector(".setReps")?.value);
+      if(isFinite(w) && w > 0 && isFinite(reps) && reps > 0){
+        setsArr.push({weight:w, reps:reps});
+      }
+    }
+
+    if(setsArr.length === 0){
+      alert("Enter at least one valid set (weight + reps).");
+      return;
+    }
+
+    let top = setsArr[0];
+    for(const s of setsArr){
+      if(s.weight > top.weight) top = s;
+    }
+
+    const {life} = liftStatsForExercise(modalExerciseName);
+    const isPR = (life === null) ? true : (top.weight > life);
+
+    lifts.push({
+      id: uid(),
+      date,
+      ex: modalExerciseName,
+      exNorm: normExName(modalExerciseName),
+      kind: "strength",
+      sets: setsArr.length,
+      reps: top.reps,
+      weight: top.weight,
+      pr: isPR,
+      details: setsArr,
+      routineId: modalRoutine?.id || "",
+      routineName: modalRoutine?.name || "",
+      dayKey: modalDayKey || ""
+    });
   }
-
-  if(setsArr.length === 0){
-    alert("Enter at least one valid set (weight + reps).");
-    return;
-  }
-
-  let top = setsArr[0];
-  for(const s of setsArr){
-    if(s.weight > top.weight) top = s;
-  }
-
-  const {life} = liftStatsForExercise(modalExerciseName);
-  const isPR = (life === null) ? true : (top.weight > life);
-
-  lifts.push({
-    id: uid(),
-    date,
-    ex: modalExerciseName,
-    exNorm: normExName(modalExerciseName),
-    sets: setsArr.length,
-    reps: top.reps,
-    weight: top.weight,
-    pr: isPR,
-    details: setsArr,
-    routineId: modalRoutine?.id || "",
-    routineName: modalRoutine?.name || "",
-    dayKey: modalDayKey || ""
-  });
 
   lifts.sort((a,b)=>b.date.localeCompare(a.date));
   LS.set(KEY_LIFTS, lifts);
@@ -5650,13 +5889,8 @@ logSaveBtn.addEventListener("click", ()=>{
   renderPPL();
   window.scrollTo(0, prevScroll);
   buildRoutineExerciseSuggestions();
-
-// ✅ Stay on Routine screen after saving
-// showScreen("lifts");
-// setTimeout(()=>{
-//   document.getElementById("liftTableWrap")?.scrollIntoView({behavior:"smooth", block:"start"});
-// }, 0);
 }); // ✅ closes logSaveBtn click handler
+
 
 /* ---------------------------
    History Modal
@@ -5687,16 +5921,50 @@ function openHistoryModal(exName){
   histTable.innerHTML = "";
 
   exLifts.forEach(x=>{
-    const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
-    const allSets = Array.isArray(x.details) && x.details.length
-      ? x.details.map((s,i)=>`S${i+1}:${s.weight}x${s.reps}`).join("  ")
-      : "—";
+    const kind = x.kind || (getExerciseMeta(x.ex)?.type || "strength");
+
+    let topCell = "—";
+    let detailsCell = "—";
+
+    if(kind === "cardio"){
+      const mins = (x.minutes != null) ? Number(x.minutes) : Number(x.details?.[0]?.minutes);
+      const dist = (x.distance != null) ? Number(x.distance) : Number(x.details?.[0]?.distance);
+      topCell = (isFinite(mins) && mins > 0) ? `${mins} min` : "—";
+      detailsCell = (isFinite(dist) && dist > 0) ? `${dist} mi` : "—";
+
+    } else if(kind === "core"){
+      const mode = x.coreMode || (getExerciseMeta(x.ex)?.coreMode || null);
+
+      if(mode === "time"){
+        const secs = (x.seconds != null) ? Number(x.seconds) : Number(x.details?.[0]?.secs);
+        topCell = (isFinite(secs) && secs > 0) ? `${secs} sec` : "—";
+        detailsCell = Array.isArray(x.details) && x.details.length
+          ? x.details.map((s,i)=>`S${i+1}:${s.secs}s`).join("  ")
+          : "—";
+      } else {
+        const reps = Number(x.reps);
+        topCell = (isFinite(reps) && reps > 0) ? `${reps} reps` : "—";
+        detailsCell = Array.isArray(x.details) && x.details.length
+          ? x.details.map((s,i)=>`S${i+1}:${s.reps}`).join("  ")
+          : "—";
+      }
+
+    } else {
+      // strength
+      const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
+      const allSets = Array.isArray(x.details) && x.details.length
+        ? x.details.map((s,i)=>`S${i+1}:${s.weight}x${s.reps}`).join("  ")
+        : "—";
+
+      topCell = topSet;
+      detailsCell = allSets;
+    }
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="mono">${x.date}</td>
-      <td class="mono">${topSet}</td>
-      <td class="mono">${allSets}</td>
+      <td class="mono">${topCell}</td>
+      <td class="mono">${detailsCell}</td>
       <td>${x.pr ? '<span class="badge">🏆</span>' : ''}</td>
     `;
     histTable.appendChild(tr);
