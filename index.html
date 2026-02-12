@@ -5382,10 +5382,10 @@ function addSetRow(weight="", reps=""){
   row.innerHTML = `
     <span class="pill"><span class="muted">Set</span> <strong class="mono">${idx}</strong></span>
     <label>Weight (lbs)
-      <input type="number" step="0.5" inputmode="decimal" class="setWeight" placeholder="e.g., 75" value="${weight}" />
+      <input type="number" step="0.5" inputmode="decimal" class="setWeight" placeholder="e.g., 75" value="${escHTML(weight)}" />
     </label>
     <label>Reps
-      <input type="number" inputmode="numeric" class="setReps" placeholder="e.g., 8" value="${reps}" />
+      <input type="number" inputmode="numeric" class="setReps" placeholder="e.g., 8" value="${escHTML(reps)}" />
     </label>
     <button type="button" class="removeSetBtn">Remove</button>
   `;
