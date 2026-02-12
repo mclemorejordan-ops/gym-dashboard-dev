@@ -6078,30 +6078,45 @@ function clearAutoReloadTimers(){
 function scheduleAutoReload(){
   clearAutoReloadTimers();
 
+  // If we can't auto reload, explain WHY (better UX)
   if(!canAutoReloadNow()){
-    setUpdateBannerSub("Refresh to load the latest version.");
+    if(document.visibilityState !== "visible"){
+      setUpdateBannerSub("Update available. Return to this tab to refresh.");
+    }else if(navigator && navigator.onLine === false){
+      setUpdateBannerSub("Update available. Reconnect to refresh.");
+    }else{
+      setUpdateBannerSub("Update available. Tap Refresh to load it.");
+    }
     return;
   }
 
   let remaining = AUTO_REFRESH_COUNTDOWN_S;
   setUpdateBannerSub(`Auto-refreshing in ${remaining}s… (click banner to postpone)`);
 
+  // ✅ IMPORTANT: only stop the interval at 0 — DO NOT clear the timeout here
   _autoReloadTick = setInterval(()=>{
     remaining -= 1;
+
     if(remaining <= 0){
-      clearAutoReloadTimers();
+      clearInterval(_autoReloadTick);
+      _autoReloadTick = null;
       return;
     }
+
     setUpdateBannerSub(`Auto-refreshing in ${remaining}s… (click banner to postpone)`);
   }, 1000);
 
   _autoReloadTimer = setTimeout(()=>{
     clearAutoReloadTimers();
     localStorage.setItem(KEY_APP_LAST_RELOAD, String(Date.now()));
-    // Hard reload helps ensure the newest assets are requested.
-    location.reload();
+
+    // ✅ Cache-busted reload (more reliable than location.reload())
+    const u = new URL(location.href);
+    u.searchParams.set("v", String(Date.now()));
+    location.replace(u.toString());
   }, AUTO_REFRESH_COUNTDOWN_S * 1000);
 }
+
 
 function postponeAutoReload(minutes=10){
   clearAutoReloadTimers();
