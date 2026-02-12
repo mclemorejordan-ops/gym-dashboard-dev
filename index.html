@@ -3896,8 +3896,17 @@ const GENERIC_CARDIO_SPEC = {
 
 function getCardioSpec(exName){
   const canon = canonicalExerciseName(exName);
-return CARDIO_DEFAULTS[canon] || GENERIC_CARDIO_SPEC;
+
+  // 1) If it’s a known built-in cardio exercise, use its real spec
+  if (CARDIO_DEFAULTS[canon]) return CARDIO_DEFAULTS[canon];
+
+  // 2) If the user explicitly toggled this exercise to cardio, use the fallback spec
+  if (customExerciseTypes?.[canon] === "cardio") return GENERIC_CARDIO_SPEC;
+
+  // 3) Otherwise it is NOT cardio
+  return null;
 }
+
 
 function isCardioExercise(exName){
   return !!getCardioSpec(exName);
