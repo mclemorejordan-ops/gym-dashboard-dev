@@ -2645,7 +2645,7 @@ const CARDIO_SPECS = {
   }
 };
 
-  // ✅ Fallback fields for CUSTOM cardio exercises not listed in CARDIO_SPECS
+// ✅ Fallback fields for CUSTOM cardio exercises not listed in CARDIO_SPECS
 const CARDIO_FALLBACK_SPEC = {
   required: [
     { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" }
@@ -2655,7 +2655,6 @@ const CARDIO_FALLBACK_SPEC = {
     { key:"pace",        label:"Pace (optional)", type:"text", placeholder:"10:00/mi" },
     { key:"inclinePct",  label:"Incline % (optional)", type:"number", placeholder:"1" },
     { key:"level",       label:"Level (optional)", type:"number", placeholder:"6" },
-    { key:"resistance",  label:"Resistance (optional)", type:"number", placeholder:"8" },
     { key:"meters",      label:"Meters (optional)", type:"number", placeholder:"2000" },
     { key:"rounds",      label:"Rounds (optional)", type:"number", placeholder:"6" },
     { key:"workRest",    label:"Work/Rest (optional)", type:"text", placeholder:"30s/30s" }
@@ -2667,6 +2666,7 @@ function getCardioSpec(name){
   const n = canonicalExerciseName(String(name||""));
   return CARDIO_SPECS[n] || CARDIO_FALLBACK_SPEC;
 }
+
 
 
 function isCardioName(name){
