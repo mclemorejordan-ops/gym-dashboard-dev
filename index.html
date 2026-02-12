@@ -1628,6 +1628,80 @@ header{
 
 }
 
+/* ===========================
+   SETTINGS: Glass Dropdown (Custom Exercises)
+=========================== */
+.glassDrop{
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.glassSummary{
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.glassSummary::-webkit-details-marker{ display:none; }
+.glassBody{
+  padding: 12px 12px 14px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.glassList{
+  display: grid;
+  gap: 8px;
+}
+.glassItem{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding: 10px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.glassItem .left{
+  min-width: 0;
+}
+.glassItem .name{
+  font-weight: 700;
+  letter-spacing: .2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.glassItem .meta{
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.xBtn{
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,107,107,.45);
+  background: rgba(255,107,107,.08);
+  color: var(--bad);
+  font-size: 18px;
+  line-height: 1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  flex: 0 0 auto;
+}
+.xBtn:active{
+  transform: scale(.98);
+}
 
     
   </style>
@@ -2186,7 +2260,29 @@ header{
 
       <button id="runRefreshBtn">Refresh Selected</button>
     </div>
+   </section>
+
+  <!-- Custom Exercises (Glass Dropdown) -->
+  <section class="card">
+    <details id="customExerciseDropdown" class="glassDrop">
+      <summary class="glassSummary">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h2 style="margin:0;">Custom Exercises</h2>
+          <span class="pill"><span class="muted">Count:</span> <strong class="mono" id="customExerciseCount">0</strong></span>
+        </div>
+        <span class="muted small">Tap to expand</span>
+      </summary>
+
+      <div class="glassBody">
+        <div class="notice small muted" style="margin-bottom:10px;">
+          Tap <strong>×</strong> to delete. Delete removes the exercise from your routines and lift logs.
+        </div>
+
+        <div id="customExerciseList" class="glassList"></div>
+      </div>
+    </details>
   </section>
+
 
     <!-- Updates -->
   <section class="card" id="updatesCard">
@@ -3382,6 +3478,8 @@ const onEnterScreen = {
     hydrateSettingsUI();
     renderStorageInfo();
     renderLastBackup();
+    renderCustomExerciseSettings();
+}
   }
 };
 
@@ -5216,6 +5314,115 @@ function saveCustomExerciseTypes(map){
 }
 
 let customExerciseTypes = loadCustomExerciseTypes();
+  /* ===========================
+   SETTINGS: Custom Exercises (Glass)
+   - delete custom exercises safely
+=========================== */
+
+function refreshAllUIAfterCustomExerciseChange(){
+  // routine-related
+  if(typeof renderRoutineDropdown === "function") renderRoutineDropdown();
+  if(typeof renderPPL === "function") renderPPL();
+  if(typeof buildRoutineExerciseSuggestions === "function") buildRoutineExerciseSuggestions();
+
+  // lifts-related
+  if(typeof renderLiftSearchDropdown === "function") renderLiftSearchDropdown();
+  if(typeof renderLiftRoutineDropdown === "function") renderLiftRoutineDropdown();
+  if(typeof applyLiftFiltersFromUI === "function") applyLiftFiltersFromUI();
+  if(typeof renderLifts === "function") renderLifts();
+
+  // home + any carousel UI
+  if(typeof refreshHome === "function") refreshHome();
+  if(typeof renderRoutineCarousel === "function") renderRoutineCarousel();
+}
+
+function renderCustomExerciseSettings(){
+  const wrap = document.getElementById("customExerciseList");
+  const countEl = document.getElementById("customExerciseCount");
+  if(!wrap) return;
+
+  const customs = loadCustomExercises();
+  if(countEl) countEl.textContent = String(customs.length);
+
+  wrap.innerHTML = "";
+
+  if(!customs.length){
+    wrap.innerHTML = `<div class="notice">No custom exercises created.</div>`;
+    return;
+  }
+
+  customs.forEach(name=>{
+    const canon = canonicalExerciseName(name);
+    const t = customExerciseTypes?.[canon] || "";
+
+    const row = document.createElement("div");
+    row.className = "glassItem";
+
+    row.innerHTML = `
+      <div class="left">
+        <div class="name">${name}</div>
+        ${t ? `<div class="meta">${t}</div>` : ``}
+      </div>
+      <button type="button" class="xBtn" title="Delete">×</button>
+    `;
+
+    row.querySelector(".xBtn").addEventListener("click", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+
+      const ok = confirm(
+        `Delete custom exercise "${name}"?\n\nThis will remove it from:\n• All routines\n• All lift logs\n\nThis cannot be undone (unless you re-create it).`
+      );
+      if(!ok) return;
+      deleteCustomExercise(name);
+    });
+
+    wrap.appendChild(row);
+  });
+}
+
+function deleteCustomExercise(name){
+  const canon = canonicalExerciseName(name);
+  const nCanon = normExName(canon);
+
+  // 1) remove from custom list
+  const nextCustoms = loadCustomExercises().filter(x => normExName(canonicalExerciseName(x)) !== nCanon);
+  saveCustomExercises(nextCustoms);
+
+  // 2) remove saved custom type override
+  if(customExerciseTypes && typeof customExerciseTypes === "object"){
+    delete customExerciseTypes[canon];
+    saveCustomExerciseTypes(customExerciseTypes);
+  }
+
+  // 3) remove from routines (all days/all routines)
+  let changedRoutines = false;
+  routines.forEach(r=>{
+    DAY_KEYS.forEach(k=>{
+      const day = r.days?.[k];
+      if(!day?.exercises || !Array.isArray(day.exercises)) return;
+
+      const beforeLen = day.exercises.length;
+      day.exercises = day.exercises.filter(ex => normExName(canonicalExerciseName(ex?.name)) !== nCanon);
+      if(day.exercises.length !== beforeLen) changedRoutines = true;
+    });
+  });
+  if(changedRoutines) saveRoutines();
+
+  // 4) remove from lift logs
+  const beforeLifts = lifts.length;
+  lifts = lifts.filter(x => normExName(canonicalExerciseName(x?.ex)) !== nCanon);
+  if(lifts.length !== beforeLifts){
+    LS.set(KEY_LIFTS, lifts);
+  }
+
+  // 5) refresh UI everywhere
+  renderCustomExerciseSettings();
+  refreshAllUIAfterCustomExerciseChange();
+
+  alert("Custom exercise deleted ✅");
+}
+
 
 function setExPickType(t){
   exPickType = (t === "cardio") ? "cardio" : "strength";
