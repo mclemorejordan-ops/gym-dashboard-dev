@@ -2444,7 +2444,14 @@ header{
       </label>
     </div>
 
+    <div style="margin-top:8px; display:flex; gap:6px;">
+  <button id="exPickTypeStrength" class="miniBtn">Strength</button>
+  <button id="exPickTypeCardio" class="miniBtn ghost">Cardio</button>
+</div>
+
+
     <div id="exPickList"></div>
+    
 
     <div class="btnRow">
       <button id="exPickConfirmBtn">Confirm</button>
@@ -5168,6 +5175,28 @@ const exPickConfirmBtn = document.getElementById("exPickConfirmBtn");
 const exPickSearch = document.getElementById("exPickSearch");
 const exPickList = document.getElementById("exPickList");
 
+  // 🔹 Picker type state
+const exPickTypeStrength = document.getElementById("exPickTypeStrength");
+const exPickTypeCardio   = document.getElementById("exPickTypeCardio");
+
+let exPickType = "strength"; // default
+
+function setExPickType(next){
+  exPickType = next === "cardio" ? "cardio" : "strength";
+
+  if(exPickType === "cardio"){
+    exPickTypeCardio.classList.remove("ghost");
+    exPickTypeStrength.classList.add("ghost");
+  } else {
+    exPickTypeStrength.classList.remove("ghost");
+    exPickTypeCardio.classList.add("ghost");
+  }
+}
+
+exPickTypeStrength?.addEventListener("click", ()=> setExPickType("strength"));
+exPickTypeCardio?.addEventListener("click", ()=> setExPickType("cardio"));
+
+
 let exPickSelected = "";                 // single mode selected
 let exPickSelectedSet = new Set();       // multi mode selected set
 let exPickMulti = false;                 // are we in multi mode?
@@ -6515,18 +6544,17 @@ rtAddExBtn.addEventListener("click", ()=>{
   renderLiftSearchDropdown();
 });
 
-
-  rtAddMultiBtn?.addEventListener("click", ()=>{
+rtAddMultiBtn?.addEventListener("click", ()=>{
   openExercisePicker({
     title: "Pick multiple exercises",
     multi: true,
     initialMulti: [],
     onConfirm: (pickedNames)=>{
-      // pickedNames is an array when multi=true
       openBatchAddModal(pickedNames);
     }
   });
 });
+
 
 
 rtSaveBtn.addEventListener("click", ()=>{
