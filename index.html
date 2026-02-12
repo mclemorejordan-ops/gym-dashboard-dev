@@ -4371,14 +4371,14 @@ function bindCarouselGestures(){
     r3dLastX = clientX;
 
 // smoother drag (less sensitive)
-r3dAngle += dx * 0.16;
+r3dAngle += dx * 0.30;
 
 const dt = Math.max(16, now - r3dLastT);
 r3dLastT = now;
 
 // compute raw velocity, then smooth it (glide)
-const v = (dx / dt) * 14;
-r3dVelocity = (r3dVelocity * 0.80) + (v * 0.20);
+const v = (dx / dt) * 32;
+r3dVelocity = (r3dVelocity * 0.55) + (v * 0.45);
 
 updateCarouselTransforms();
 
@@ -4390,11 +4390,11 @@ updateCarouselTransforms();
 
     // apply momentum
     const start = performance.now();
-    const friction = 0.972; // was 0.92 (more glide)
+    const friction = 0.965;
 
     function momentum(t){
       r3dVelocity *= friction;
-      r3dAngle += r3dVelocity * 0.18; // slightly slower drift
+      r3dAngle += r3dVelocity * 0.34;
       updateCarouselTransforms();
 
       if(Math.abs(r3dVelocity) > 0.015 && (t - start) < 1200){
