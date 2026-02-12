@@ -4316,6 +4316,7 @@ let r3dVelocity = 0;
 let r3dDrag = false;
 let r3dLastX = 0;
 let r3dLastT = 0;
+let r3dMomentumRAF = 0;
 
 const r3dRadius = 260;          // reduced depth (less distortion)
 const r3dStep = 360 / 7;        // 7 days
@@ -4438,7 +4439,13 @@ function snapCarouselToActive(instant=false){
 function bindCarouselGestures(){
   if(!r3dStage) return;
 
-  const onDown = (clientX)=>{
+const onDown = (clientX)=>{
+    // ✅ BUG FIX: stop any existing momentum loop so it can't snap later mid-drag
+    if(r3dMomentumRAF){
+      cancelAnimationFrame(r3dMomentumRAF);
+      r3dMomentumRAF = 0;
+    }
+
     r3dDrag = true;
     r3dLastX = clientX;
     r3dLastT = performance.now();
@@ -4477,7 +4484,7 @@ const onUp = ()=>{
     updateCarouselTransforms();
 
     if (Math.abs(r3dVelocity) > 0.015 && (t - start) < 1200) {
-      requestAnimationFrame(momentum);
+      r3dMomentumRAF = requestAnimationFrame(momentum);
     } else {
       const nearest = Math.round((-r3dAngle) / r3dStep);
       activeDayIndex = (nearest % 7 + 7) % 7;
@@ -4486,7 +4493,7 @@ const onUp = ()=>{
     }
   }
 
-  requestAnimationFrame(momentum);
+  r3dMomentumRAF = requestAnimationFrame(momentum);
 };
 
 
