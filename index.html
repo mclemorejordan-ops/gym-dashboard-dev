@@ -5684,7 +5684,7 @@ function renderRtDayPanel(){
 
     wrap.innerHTML = `
       <div class="rtExTop">
-        <div class="rtExName">${ex.name || "Exercise"}</div>
+        <div class="rtExName">${escHTML(ex.name || "Exercise")}</div>
         <span class="badge">${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps</span>
       </div>
 
