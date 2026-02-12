@@ -4764,12 +4764,24 @@ function renderExercisePickerList(){
     if(!exists){
       const create = document.createElement("div");
       create.className = "exPickItem";
-      create.innerHTML = `
-        <div class="exPickRow">
-          ${exPickMulti ? `<span class="exPickCheck">+</span>` : ``}
-          <span>➕ Create "<strong>${rawQ}</strong>"</span>
-        </div>
-      `;
+            // ✅ BUG FIX: never inject raw user input into innerHTML (prevents broken markup / XSS)
+      create.innerHTML = ""; // clear
+      const row = document.createElement("div");
+      row.className = "exPickRow";
+
+      if(exPickMulti){
+        const chk = document.createElement("span");
+        chk.className = "exPickCheck";
+        chk.textContent = "+";
+        row.appendChild(chk);
+      }
+
+      const label = document.createElement("span");
+      label.textContent = `➕ Create "${rawQ}"`;
+      row.appendChild(label);
+
+      create.appendChild(row);
+
      create.addEventListener("click", ()=>{
   const created = addCustomExercise(rawQ);
   if(!created) return;
