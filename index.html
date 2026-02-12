@@ -4392,18 +4392,30 @@ updateCarouselTransforms();
     const start = performance.now();
     const friction = 0.965;
 
-    function momentum(t){
-      r3dVelocity *= friction;
-      r3dAngle += r3dVelocity * 0.34;
-      updateCarouselTransforms();
+function momentum(t){
+  r3dVelocity *= friction;
+  r3dAngle += r3dVelocity * 0.34;
+  updateCarouselTransforms();
 
-      if(Math.abs(r3dVelocity) > 0.015 && (t - start) < 1200){
-        requestAnimationFrame(momentum);
-      }else{
-      }
-    }
+  if(Math.abs(r3dVelocity) > 0.015 && (t - start) < 1200){
     requestAnimationFrame(momentum);
-  };
+  }else{
+  const nearest = Math.round((-r3dAngle) / r3dStep);
+  const target = -(nearest * r3dStep);
+
+  activeDayIndex = (nearest % 7 + 7) % 7;
+
+  // only snap if we're within ~40% of a step
+  if(Math.abs(r3dAngle - target) < r3dStep * 0.4){
+    snapCarouselToActive(false);
+  }
+
+  renderPPL();
+}
+}
+
+requestAnimationFrame(momentum);
+
 
   // pointer (desktop)
   r3dStage.addEventListener("pointerdown", (e)=> onDown(e.clientX));
