@@ -2452,54 +2452,8 @@ header{
   <button id="logSaveBtn" class="tap">Confirm & Save</button>
   <button id="logModalClose" class="tap ghost" type="button">Close</button>
 </div>
-   </div>
-</div>
-
-<!-- =========================
-     LOG CARDIO MODAL
-========================= -->
-<div id="cardioModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
-  <div style="max-width:520px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
-
-    <div class="topRight">
-      <div>
-        <h2 style="margin:0;">Log Cardio</h2>
-        <div class="small muted" id="cardioRoutineLine">—</div>
-      </div>
     </div>
-
-    <div class="notice" style="margin-top:10px;">
-      <div><strong id="cardioModalExercise">—</strong></div>
-      <div class="small muted">Enter your cardio details.</div>
-    </div>
-
-    <div class="row" style="margin-top:10px;">
-      <label>Date
-        <input type="date" id="cardioModalDate" />
-      </label>
-    </div>
-
-    <div class="row">
-      <label>Duration (minutes)
-        <input type="number" id="cardioDuration" placeholder="e.g. 20" />
-      </label>
-    </div>
-
-    <div class="row">
-      <label>Distance
-        <input type="number" id="cardioDistance" placeholder="e.g. 2.5" />
-      </label>
-    </div>
-
-    <div class="btnRow">
-      <button id="cardioSaveBtn" class="tap">Confirm & Save</button>
-      <button id="cardioModalClose" class="tap ghost" type="button">Close</button>
-    </div>
-
   </div>
-</div>
-
-
 
   <!-- HISTORY MODAL -->
   <div id="histModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
@@ -2825,20 +2779,6 @@ const CARDIO_SPECS = {
   }
 };
 
-  // ✅ Generic fallback fields for ANY custom cardio exercise
-const GENERIC_CARDIO_SPECS = {
-  required: [
-    { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" }
-  ],
-  optional: [
-    { key:"distanceMi",  label:"Distance (mi) (optional)", type:"number", placeholder:"2.0" },
-    { key:"calories",    label:"Calories (optional)",      type:"number", placeholder:"200" },
-    { key:"pace",        label:"Pace (optional)",          type:"text",   placeholder:"10:00/mi" },
-    { key:"inclinePct",  label:"Incline % (optional)",     type:"number", placeholder:"1" }
-  ]
-};
-
-  
 function isCardioName(name){
   const n = canonicalExerciseName(String(name||""));
 
@@ -2853,12 +2793,9 @@ function isCardioName(name){
 
 function cardioBlankFor(name){
   const n = canonicalExerciseName(String(name||""));
-  // Use real spec if it exists, otherwise use generic fields IF this is cardio
-  const spec = CARDIO_SPECS[n] || (isCardioName(n) ? GENERIC_CARDIO_SPECS : null);
-
+  const spec = CARDIO_SPECS[n];
   const obj = {};
   if(!spec) return obj;
-
   [...spec.required, ...spec.optional].forEach(f => obj[f.key] = "");
   return obj;
 }
@@ -3904,29 +3841,10 @@ const CARDIO_DEFAULTS = {
   }
 };
 
-  // ✅ Fallback for ANY custom cardio exercise
-const GENERIC_CARDIO_SPEC = {
-  required: ["durationMin"],
-  optional: ["distance", "calories", "pace", "incline"]
-};
-
 function getCardioSpec(exName){
   const canon = canonicalExerciseName(exName);
-
-  // 1) Built-in cardio exercises
-  if (CARDIO_DEFAULTS[canon]) {
-    return CARDIO_DEFAULTS[canon];
-  }
-
-  // 2) Custom exercises the user toggled to cardio
-  if (customExerciseTypes?.[canon] === "cardio") {
-    return GENERIC_CARDIO_SPEC;
-  }
-
-  // 3) Otherwise not cardio
-  return null;
+  return CARDIO_DEFAULTS[canon] || null;
 }
-
 
 function isCardioExercise(exName){
   return !!getCardioSpec(exName);
@@ -5154,7 +5072,7 @@ renderDayTabs(); // ✅ ADD THIS LINE
       ${
         isCardio
           ? `
-            <div class="line2 small muted">Cardio</div>
+            <div class="line2 small muted">Cardio logging UI is next (we’ll add a Cardio Log modal).</div>
             <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
               <button type="button" data-logcardio="${ex}">Log Cardio</button>
             </div>
@@ -5180,17 +5098,16 @@ renderDayTabs(); // ✅ ADD THIS LINE
     });
   }
 
-  // ✅ Cardio: open real modal
+  // Cardio: placeholder (next step will be a real modal)
   const cardioBtn = card.querySelector('button[data-logcardio]');
   if(cardioBtn){
     cardioBtn.addEventListener("click", ()=>{
-      openCardioModal(ex, ar, dayKey, activeDayIndex);
+      alert(`Cardio logging coming next for: ${canonicalExerciseName(ex)}`);
     });
   }
 
   pplList.appendChild(card);
 });
-
 
 }
 
@@ -5787,9 +5704,8 @@ function renderBatchAddList(){
     // cardio fields
     let cardioHTML = "";
     if(isCardio){
-      const canon = canonicalExerciseName(it.name);
-const spec = CARDIO_SPECS[canon] || (isCardioName(canon) ? GENERIC_CARDIO_SPECS : null);
-const fields = spec ? [...spec.required, ...spec.optional] : [];
+      const spec = CARDIO_SPECS[canonicalExerciseName(it.name)];
+      const fields = spec ? [...spec.required, ...spec.optional] : [];
       cardioHTML = `
         <div class="row" style="margin-top:10px; align-items:end; flex-wrap:wrap;">
           ${fields.map(f=>`
@@ -6429,83 +6345,6 @@ logSaveBtn.addEventListener("click", ()=>{
 //   document.getElementById("liftTableWrap")?.scrollIntoView({behavior:"smooth", block:"start"});
 // }, 0);
 }); // ✅ closes logSaveBtn click handler
-
-
-/* ---------------------------
-   Log Cardio Modal
----------------------------- */
-
-let modalCardioExercise = null;
-let modalCardioRoutine = null;
-let modalCardioDayKey = null;
-let modalCardioDayIndex = null;
-
-function openCardioModal(exName, routineObj=null, dayKey="", dayIndex=0){
-
-  modalCardioExercise = canonicalExerciseName(exName);
-  modalCardioRoutine = routineObj;
-  modalCardioDayKey = dayKey;
-  modalCardioDayIndex = dayIndex;
-
-  const dateInput = document.getElementById("cardioModalDate");
-  if(dateInput){
-    dateInput.value = dateForWeekdayIndex(dayIndex, new Date()) || todayISO();
-  }
-
-  lockBodyScroll();
-  document.getElementById("cardioModal").style.display = "block";
-}
-
-function closeCardioModal(){
-  document.getElementById("cardioModal").style.display = "none";
-  unlockBodyScroll();
-  modalCardioExercise = null;
-}
-
-document.getElementById("cardioModalClose")
-  ?.addEventListener("click", closeCardioModal);
-
-document.getElementById("cardioModal")
-  ?.addEventListener("click", (e)=>{
-    if(e.target.id === "cardioModal") closeCardioModal();
-  });
-
-document.getElementById("cardioSaveBtn")
-  ?.addEventListener("click", ()=>{
-
-    if(!modalCardioExercise) return;
-
-    const date = document.getElementById("cardioModalDate").value || todayISO();
-    const duration = Number(document.getElementById("cardioDuration")?.value);
-    const distance = Number(document.getElementById("cardioDistance")?.value);
-
-    if(!isFinite(duration) || duration <= 0){
-      alert("Enter valid duration.");
-      return;
-    }
-
-    lifts.push({
-      id: uid(),
-      date,
-      ex: modalCardioExercise,
-      exNorm: normExName(modalCardioExercise),
-      type: "cardio",               // 👈 important
-      duration,
-      distance,
-      routineId: modalCardioRoutine?.id || "",
-      routineName: modalCardioRoutine?.name || "",
-      dayKey: modalCardioDayKey || ""
-    });
-
-    lifts.sort((a,b)=>b.date.localeCompare(a.date));
-    LS.set(KEY_LIFTS, lifts);
-
-    closeCardioModal();
-
-    renderLiftSearchDropdown();
-    renderLifts();
-    renderPPL();
-  });
 
 /* ---------------------------
    History Modal
