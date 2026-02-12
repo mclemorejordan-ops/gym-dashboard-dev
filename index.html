@@ -4277,22 +4277,6 @@ function snapCarouselToActive(instant=false){
   requestAnimationFrame(tick);
 }
 
-  // simple smooth snap
-  r3dVelocity = 0;
-  const start = r3dAngle;
-  const delta = target - start;
-  const t0 = performance.now();
-  const dur = 220;
-
-  function tick(t){
-    const p = Math.min(1, (t - t0) / dur);
-    const ease = 1 - Math.pow(1 - p, 3);
-    r3dAngle = start + delta * ease;
-    updateCarouselTransforms();
-    if(p < 1) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-}
 
 function bindCarouselGestures(){
   if(!r3dStage) return;
