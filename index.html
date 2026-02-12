@@ -2452,8 +2452,53 @@ header{
   <button id="logSaveBtn" class="tap">Confirm & Save</button>
   <button id="logModalClose" class="tap ghost" type="button">Close</button>
 </div>
+   </div>
+</div>
+
+<!-- =========================
+     LOG CARDIO MODAL
+========================= -->
+<div id="cardioModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
+  <div style="max-width:520px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+
+    <div class="topRight">
+      <div>
+        <h2 style="margin:0;">Log Cardio</h2>
+        <div class="small muted" id="cardioRoutineLine">—</div>
+      </div>
     </div>
+
+    <div class="notice" style="margin-top:10px;">
+      <div><strong id="cardioModalExercise">—</strong></div>
+      <div class="small muted">Enter your cardio details.</div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <label>Date
+        <input type="date" id="cardioModalDate" />
+      </label>
+    </div>
+
+    <div class="row">
+      <label>Duration (minutes)
+        <input type="number" id="cardioDuration" placeholder="e.g. 20" />
+      </label>
+    </div>
+
+    <div class="row">
+      <label>Distance
+        <input type="number" id="cardioDistance" placeholder="e.g. 2.5" />
+      </label>
+    </div>
+
+    <div class="btnRow">
+      <button id="cardioSaveBtn" class="tap">Confirm & Save</button>
+      <button id="cardioModalClose" class="tap ghost" type="button">Close</button>
+    </div>
+
   </div>
+</div>
+
 
   <!-- HISTORY MODAL -->
   <div id="histModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
@@ -5098,13 +5143,14 @@ renderDayTabs(); // ✅ ADD THIS LINE
     });
   }
 
-  // Cardio: placeholder (next step will be a real modal)
-  const cardioBtn = card.querySelector('button[data-logcardio]');
-  if(cardioBtn){
-    cardioBtn.addEventListener("click", ()=>{
-      alert(`Cardio logging coming next for: ${canonicalExerciseName(ex)}`);
-    });
-  }
+ // ✅ Cardio: open real modal
+const cardioBtn = card.querySelector('button[data-logcardio]');
+if(cardioBtn){
+  cardioBtn.addEventListener("click", ()=>{
+    openCardioModal(ex, ar, dayKey, activeDayIndex);
+  });
+}
+
 
   pplList.appendChild(card);
 });
@@ -6346,6 +6392,84 @@ logSaveBtn.addEventListener("click", ()=>{
 // }, 0);
 }); // ✅ closes logSaveBtn click handler
 
+
+/* ---------------------------
+   Log Cardio Modal
+---------------------------- */
+
+let modalCardioExercise = null;
+let modalCardioRoutine = null;
+let modalCardioDayKey = null;
+let modalCardioDayIndex = null;
+
+function openCardioModal(exName, routineObj=null, dayKey="", dayIndex=0){
+
+  modalCardioExercise = canonicalExerciseName(exName);
+  modalCardioRoutine = routineObj;
+  modalCardioDayKey = dayKey;
+  modalCardioDayIndex = dayIndex;
+
+  const dateInput = document.getElementById("cardioModalDate");
+  if(dateInput){
+    dateInput.value = dateForWeekdayIndex(dayIndex, new Date()) || todayISO();
+  }
+
+  lockBodyScroll();
+  document.getElementById("cardioModal").style.display = "block";
+}
+
+function closeCardioModal(){
+  document.getElementById("cardioModal").style.display = "none";
+  unlockBodyScroll();
+  modalCardioExercise = null;
+}
+
+document.getElementById("cardioModalClose")
+  ?.addEventListener("click", closeCardioModal);
+
+document.getElementById("cardioModal")
+  ?.addEventListener("click", (e)=>{
+    if(e.target.id === "cardioModal") closeCardioModal();
+  });
+
+document.getElementById("cardioSaveBtn")
+  ?.addEventListener("click", ()=>{
+
+    if(!modalCardioExercise) return;
+
+    const date = document.getElementById("cardioModalDate").value || todayISO();
+    const duration = Number(document.getElementById("cardioDuration")?.value);
+    const distance = Number(document.getElementById("cardioDistance")?.value);
+
+    if(!isFinite(duration) || duration <= 0){
+      alert("Enter valid duration.");
+      return;
+    }
+
+    lifts.push({
+      id: uid(),
+      date,
+      ex: modalCardioExercise,
+      exNorm: normExName(modalCardioExercise),
+      type: "cardio",               // 👈 important
+      duration,
+      distance,
+      routineId: modalCardioRoutine?.id || "",
+      routineName: modalCardioRoutine?.name || "",
+      dayKey: modalCardioDayKey || ""
+    });
+
+    lifts.sort((a,b)=>b.date.localeCompare(a.date));
+    LS.set(KEY_LIFTS, lifts);
+
+    closeCardioModal();
+
+    renderLiftSearchDropdown();
+    renderLifts();
+    renderPPL();
+  });
+
+  
 /* ---------------------------
    History Modal
 ---------------------------- */
