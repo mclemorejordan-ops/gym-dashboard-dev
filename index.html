@@ -2521,23 +2521,6 @@ const CARDIO_EXERCISES = new Set([
   "Burpees"
 ]);
 
-  // ✅ NEW: single source of truth for strength vs cardio (supports custom exercises too)
-function getExerciseType(name){
-  const canon = canonicalExerciseName(name);
-
-  // custom type wins (set when you press "Create ...")
-  const t = (customExerciseTypes && customExerciseTypes[canon]) ? customExerciseTypes[canon] : "";
-  if(t === "cardio" || t === "strength") return t;
-
-  // fallback to built-in cardio list
-  return CARDIO_EXERCISES.has(canon) ? "cardio" : "strength";
-}
-
-function isCardioAny(name){
-  return getExerciseType(name) === "cardio";
-}
-
-
 // Field definitions per cardio exercise
 // - "required" means: we should show these first + validate in Batch Add
 // - "optional" means: nice-to-have fields
@@ -2662,30 +2645,6 @@ const CARDIO_SPECS = {
   }
 };
 
-// ✅ Fallback fields for CUSTOM cardio exercises not listed in CARDIO_SPECS
-const CARDIO_FALLBACK_SPEC = {
-  required: [
-    { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" }
-  ],
-  optional: [
-    { key:"distanceMi",  label:"Distance (mi) (optional)", type:"number", placeholder:"2.0" },
-    { key:"pace",        label:"Pace (optional)", type:"text", placeholder:"10:00/mi" },
-    { key:"inclinePct",  label:"Incline % (optional)", type:"number", placeholder:"1" },
-    { key:"level",       label:"Level (optional)", type:"number", placeholder:"6" },
-    { key:"meters",      label:"Meters (optional)", type:"number", placeholder:"2000" },
-    { key:"rounds",      label:"Rounds (optional)", type:"number", placeholder:"6" },
-    { key:"workRest",    label:"Work/Rest (optional)", type:"text", placeholder:"30s/30s" }
-  ]
-};
-
-// ✅ Always use this accessor instead of reading CARDIO_SPECS directly
-function getCardioSpec(name){
-  const n = canonicalExerciseName(String(name||""));
-  return CARDIO_SPECS[n] || CARDIO_FALLBACK_SPEC;
-}
-
-
-
 function isCardioName(name){
   const n = canonicalExerciseName(String(name||""));
 
@@ -2698,19 +2657,14 @@ function isCardioName(name){
 }
 
 
-function cardioBlankFor(exName){
-  const canon = canonicalExerciseName(exName);
-
-  // If it's cardio, use its mapped spec, otherwise use fallback for custom cardio
-  const spec = CARDIO_SPECS[canon] || CARDIO_FALLBACK_SPEC;
-
+function cardioBlankFor(name){
+  const n = canonicalExerciseName(String(name||""));
+  const spec = CARDIO_SPECS[n];
   const obj = {};
-  const fields = [...(spec.required || []), ...(spec.optional || [])];
-  fields.forEach(f => { obj[f.key] = ""; });
-
+  if(!spec) return obj;
+  [...spec.required, ...spec.optional].forEach(f => obj[f.key] = "");
   return obj;
 }
-
 
 // Creates the correct shape for Routine exercises[]
 function makeRoutineExerciseFromName(name){
@@ -5460,7 +5414,7 @@ function openBatchAddModal(names){
 
 batchAddItems = arr.map(n=>{
   const name = canonicalExerciseName(n);
-  const isC = isCardioAny(name);
+  const isC = isCardioName(name);
 
   if(isC){
     return {
@@ -5500,12 +5454,12 @@ function renderBatchAddList(){
     card.style.background = "#0f0f10";
     card.style.padding = "10px";
 
-    const isCardio = it.type === "cardio" || isCardioAny(it.name);
+    const isCardio = it.type === "cardio" || isCardioName(it.name);
 
     // cardio fields
     let cardioHTML = "";
     if(isCardio){
-      const spec = getCardioSpec(it.name);
+      const spec = CARDIO_SPECS[canonicalExerciseName(it.name)];
       const fields = spec ? [...spec.required, ...spec.optional] : [];
       cardioHTML = `
         <div class="row" style="margin-top:10px; align-items:end; flex-wrap:wrap;">
@@ -5611,7 +5565,7 @@ batchAddConfirmBtn?.addEventListener("click", ()=>{
     const isCardio = it.type === "cardio" || isCardioName(it.name);
 
     if(isCardio){
-      const spec = getCardioSpec(it.name);
+      const spec = CARDIO_SPECS[canonicalExerciseName(it.name)];
       const req = spec ? spec.required : [];
       for(const f of req){
         const v = String(it.cardio?.[f.key] ?? "").trim();
@@ -6220,7 +6174,7 @@ const rtAddRepsLabel = rtAddExReps?.closest("label");
 
 function syncRtAddUI(){
   const name = canonicalExerciseName(String(rtAddExName?.value || "").trim());
-  const isC = currentExerciseName && isCardioAny(currentExerciseName);
+  const isC = name && isCardioName(name);
 
   if(rtAddSetsLabel) rtAddSetsLabel.style.display = isC ? "none" : "";
   if(rtAddRepsLabel) rtAddRepsLabel.style.display = isC ? "none" : "";
@@ -6599,7 +6553,7 @@ rtAddExBtn.addEventListener("click", ()=>{
   if(!name) return alert("Enter an exercise name.");
 
   // ✅ CARDIO: no sets/reps required, store cardio shape
-  if(isCardioAny(name)){
+  if(isCardioName(name)){
     day.exercises.push({
       name,
       type: "cardio",
