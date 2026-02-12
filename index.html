@@ -2022,6 +2022,12 @@ header{
         </div>
       </div>
 
+      <div class="row" style="gap:6px; margin-top:6px;">
+  <button id="liftTypeStrengthBtn" class="miniBtn">Strength</button>
+  <button id="liftTypeCardioBtn" class="miniBtn ghost">Cardio</button>
+</div>
+
+
       <div class="row">
         <label>Exercise
           <select id="liftSearch"></select>
@@ -3328,10 +3334,19 @@ const onEnterScreen = {
   },
 
   lifts: () => {
-    renderLiftSearchDropdown();
-    renderLiftRoutineDropdown();
-    renderLifts();
-  },
+  // 🔹 initialize toggle + metrics first
+  renderLiftMetricOptions();
+  setLiftType("strength");
+
+  // 🔹 then render dropdowns
+  renderLiftSearchDropdown();
+  renderLiftRoutineDropdown();
+
+  // 🔹 then render data
+  applyLiftFiltersFromUI();
+  renderLifts();
+},
+
 
   settings: () => {
     hydrateSettingsUI();
@@ -4309,10 +4324,15 @@ function ensureLiftCompatibility(){
   lifts = lifts.map(x=>{
     const ex = String(x.ex || x.exercise || "");
     const exNorm = x.exNorm || normExName(ex);
+
+    const canon = canonicalExerciseName(ex);
+    const inferredType = x.type || (isCardioName(canon) ? "cardio" : "strength");
+
     return {
       ...x,
-      ex,
+      ex: canon,
       exNorm,
+      type: inferredType,                 // ✅ NEW
       routineId: x.routineId || "",
       routineName: x.routineName || "",
       dayKey: x.dayKey || ""
@@ -4320,6 +4340,7 @@ function ensureLiftCompatibility(){
   });
   LS.set(KEY_LIFTS, lifts);
 }
+
 ensureLiftCompatibility();
   migrateCanonicalNames();
 
@@ -4943,6 +4964,12 @@ const liftFrom = document.getElementById("liftFrom");
 const liftTo = document.getElementById("liftTo");
 const liftMetric = document.getElementById("liftMetric");
 const liftLimit = document.getElementById("liftLimit");
+// ✅ NEW: Strength/Cardio toggle
+const liftTypeStrengthBtn = document.getElementById("liftTypeStrengthBtn");
+const liftTypeCardioBtn   = document.getElementById("liftTypeCardioBtn");
+
+let liftType = "strength"; // "strength" | "cardio"
+
 
 const liftSearchBtn = document.getElementById("liftSearchBtn");
 const liftClearBtn = document.getElementById("liftClearBtn");
@@ -4956,6 +4983,7 @@ const liftGraphWrap = document.getElementById("liftGraphWrap");
 
 let liftView = "table"; // "table" | "graph"
 let appliedLiftFilters = {
+  type: "strength",   // ✅ NEW
   ex: "",
   routineId: "",
   from: "",
@@ -4964,6 +4992,132 @@ let appliedLiftFilters = {
   limit: 25
 };
 
+  function isStrengthName(name){
+  const n = canonicalExerciseName(name);
+  return !isCardioName(n);
+}
+
+function collectExerciseNamesByType(type){
+  const all = collectAllExerciseNames(); // your existing function
+  if(type === "cardio") return all.filter(isCardioName);
+  return all.filter(isStrengthName);
+}
+
+function renderLiftMetricOptions(){
+  const prev = liftMetric.value || "";
+
+  liftMetric.innerHTML = "";
+
+  if(liftType === "cardio"){
+    [
+      {v:"distance", t:"Distance"},
+      {v:"duration", t:"Duration"},
+      {v:"pace",     t:"Pace (if logged)"}
+    ].forEach(o=>{
+      const opt = document.createElement("option");
+      opt.value = o.v;
+      opt.textContent = o.t;
+      liftMetric.appendChild(opt);
+    });
+
+    // keep prev if possible, else default to distance
+    liftMetric.value = ["distance","duration","pace"].includes(prev) ? prev : "distance";
+    return;
+  }
+
+  // strength
+  [
+    {v:"top",  t:"Top Weight"},
+    {v:"e1rm", t:"Estimated 1RM (Epley)"},
+    {v:"vol",  t:"Volume"}
+  ].forEach(o=>{
+    const opt = document.createElement("option");
+    opt.value = o.v;
+    opt.textContent = o.t;
+    liftMetric.appendChild(opt);
+  });
+
+  liftMetric.value = ["top","e1rm","vol"].includes(prev) ? prev : "top";
+}
+
+  function setLiftTableHeader(){
+  const theadRow = document.querySelector("#liftTableWrap thead tr");
+  if(!theadRow) return;
+
+  if(liftType === "cardio"){
+    theadRow.innerHTML = `
+      <th>Date</th>
+      <th>Exercise</th>
+      <th>Cardio</th>
+      <th>Routine</th>
+      <th></th>
+    `;
+  } else {
+    theadRow.innerHTML = `
+      <th>Date</th>
+      <th>Exercise</th>
+      <th>Top Set</th>
+      <th>Sets</th>
+      <th>PR</th>
+      <th></th>
+    `;
+  }
+}
+
+  function setLiftType(next){
+  liftType = (next === "cardio") ? "cardio" : "strength";
+
+  // button UI
+  if(liftTypeStrengthBtn && liftTypeCardioBtn){
+    if(liftType === "cardio"){
+      liftTypeCardioBtn.classList.remove("ghost");
+      liftTypeStrengthBtn.classList.add("ghost");
+    } else {
+      liftTypeStrengthBtn.classList.remove("ghost");
+      liftTypeCardioBtn.classList.add("ghost");
+    }
+  }
+
+  // update dropdowns + metrics + applied filters
+  renderLiftMetricOptions();
+  renderLiftSearchDropdown();
+  applyLiftFiltersFromUI();
+
+  // rerender
+  renderLifts();
+}
+
+liftTypeStrengthBtn?.addEventListener("click", ()=> setLiftType("strength"));
+liftTypeCardioBtn?.addEventListener("click", ()=> setLiftType("cardio"));
+
+
+function formatCardioSummary(cardio){
+  if(!cardio || typeof cardio !== "object") return "—";
+
+  const parts = [];
+  const add = (label, key)=>{
+    const v = String(cardio[key] ?? "").trim();
+    if(v) parts.push(`${label}: ${v}`);
+  };
+
+  add("Duration", "duration");
+  add("Distance", "distance");
+  add("Incline", "incline");
+  add("Pace", "pace");
+  add("Level", "level");
+  add("Resistance", "resistance");
+  add("Meters", "meters");
+  add("Rounds", "rounds");
+  add("Work", "work");
+  add("Rest", "rest");
+  add("Reps", "reps");
+  add("Weight", "weight");
+  add("Height", "height");
+
+  return parts.length ? parts.join(" • ") : "—";
+}
+
+  
 function collectAllExerciseNames(){
   const set = new Set();
 
@@ -4992,7 +5146,7 @@ loadCustomExercises().forEach(n => set.add(canonicalExerciseName(n)));
 
 function renderLiftSearchDropdown(){
   const prev = liftSearch.value || "";
-  const items = ["", ...collectAllExerciseNames()];
+const items = ["", ...collectExerciseNamesByType(liftType)];
   liftSearch.innerHTML = "";
   items.forEach(v=>{
     const opt = document.createElement("option");
@@ -5408,14 +5562,16 @@ function renderLiftRoutineDropdown(){
 
 function applyLiftFiltersFromUI(){
   appliedLiftFilters = {
+    type: liftType, // ✅ NEW
     ex: (liftSearch.value || "").trim(),
     routineId: (liftRoutine.value || "").trim(),
     from: (liftFrom.value || "").trim(),
     to: (liftTo.value || "").trim(),
-    metric: (liftMetric.value || "top"),
+    metric: (liftMetric.value || (liftType==="cardio" ? "distance" : "top")),
     limit: Number(liftLimit.value || 25)
   };
 }
+
 
 function clearLiftFiltersUI(){
   liftSearch.value = "";
@@ -5428,6 +5584,9 @@ function clearLiftFiltersUI(){
 
 function getLiftFilteredData(){
   let arr = [...lifts];
+  // ✅ NEW: type filter (default old entries to strength)
+arr = arr.filter(x => (x.type || "strength") === (appliedLiftFilters.type || "strength"));
+
 
   // exercise filter (normalized)
   if(appliedLiftFilters.ex){
@@ -5464,19 +5623,33 @@ function getLiftFilteredData(){
 
 function renderLiftsTable(){
   liftTable.innerHTML = "";
+  setLiftTableHeader();
+
   const visible = getLiftFilteredData();
 
   visible.forEach(x=>{
-    const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="mono">${x.date}</td>
-      <td><span class="clickEx" data-hist="${x.ex}">${x.ex}</span></td>
-      <td class="mono">${topSet}</td>
-      <td class="mono">${x.sets ?? "—"}</td>
-      <td>${x.pr ? '<span class="badge">🏆</span>' : ''}</td>
-      <td><button data-dellift="${x.id}">Delete</button></td>
-    `;
+
+    if(liftType === "cardio"){
+      tr.innerHTML = `
+        <td class="mono">${x.date}</td>
+        <td><span class="clickEx" data-hist="${x.ex}">${x.ex}</span></td>
+        <td class="mono">${formatCardioSummary(x.cardio)}</td>
+        <td class="small muted">${x.routineName || "—"}</td>
+        <td><button data-dellift="${x.id}">Delete</button></td>
+      `;
+    } else {
+      const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
+      tr.innerHTML = `
+        <td class="mono">${x.date}</td>
+        <td><span class="clickEx" data-hist="${x.ex}">${x.ex}</span></td>
+        <td class="mono">${topSet}</td>
+        <td class="mono">${x.sets ?? "—"}</td>
+        <td>${x.pr ? '<span class="badge">🏆</span>' : ''}</td>
+        <td><button data-dellift="${x.id}">Delete</button></td>
+      `;
+    }
+
     liftTable.appendChild(tr);
   });
 
@@ -5486,7 +5659,7 @@ function renderLiftsTable(){
       lifts = lifts.filter(x=>x.id!==id);
       LS.set(KEY_LIFTS, lifts);
       renderLiftSearchDropdown();
-      renderLifts();   // rerun with applied filters
+      renderLifts();
       renderPPL();
       buildRoutineExerciseSuggestions();
     });
@@ -5499,6 +5672,7 @@ function renderLiftsTable(){
     });
   });
 }
+
 
 /* ---- Graph helpers ---- */
 function estEpley1RM(weight, reps){
