@@ -2645,6 +2645,30 @@ const CARDIO_SPECS = {
   }
 };
 
+  // ✅ Fallback fields for CUSTOM cardio exercises not listed in CARDIO_SPECS
+const CARDIO_FALLBACK_SPEC = {
+  required: [
+    { key:"durationMin", label:"Duration (min)", type:"number", placeholder:"20" }
+  ],
+  optional: [
+    { key:"distanceMi",  label:"Distance (mi) (optional)", type:"number", placeholder:"2.0" },
+    { key:"pace",        label:"Pace (optional)", type:"text", placeholder:"10:00/mi" },
+    { key:"inclinePct",  label:"Incline % (optional)", type:"number", placeholder:"1" },
+    { key:"level",       label:"Level (optional)", type:"number", placeholder:"6" },
+    { key:"resistance",  label:"Resistance (optional)", type:"number", placeholder:"8" },
+    { key:"meters",      label:"Meters (optional)", type:"number", placeholder:"2000" },
+    { key:"rounds",      label:"Rounds (optional)", type:"number", placeholder:"6" },
+    { key:"workRest",    label:"Work/Rest (optional)", type:"text", placeholder:"30s/30s" }
+  ]
+};
+
+// ✅ Always use this accessor instead of reading CARDIO_SPECS directly
+function getCardioSpec(name){
+  const n = canonicalExerciseName(String(name||""));
+  return CARDIO_SPECS[n] || CARDIO_FALLBACK_SPEC;
+}
+
+
 function isCardioName(name){
   const n = canonicalExerciseName(String(name||""));
 
@@ -2658,13 +2682,12 @@ function isCardioName(name){
 
 
 function cardioBlankFor(name){
-  const n = canonicalExerciseName(String(name||""));
-  const spec = CARDIO_SPECS[n];
+  const spec = getCardioSpec(name);
   const obj = {};
-  if(!spec) return obj;
-  [...spec.required, ...spec.optional].forEach(f => obj[f.key] = "");
+  [...(spec.required||[]), ...(spec.optional||[])].forEach(f => obj[f.key] = "");
   return obj;
 }
+
 
 // Creates the correct shape for Routine exercises[]
 function makeRoutineExerciseFromName(name){
