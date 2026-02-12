@@ -5482,7 +5482,7 @@ function renderBatchAddList(){
     // cardio fields
     let cardioHTML = "";
     if(isCardio){
-      const spec = CARDIO_SPECS[canonicalExerciseName(it.name)];
+      const spec = getCardioSpec(it.name);
       const fields = spec ? [...spec.required, ...spec.optional] : [];
       cardioHTML = `
         <div class="row" style="margin-top:10px; align-items:end; flex-wrap:wrap;">
@@ -5588,7 +5588,7 @@ batchAddConfirmBtn?.addEventListener("click", ()=>{
     const isCardio = it.type === "cardio" || isCardioName(it.name);
 
     if(isCardio){
-      const spec = CARDIO_SPECS[canonicalExerciseName(it.name)];
+      const spec = getCardioSpec(it.name);
       const req = spec ? spec.required : [];
       for(const f of req){
         const v = String(it.cardio?.[f.key] ?? "").trim();
