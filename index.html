@@ -4012,7 +4012,7 @@ pDate?.addEventListener("change", ()=>{
   }
 });
 
-document.getElementById("pSaveBtn").addEventListener("click", ()=>{
+document.getElementById("pSaveBtn")?.addEventListener("click", ()=>{
   const d = pDate.value || todayISO();
   proteinMap[d] = {
     morning:Number(pMorning.value)||0,
@@ -4622,7 +4622,7 @@ renderDayTabs(); // ✅ ADD THIS LINE
   renderLiftSearchDropdown();
 }
 
-document.getElementById("startTodayBtn").addEventListener("click", ()=>{
+document.getElementById("startTodayBtn")?.addEventListener("click", ()=>{
   showScreen("routine");
   activeDayIndex = getTodaySplitIndex();
   renderPPL();
@@ -5957,7 +5957,7 @@ hydrateOnboardingInputs();
   }
 });
 
-document.getElementById("settingsResetBtn").addEventListener("click", ()=>{
+document.getElementById("settingsResetBtn")?.addEventListener("click", ()=>{
   const ok = confirm("Reset ALL saved gym data on this device/browser?");
   if(!ok) return;
   localStorage.removeItem(KEY_BW);
