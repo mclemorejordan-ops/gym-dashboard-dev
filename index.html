@@ -4327,6 +4327,15 @@ function r3dDayText(k){
   // k is "Mon"..."Sun" from DAY_KEYS
   return k.toUpperCase();
 }
+  // ✅ ADD THIS RIGHT HERE
+function escHTML(s){
+  return String(s).replace(/[&<>"']/g, (c)=>(
+    c === "&" ? "&amp;" :
+    c === "<" ? "&lt;"  :
+    c === ">" ? "&gt;"  :
+    c === '"' ? "&quot;" : "&#39;"
+  ));
+}
 
 function renderRoutineCarousel(){
   if(!r3dCarousel) return;
@@ -4336,7 +4345,7 @@ function renderRoutineCarousel(){
   r3dCards = [];
 
   DAY_KEYS.forEach((k, idx)=>{
-const day = ar.days[k] || {};
+const day = (ar && ar.days && ar.days[k]) ? ar.days[k] : {};
 const label = (day.label || "").trim();
 
 const card = document.createElement("div");
@@ -4357,7 +4366,7 @@ card.innerHTML = `
     <div class="r3dTop">
       <div>
         <div class="r3dDay">${r3dDayText(k)}</div>
-        <div class="r3dLabel">${label ? label : "—"}</div>
+        <div class="r3dLabel">${escHTML(label ? label : "—")}</div>
         <div class="r3dMeta">${exCount} ${exCount === 1 ? "exercise" : "exercises"}</div>
       </div>
 
@@ -4530,7 +4539,7 @@ function renderDayTabs(){
   const ar = getActiveRoutine();
 
   DAY_KEYS.forEach((k, idx)=>{
-    const day = ar.days[k] || {};
+    const day = (ar && ar.days && ar.days[k]) ? ar.days[k] : {};
     const isRest = !!day.rest;
 
     const b = document.createElement("div");
