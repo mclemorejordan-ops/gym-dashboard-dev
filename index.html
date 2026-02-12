@@ -5882,7 +5882,7 @@ function downloadJSON(filename, obj){
   a.remove();
   URL.revokeObjectURL(url);
 }
-backupNowBtn.addEventListener("click", ()=>{
+backupNowBtn?.addEventListener("click", ()=>{
   const payload = buildExportPayload();
   const stamp = localISODate(new Date());
   downloadJSON(`gym-dashboard-${stamp}.json`, payload);
@@ -5891,11 +5891,11 @@ backupNowBtn.addEventListener("click", ()=>{
   localStorage.setItem(KEY_LAST_BACKUP, new Date().toISOString());
   renderLastBackup();
 });
-importBtn.addEventListener("click", ()=>{
+importBtn?.addEventListener("click", ()=>{
   importFile.value = "";
   importFile.click();
 });
-importFile.addEventListener("change", async ()=>{
+importFile?.addEventListener("change", async ()=>{
   const file = importFile.files?.[0];
   if(!file) return;
 
