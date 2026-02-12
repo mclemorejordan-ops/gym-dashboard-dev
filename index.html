@@ -3263,25 +3263,76 @@ function cleanExerciseName(s){
 }
 
 function loadCustomExercises(){
-  const arr = LS.get(KEY_CUSTOM_EX, []);
-  return Array.isArray(arr) ? arr : [];
+  // Backward compatible:
+  // - v1: ["Pushup","Rowing Machine"]
+  // - v2: [{name:"Pushup", type:"strength", coreMode:null}, ...]
+  const raw = LS.get(KEY_CUSTOM_EX, []);
+  const arr = Array.isArray(raw) ? raw : [];
+
+  const out = [];
+  arr.forEach(item=>{
+    if(typeof item === "string"){
+      const nm = cleanExerciseName(item);
+      if(nm) out.push({ name: nm, type: "strength", coreMode: null });
+      return;
+    }
+    if(item && typeof item === "object"){
+      const nm = cleanExerciseName(item.name);
+      if(!nm) return;
+
+      const t = String(item.type || "strength").toLowerCase();
+      const type = (t === "cardio" || t === "core" || t === "strength") ? t : "strength";
+
+      const cmRaw = (item.coreMode == null) ? null : String(item.coreMode).toLowerCase();
+      const coreMode = (type === "core" && (cmRaw === "time" || cmRaw === "reps")) ? cmRaw : null;
+
+      out.push({ name: nm, type, coreMode });
+    }
+  });
+
+  // De-dupe by normalized name, keep first
+  const seen = new Set();
+  const deduped = [];
+  out.forEach(o=>{
+    const key = normExName(o.name);
+    if(seen.has(key)) return;
+    seen.add(key);
+    deduped.push(o);
+  });
+
+  // Sort by name for stable UI lists
+  deduped.sort((a,b)=>a.name.localeCompare(b.name));
+
+  return deduped;
 }
+
 function saveCustomExercises(arr){
-  LS.set(KEY_CUSTOM_EX, arr);
+  // Expect v2 format [{name,type,coreMode}]
+  LS.set(KEY_CUSTOM_EX, Array.isArray(arr) ? arr : []);
 }
-function addCustomExercise(name){
+
+function addCustomExercise(name, type="strength", coreMode=null){
   const cleaned = cleanExerciseName(name);
   if(!cleaned) return "";
 
+  const t = String(type || "strength").toLowerCase();
+  const safeType = (t === "cardio" || t === "core" || t === "strength") ? t : "strength";
+
+  const cmRaw = (coreMode == null) ? null : String(coreMode).toLowerCase();
+  const safeCoreMode = (safeType === "core" && (cmRaw === "time" || cmRaw === "reps")) ? cmRaw : null;
+
   const cur = loadCustomExercises();
-  const exists = cur.some(x => normExName(x) === normExName(cleaned));
+  const exists = cur.some(x => normExName(x.name) === normExName(cleaned));
+
   if(!exists){
-    cur.push(cleaned);
-    cur.sort((a,b)=>a.localeCompare(b));
+    cur.push({ name: cleaned, type: safeType, coreMode: safeCoreMode });
+    cur.sort((a,b)=>a.name.localeCompare(b.name));
     saveCustomExercises(cur);
   }
+
   return cleaned;
 }
+
 
   /* ---------------------------
    Canonical Exercise Naming
@@ -3400,6 +3451,74 @@ const EXERCISE_LIBRARY = [
   "Box Jumps",
   "Burpees"
 ];
+
+  /* ---------------------------
+   Exercise Metadata (Type + Core Mode)
+   - Used to render correct logging UI later
+---------------------------- */
+const EXERCISE_META = (() => {
+  const m = {};
+
+  // Defaults: treat everything as strength unless explicitly tagged
+  EXERCISE_LIBRARY.forEach(n => {
+    const key = canonicalExerciseName(n);
+    if(!m[key]) m[key] = { type: "strength", coreMode: null };
+  });
+
+  // Core (default reps-based unless overridden)
+  const CORE_LIST = [
+    "Plank",
+    "Side Plank",
+    "Leg Raises",
+    "Bicycle Crunch",
+    "Russian Twist",
+    "Ab Wheel Rollout",
+    "Mountain Climbers"
+  ];
+  CORE_LIST.forEach(n => {
+    const key = canonicalExerciseName(n);
+    m[key] = { type: "core", coreMode: "reps" };
+  });
+
+  // Core holds (time-based)
+  const CORE_TIME = [
+    "Plank",
+    "Side Plank"
+  ];
+  CORE_TIME.forEach(n => {
+    const key = canonicalExerciseName(n);
+    m[key] = { type: "core", coreMode: "time" };
+  });
+
+  // Cardio / Conditioning
+  const CARDIO_LIST = [
+    "Treadmill Walk / Run",
+    "Incline Treadmill Walk",
+    "Stair Climber",
+    "Stationary Bike",
+    "Elliptical",
+    "Rowing Machine",
+    "Jump Rope",
+    "Battle Ropes",
+    "Kettlebell Swings",
+    "Sled Push / Pull",
+    "Box Jumps",
+    "Burpees"
+  ];
+  CARDIO_LIST.forEach(n => {
+    const key = canonicalExerciseName(n);
+    m[key] = { type: "cardio", coreMode: null };
+  });
+
+  return m;
+})();
+
+function getDefaultExerciseMeta(exName){
+  const key = canonicalExerciseName(exName || "");
+  return EXERCISE_META[key] || null;
+}
+
+  
 /* ---------------------------
    UID helper
 ---------------------------- */
@@ -4684,7 +4803,7 @@ function collectAllExerciseNames(){
   EXERCISE_LIBRARY.forEach(n => set.add(canonicalExerciseName(n)));
 
   // 1.5️⃣ Custom exercises created by you
-loadCustomExercises().forEach(n => set.add(canonicalExerciseName(n)));
+loadCustomExercises().forEach(o => set.add(canonicalExerciseName(o.name)));
 
   // 2️⃣ Routine exercises
   routines.forEach(r=>{
