@@ -3817,7 +3817,7 @@ function renderBW(){
       tr.classList.add("tap");
 
       tr.innerHTML = `
-        <td class="mono">${cur.date}</td>
+        <td class="mono">${escHTML(cur.date)}</td>
         <td class="mono">${cur.bw.toFixed(1)}</td>
         <td class="mono">${prevBW===null ? "—" : prevBW.toFixed(1)}</td>
         <td class="mono ${cls}">${dltTxt} ${trend}</td>
