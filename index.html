@@ -2451,6 +2451,17 @@ header{
 
 
     <div id="exPickList"></div>
+
+    <!-- ✅ NEW: manual type toggle (Strength / Cardio) -->
+<div class="row" style="margin-top:10px; gap:8px;">
+  <button id="exPickTypeStrength" type="button" class="tap" style="flex:1; border-radius:999px;">
+    Strength
+  </button>
+  <button id="exPickTypeCardio" type="button" class="tap ghost" style="flex:1; border-radius:999px;">
+    Cardio
+  </button>
+</div>
+
     
 
     <div class="btnRow">
@@ -2632,8 +2643,15 @@ const CARDIO_SPECS = {
 
 function isCardioName(name){
   const n = canonicalExerciseName(String(name||""));
-  return CARDIO_EXERCISES.has(n);
+
+  // 1) built-in cardio list
+  if(CARDIO_EXERCISES.has(n)) return true;
+
+  // 2) custom type overrides (manual toggle)
+  const t = customExerciseTypes?.[n];
+  return t === "cardio";
 }
+
 
 function cardioBlankFor(name){
   const n = canonicalExerciseName(String(name||""));
@@ -5174,6 +5192,35 @@ const exPickCancelBtn = document.getElementById("exPickCancelBtn");
 const exPickConfirmBtn = document.getElementById("exPickConfirmBtn");
 const exPickSearch = document.getElementById("exPickSearch");
 const exPickList = document.getElementById("exPickList");
+  // ✅ NEW: manual picker type toggle (strength/cardio)
+const exPickTypeStrengthBtn = document.getElementById("exPickTypeStrength");
+const exPickTypeCardioBtn   = document.getElementById("exPickTypeCardio");
+
+// default selection
+let exPickType = "strength"; // "strength" | "cardio"
+
+// ✅ NEW: persist custom exercise type (so cardio stays cardio forever)
+const KEY_CUSTOM_EX_TYPES = "gym_custom_ex_types_v1";
+
+function loadCustomExerciseTypes(){
+  return LS.get(KEY_CUSTOM_EX_TYPES, {}); // { "My Exercise": "cardio" }
+}
+function saveCustomExerciseTypes(map){
+  LS.set(KEY_CUSTOM_EX_TYPES, map || {});
+}
+
+let customExerciseTypes = loadCustomExerciseTypes();
+
+function setExPickType(t){
+  exPickType = (t === "cardio") ? "cardio" : "strength";
+  exPickTypeStrengthBtn?.classList.toggle("ghost", exPickType !== "strength");
+  exPickTypeCardioBtn?.classList.toggle("ghost", exPickType !== "cardio");
+}
+
+// button wiring
+exPickTypeStrengthBtn?.addEventListener("click", ()=> setExPickType("strength"));
+exPickTypeCardioBtn?.addEventListener("click", ()=> setExPickType("cardio"));
+
 
   // 🔹 Picker type state
 const exPickTypeStrength = document.getElementById("exPickTypeStrength");
@@ -5215,6 +5262,7 @@ function openExercisePicker({ title="Pick Exercise", initial="", onConfirm, mult
   exPickSearch.value = "";
   renderExercisePickerList();
   lockBodyScroll();                 // ✅ ADD
+  setExPickType("strength");
   exPickModal.style.display = "block";
 }
 
@@ -5253,6 +5301,10 @@ function renderExercisePickerList(){
      create.addEventListener("click", ()=>{
   const created = addCustomExercise(rawQ);
   if(!created) return;
+       // ✅ NEW: save the type (so "Create" can be cardio)
+customExerciseTypes[canonicalExerciseName(created)] = exPickType;
+saveCustomExerciseTypes(customExerciseTypes);
+
 
   if(exPickMulti){
     // MULTI: add to selected list, stay open
