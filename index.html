@@ -1,3 +1,4 @@
+
 <!doctype html>
 
 
@@ -2472,12 +2473,6 @@ header{
 'use strict';
 
 /* ---------------------------
-   DOM helpers
----------------------------- */
-const $  = (id)=>document.getElementById(id);
-const $$ = (sel, root=document)=>[...root.querySelectorAll(sel)];
-
-/* ---------------------------
    Storage helpers
 ---------------------------- */
 const LS = {
@@ -2492,12 +2487,16 @@ const LS = {
   }
 };
 
+  /* ---------------------------
+   DOM helpers
+---------------------------- */
+const $  = (id)=>document.getElementById(id);
+const $$ = (sel, root=document)=>[...root.querySelectorAll(sel)];
+
 const KEY_BW = "gym_bw_logs_v1";
 const KEY_ATT = "gym_attendance_v1";
 const KEY_PRO = "gym_protein_v1";
 const KEY_LIFTS = "gym_lifts_v1";
-const KEY_CORE_LOGS = "gym_core_logs_v1";
-const KEY_CARDIO_LOGS = "gym_cardio_logs_v1";
 const KEY_TARGETS = "gym_targets_v1";
 
 const KEY_ROUTINES = "gym_routines_v1";
@@ -2506,16 +2505,9 @@ const KEY_PROFILE = "gym_profile_v1";
 const KEY_LAST_BACKUP = "gym_last_backup_v1";
 const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
 const KEY_CUSTOM_EX = "gym_custom_ex_v1";
-const KEY_APP_VERSION = "gym_app_version_v1";
+const KEY_APP_VERSION = "gym_app_version_v1"; // ✅ ADD THIS
 const KEY_APP_LAST_RELOAD = "gym_app_last_reload_v1";
 const KEY_APP_UPDATE_DISMISSED_UNTIL = "gym_app_update_dismissed_until_v1";
-
-// ---------------------------
-// Load persisted data
-// ---------------------------
-let lifts = LS.get(KEY_LIFTS, []);
-let coreLogs = LS.get(KEY_CORE_LOGS, []);
-let cardioLogs = LS.get(KEY_CARDIO_LOGS, []);
 
 const VERSION_CHECK_INTERVAL_MS = 60 * 1000;   // 1 min
 const AUTO_REFRESH_COUNTDOWN_S = 8;            // seconds
@@ -2552,9 +2544,6 @@ let bwLogs = [];
 let attendance = new Set();
 let proteinMap = {};
 let lifts = [];
-let coreLogs = [];
-let cardioLogs = [];
-
 
   /* ---------------------------
    SETTINGS bindings
@@ -3411,41 +3400,6 @@ const EXERCISE_LIBRARY = [
   "Box Jumps",
   "Burpees"
 ];
-  // ---------------------------
-// Exercise Kind Classification
-// (Foundation for core/cardio UI + logging)
-// ---------------------------
-const CORE_EXERCISES = new Set([
-  "Plank",
-  "Side Plank",
-  "Leg Raises",
-  "Bicycle Crunch",
-  "Russian Twist",
-  "Ab Wheel Rollout",
-  "Mountain Climbers",
-].map(normExName));
-
-const CARDIO_EXERCISES = new Set([
-  "Treadmill Walk / Run",
-  "Incline Treadmill Walk",
-  "Stair Climber",
-  "Stationary Bike",
-  "Elliptical",
-  "Rowing Machine",
-  "Jump Rope",
-  "Battle Ropes",
-  "Kettlebell Swings",
-  "Sled Push / Pull",
-  "Box Jumps",
-  "Burpees",
-].map(normExName));
-
-function exerciseKind(name){
-  const n = normExName(name || "");
-  if(CORE_EXERCISES.has(n)) return "core";
-  if(CARDIO_EXERCISES.has(n)) return "cardio";
-  return "lift";
-}
 /* ---------------------------
    UID helper
 ---------------------------- */
@@ -4080,10 +4034,12 @@ document.getElementById("pSaveBtn")?.addEventListener("click", ()=>{
 /* ---------------------------
    Lifts + PR helpers
 ---------------------------- */
+lifts = LS.get(KEY_LIFTS, []);
+
 function ensureLiftCompatibility(){
-  lifts = (Array.isArray(lifts) ? lifts : []).map(x=>{
+  lifts = lifts.map(x=>{
     const ex = String(x.ex || x.exercise || "");
-    const exNorm = String(x.exNorm || normExName(ex));
+    const exNorm = x.exNorm || normExName(ex);
     return {
       ...x,
       ex,
@@ -4095,79 +4051,34 @@ function ensureLiftCompatibility(){
   });
   LS.set(KEY_LIFTS, lifts);
 }
-
-function ensureCoreLogCompatibility(){
-  coreLogs = (Array.isArray(coreLogs) ? coreLogs : []).map(x=>{
-    const ex = String(x.ex || x.exercise || "");
-    const exNorm = String(x.exNorm || normExName(ex));
-    const date = String(x.date || "");
-    return {
-      ...x,
-      ex,
-      exNorm,
-      date,
-      routineId: x.routineId ?? null,
-      routineName: x.routineName ?? "",
-      dayKey: x.dayKey ?? ""
-    };
-  });
-  LS.set(KEY_CORE_LOGS, coreLogs);
-}
-
-function ensureCardioLogCompatibility(){
-  cardioLogs = (Array.isArray(cardioLogs) ? cardioLogs : []).map(x=>{
-    const ex = String(x.ex || x.exercise || "");
-    const exNorm = String(x.exNorm || normExName(ex));
-    const date = String(x.date || "");
-    return {
-      ...x,
-      ex,
-      exNorm,
-      date,
-      routineId: x.routineId ?? null,
-      routineName: x.routineName ?? "",
-      dayKey: x.dayKey ?? ""
-    };
-  });
-  LS.set(KEY_CARDIO_LOGS, cardioLogs);
-}
-
-// normalize persisted data once (safe to call multiple times)
 ensureLiftCompatibility();
-ensureCoreLogCompatibility();
-ensureCardioLogCompatibility();
+  migrateCanonicalNames();
 
-migrateCanonicalNames();
-
-function migrateCanonicalNames(){
+  function migrateCanonicalNames(){
   // ---- Routines ----
   let routinesChanged = false;
 
   routines.forEach(r=>{
     DAY_KEYS.forEach(k=>{
-      const day = r.days[k];
+      const day = r.days?.[k];
       if(!day || !Array.isArray(day.exercises)) return;
 
       day.exercises.forEach(ex=>{
-        const before = ex.name || "";
-        const after = canonicalExerciseName(before);
-        if(after !== before){
+        const after = canonicalExerciseName(ex.name);
+        if(after && ex.name !== after){
           ex.name = after;
           routinesChanged = true;
         }
       });
 
-      // de-dupe after canonicalization
+      // Remove duplicates caused by merging names
       const seen = new Set();
-      const beforeLen = day.exercises.length;
       day.exercises = day.exercises.filter(ex=>{
-        const n = normExName(ex.name || "");
-        if(!n) return false;
+        const n = normExName(ex.name);
         if(seen.has(n)) return false;
         seen.add(n);
         return true;
       });
-      if(day.exercises.length !== beforeLen) routinesChanged = true;
     });
   });
 
@@ -4176,12 +4087,10 @@ function migrateCanonicalNames(){
   // ---- Lifts ----
   let liftsChanged = false;
 
-  lifts = (Array.isArray(lifts) ? lifts : []).map(x=>{
-    const before = String(x.ex || "");
-    const after = canonicalExerciseName(before);
+  lifts = lifts.map(x=>{
+    const after = canonicalExerciseName(x.ex);
     const afterNorm = normExName(after);
-
-    if(after !== before || x.exNorm !== afterNorm){
+    if(x.ex !== after || x.exNorm !== afterNorm){
       liftsChanged = true;
       return { ...x, ex: after, exNorm: afterNorm };
     }
@@ -4190,7 +4099,6 @@ function migrateCanonicalNames(){
 
   if(liftsChanged) LS.set(KEY_LIFTS, lifts);
 }
-
 migrateCanonicalNames();
 
 function liftStatsForExercise(exName){
