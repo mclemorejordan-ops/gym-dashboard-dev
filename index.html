@@ -2171,210 +2171,249 @@ header{
     </section>
   </section>
 
-  <!-- SETTINGS SCREEN -->
+ <!-- SETTINGS SCREEN -->
 <section id="screen-settings" class="screen">
   <div class="screenTop">
     <button class="ghost" type="button" data-home>← Back</button>
     <h2 style="margin:0;">Settings</h2>
   </div>
 
-  <!-- Profile -->
+  <!-- Profile (Glass Dropdown) -->
   <section class="card">
-    <h2>Profile</h2>
-    <div class="row">
-      <label>Name (optional)
-        <input id="setName" placeholder="e.g., Jordan" />
-      </label>
+    <details id="profileDropdown" class="glassDrop">
+      <summary class="glassSummary">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h2 style="margin:0;">Profile</h2>
+        </div>
+        <span class="muted small">Tap to expand</span>
+      </summary>
 
-      <label>Units
-        <select id="setUnits">
-          <option value="lbs" selected>lbs</option>
-        </select>
-      </label>
+      <div class="glassBody">
+        <div class="row">
+          <label>Name (optional)
+            <input id="setName" placeholder="e.g., Jordan" />
+          </label>
 
-      <label>Protein Goal (g)
-        <input id="setProteinGoal" type="number" min="0" placeholder="240" />
-      </label>
+          <label>Units
+            <select id="setUnits">
+              <option value="lbs" selected>lbs</option>
+            </select>
+          </label>
 
-      <label>Week Starts On
-        <select id="setWeekStart">
-          <option value="mon" selected>Monday</option>
-          <option value="sun">Sunday</option>
-        </select>
-      </label>
+          <label>Protein Goal (g)
+            <input id="setProteinGoal" type="number" min="0" placeholder="240" />
+          </label>
 
-      <label>Hide Rest Days
-        <select id="setHideRest">
-          <option value="1" selected>ON</option>
-          <option value="0">OFF</option>
-        </select>
-      </label>
+          <label>Week Starts On
+            <select id="setWeekStart">
+              <option value="mon" selected>Monday</option>
+              <option value="sun">Sunday</option>
+            </select>
+          </label>
 
-      <button id="saveProfileBtn">Save Profile</button>
-    </div>
+          <label>Hide Rest Days
+            <select id="setHideRest">
+              <option value="1" selected>ON</option>
+              <option value="0">OFF</option>
+            </select>
+          </label>
+
+          <button id="saveProfileBtn">Save Profile</button>
+        </div>
+      </div>
+    </details>
   </section>
 
-  <!-- Import / Backup -->
+  <!-- Import / Backup (Glass Dropdown) -->
   <section class="card">
-    <h2>Import / Backup</h2>
-    <div class="row" style="gap:6px;">
-      <button class="miniBtn" id="settingsImportBtn">Import</button>
-      <input id="settingsImportFile" type="file" accept="application/json" style="display:none;" />
+    <details id="importBackupDropdown" class="glassDrop">
+      <summary class="glassSummary">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h2 style="margin:0;">Import / Backup</h2>
+          <span class="pill">
+            <span class="muted">Last Backup:</span>
+            <strong class="mono" id="lastBackupText">—</strong>
+          </span>
+        </div>
+        <span class="muted small">Tap to expand</span>
+      </summary>
 
-      <button class="miniBtn" id="backupNowBtn">Backup Now</button>
+      <div class="glassBody">
+        <div class="row" style="gap:6px;">
+          <button class="miniBtn" id="settingsImportBtn">Import</button>
+          <input id="settingsImportFile" type="file" accept="application/json" style="display:none;" />
 
-      <span class="pill">
-        <span class="muted">Last Backup:</span>
-        <strong class="mono" id="lastBackupText">—</strong>
-      </span>
-    </div>
+          <button class="miniBtn" id="backupNowBtn">Backup Now</button>
+        </div>
 
-    <div class="notice" style="margin-top:10px;">
-      <div><strong>Storage</strong></div>
-      <div class="small muted" id="storageInfo">—</div>
-      <div class="small warn" id="storageWarn" style="display:none;">Storage is getting large — consider backing up.</div>
-    </div>
+        <div class="notice" style="margin-top:10px;">
+          <div><strong>Storage</strong></div>
+          <div class="small muted" id="storageInfo">—</div>
+          <div class="small warn" id="storageWarn" style="display:none;">Storage is getting large — consider backing up.</div>
+        </div>
+      </div>
+    </details>
   </section>
 
-  <!-- Refresh -->
+  <!-- Refresh (Glass Dropdown) -->
   <section class="card">
-    <h2>Refresh</h2>
-    <div class="notice">Choose what to refresh (useful after an import or manual edits).</div>
+    <details id="refreshDropdown" class="glassDrop">
+      <summary class="glassSummary">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h2 style="margin:0;">Refresh</h2>
+        </div>
+        <span class="muted small">Tap to expand</span>
+      </summary>
 
-    <div class="row" style="margin-top:10px;">
-      <label><span class="muted">Routine</span>
-        <select id="rfRoutine"><option value="1" selected>Yes</option><option value="0">No</option></select>
-      </label>
-      <label><span class="muted">Progress</span>
-        <select id="rfLifts"><option value="1" selected>Yes</option><option value="0">No</option></select>
-      </label>
-      <label><span class="muted">Weight</span>
-        <select id="rfWeight"><option value="1" selected>Yes</option><option value="0">No</option></select>
-      </label>
-      <label><span class="muted">Attendance</span>
-        <select id="rfAttendance"><option value="1" selected>Yes</option><option value="0">No</option></select>
-      </label>
-      <label><span class="muted">Protein</span>
-        <select id="rfProtein"><option value="1" selected>Yes</option><option value="0">No</option></select>
-      </label>
+      <div class="glassBody">
+        <div class="notice">Choose what to refresh (useful after an import or manual edits).</div>
 
-      <button id="runRefreshBtn">Refresh Selected</button>
-    </div>
-   </section>
+        <div class="row" style="margin-top:10px;">
+          <label><span class="muted">Routine</span>
+            <select id="rfRoutine"><option value="1" selected>Yes</option><option value="0">No</option></select>
+          </label>
+          <label><span class="muted">Progress</span>
+            <select id="rfLifts"><option value="1" selected>Yes</option><option value="0">No</option></select>
+          </label>
+          <label><span class="muted">Weight</span>
+            <select id="rfWeight"><option value="1" selected>Yes</option><option value="0">No</option></select>
+          </label>
+          <label><span class="muted">Attendance</span>
+            <select id="rfAttendance"><option value="1" selected>Yes</option><option value="0">No</option></select>
+          </label>
+          <label><span class="muted">Protein</span>
+            <select id="rfProtein"><option value="1" selected>Yes</option><option value="0">No</option></select>
+          </label>
 
-<!-- Custom Exercises (Glass Dropdown) -->
-<section class="card">
-  <details id="customExerciseDropdown" class="glassDrop">
-    <summary class="glassSummary">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <h2 style="margin:0;">Custom Exercises</h2>
-        <span class="pill"><span class="muted">Count:</span> <strong class="mono" id="customExerciseCount">0</strong></span>
+          <button id="runRefreshBtn">Refresh Selected</button>
+        </div>
       </div>
-      <span class="muted small">Tap to expand</span>
-    </summary>
+    </details>
+  </section>
 
-    <div class="glassBody">
-      <div class="glassList" id="customExerciseList"></div>
-      <div class="notice" style="margin-top:10px;">
-        Deleting a custom exercise removes it from all routines and all lift logs.
+  <!-- Custom Exercises (Glass Dropdown) -->
+  <section class="card">
+    <details id="customExerciseDropdown" class="glassDrop">
+      <summary class="glassSummary">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h2 style="margin:0;">Custom Exercises</h2>
+          <span class="pill"><span class="muted">Count:</span> <strong class="mono" id="customExerciseCount">0</strong></span>
+        </div>
+        <span class="muted small">Tap to expand</span>
+      </summary>
+
+      <div class="glassBody">
+        <div class="glassList" id="customExerciseList"></div>
+        <div class="notice" style="margin-top:10px;">
+          Deleting a custom exercise removes it from all routines and all lift logs.
+        </div>
       </div>
-    </div>
-  </details>
-</section>
+    </details>
+  </section>
 
-
-
-    <!-- Updates -->
+  <!-- Updates (Glass Dropdown) -->
   <section class="card" id="updatesCard">
-    <h2>Updates</h2>
+    <details id="updatesDropdown" class="glassDrop">
+      <summary class="glassSummary">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h2 style="margin:0;">Updates</h2>
+        </div>
+        <span class="muted small">Tap to expand</span>
+      </summary>
 
-    <div class="updatesGroupTitle">Version</div>
-    <div class="updatesPills">
-      <div class="pillRow" id="upCurVer">🧾 Current Version: —</div>
-      <div class="pillRow" id="upPrevVer">🕘 Previous Version: —</div>
-      <div class="pillRow" id="upLatestVer">⬆️ Latest Available: —</div>
-    </div>
+      <div class="glassBody">
+        <div class="updatesGroupTitle">Version</div>
+        <div class="updatesPills">
+          <div class="pillRow" id="upCurVer">🧾 Current Version: —</div>
+          <div class="pillRow" id="upPrevVer">🕘 Previous Version: —</div>
+          <div class="pillRow" id="upLatestVer">⬆️ Latest Available: —</div>
+        </div>
 
-    <div class="updatesGroupTitle" style="margin-top:12px;">Status</div>
-    <div class="updatesPills">
-      <div class="pillRow" id="upConn">🌐 Connection: —</div>
-      <div class="pillRow" id="upStatus">✅ Update Status: —</div>
-      <div class="pillRow" id="upChecked">🕒 Last Checked: —</div>
-    </div>
+        <div class="updatesGroupTitle" style="margin-top:12px;">Status</div>
+        <div class="updatesPills">
+          <div class="pillRow" id="upConn">🌐 Connection: —</div>
+          <div class="pillRow" id="upStatus">✅ Update Status: —</div>
+          <div class="pillRow" id="upChecked">🕒 Last Checked: —</div>
+        </div>
 
-    <div class="updatesGroupTitle" style="margin-top:12px;">Build</div>
-    <div class="updatesPills">
-      <div class="pillRow" id="upBuild">🧱 Build: —</div>
-      <div class="pillRow" id="upSW">🧩 Service Worker: —</div>
-    </div>
+        <div class="updatesGroupTitle" style="margin-top:12px;">Build</div>
+        <div class="updatesPills">
+          <div class="pillRow" id="upBuild">🧱 Build: —</div>
+          <div class="pillRow" id="upSW">🧩 Service Worker: —</div>
+        </div>
 
-    <div class="updatesGroupTitle" style="margin-top:12px;">Actions</div>
-    <div class="updatesActions">
-      <button id="upCheckNowBtn" class="tap">🔍 Check Now</button>
-      <button id="upUpdateNowBtn" class="tap">♻️ Update Now (Full Wipe & Reload)</button>
-    </div>
+        <div class="updatesGroupTitle" style="margin-top:12px;">Actions</div>
+        <div class="updatesActions">
+          <button id="upCheckNowBtn" class="tap">🔍 Check Now</button>
+          <button id="upUpdateNowBtn" class="tap">♻️ Update Now (Full Wipe & Reload)</button>
+        </div>
 
-    <div class="updatesGroupTitle" style="margin-top:12px;">Advanced</div>
-    <div class="updatesActions">
-      <button id="upClearCacheBtn" class="tap ghost">🧹 Clear Cache & Reload</button>
-      <button id="upShowResultBtn" class="tap ghost">📋 Show Last Update Result</button>
-      <button id="upDiagBtn" class="tap ghost">📈 Update Diagnostics</button>
-    </div>
-  
-    <!-- Inline dropdown panels (instead of popup) -->
-    <div id="upResultPanel" class="updatesDropPanel" style="display:none;">
-      <div class="updatesDropHead">
-        <div class="updatesDropTitle">Update Result</div>
-        <button id="upResultHideBtn" class="tap ghost" type="button">Hide</button>
+        <div class="updatesGroupTitle" style="margin-top:12px;">Advanced</div>
+        <div class="updatesActions">
+          <button id="upClearCacheBtn" class="tap ghost">🧹 Clear Cache & Reload</button>
+          <button id="upShowResultBtn" class="tap ghost">📋 Show Last Update Result</button>
+          <button id="upDiagBtn" class="tap ghost">📈 Update Diagnostics</button>
+        </div>
+
+        <!-- Inline dropdown panels (instead of popup) -->
+        <div id="upResultPanel" class="updatesDropPanel" style="display:none;">
+          <div class="updatesDropHead">
+            <div class="updatesDropTitle">Update Result</div>
+            <button id="upResultHideBtn" class="tap ghost" type="button">Hide</button>
+          </div>
+          <div class="updatesPills" style="margin-top:8px;">
+            <div class="pillRow" id="uResLine1">—</div>
+            <div class="pillRow" id="uResLine2">—</div>
+            <div class="pillRow" id="uResLine3">—</div>
+            <div class="pillRow" id="uResLine4">—</div>
+            <div class="pillRow" id="uResLine5">—</div>
+            <div class="pillRow" id="uResLine6"></div>
+          </div>
+          <div class="btnRow" style="margin-top:10px; justify-content:flex-end;">
+            <button id="uModalTryAgain" class="tap" type="button" style="display:none;">Try Again</button>
+          </div>
+        </div>
+
+        <div id="upDiagPanel" class="updatesDropPanel" style="display:none;">
+          <div class="updatesDropHead">
+            <div class="updatesDropTitle">Update Diagnostics</div>
+            <button id="upDiagHideBtn" class="tap ghost" type="button">Hide</button>
+          </div>
+          <div class="updatesPills" style="margin-top:8px;">
+            <div class="pillRow" id="uDiag1">—</div>
+            <div class="pillRow" id="uDiag2">—</div>
+            <div class="pillRow" id="uDiag3">—</div>
+            <div class="pillRow" id="uDiag4">—</div>
+            <div class="pillRow" id="uDiag5">—</div>
+          </div>
+        </div>
       </div>
-      <div class="updatesPills" style="margin-top:8px;">
-        <div class="pillRow" id="uResLine1">—</div>
-        <div class="pillRow" id="uResLine2">—</div>
-        <div class="pillRow" id="uResLine3">—</div>
-        <div class="pillRow" id="uResLine4">—</div>
-        <div class="pillRow" id="uResLine5">—</div>
-        <div class="pillRow" id="uResLine6"></div>
-      </div>
-      <div class="btnRow" style="margin-top:10px; justify-content:flex-end;">
-        <button id="uModalTryAgain" class="tap" type="button" style="display:none;">Try Again</button>
-      </div>
-    </div>
-
-    <div id="upDiagPanel" class="updatesDropPanel" style="display:none;">
-      <div class="updatesDropHead">
-        <div class="updatesDropTitle">Update Diagnostics</div>
-        <button id="upDiagHideBtn" class="tap ghost" type="button">Hide</button>
-      </div>
-      <div class="updatesPills" style="margin-top:8px;">
-        <div class="pillRow" id="uDiag1">—</div>
-        <div class="pillRow" id="uDiag2">—</div>
-        <div class="pillRow" id="uDiag3">—</div>
-        <div class="pillRow" id="uDiag4">—</div>
-        <div class="pillRow" id="uDiag5">—</div>
-      </div>
-    </div>
-
+    </details>
   </section>
 
-
-      
-
-
-
-  <!-- Reset -->
+  <!-- Reset (Glass Dropdown) -->
   <section class="card">
-    <h2>Reset</h2>
-    <div class="notice">
-      This clears everything on this device/browser.
-      <div class="small muted">Tip: Backup first.</div>
-    </div>
+    <details id="resetDropdown" class="glassDrop">
+      <summary class="glassSummary">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h2 style="margin:0;">Reset</h2>
+        </div>
+        <span class="muted small">Tap to expand</span>
+      </summary>
 
-    <div class="btnRow">
-      <button id="settingsResetBtn" class="danger">Reset ALL Data</button>
-    </div>
+      <div class="glassBody">
+        <div class="notice">
+          This clears everything on this device/browser.
+          <div class="small muted">Tip: Backup first.</div>
+        </div>
+
+        <div class="btnRow">
+          <button id="settingsResetBtn" class="danger">Reset ALL Data</button>
+        </div>
+      </div>
+    </details>
   </section>
 </section>
-
 
   <!-- ✅ KEEP YOUR MODALS EXACTLY AS-IS BELOW -->
   <!-- LOG SETS MODAL -->
