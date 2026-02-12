@@ -664,7 +664,6 @@ main > *{
   overflow: hidden;
   border-radius: 16px;
   border: 1px solid var(--line);
-  background: rgba(15,15,16,.55);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -692,17 +691,51 @@ main > *{
   margin-left: -110px;
 
   border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: linear-gradient(180deg, #151518, #101012);
-  box-shadow: 0 18px 60px rgba(0,0,0,.55);
+
+  background: linear-gradient(
+    180deg,
+    #0d0d12 0%,
+    #08080c 60%,
+    #050508 100%
+  );
+
+  border: 1px solid rgba(255,255,255,.05);
+
+  box-shadow:
+    0 24px 70px rgba(0,0,0,.75),
+    inset 0 1px 0 rgba(255,255,255,.04),
+    inset 0 -12px 26px rgba(0,0,0,.55);
+
   overflow: hidden;
 
   transition:
     transform 180ms ease,
-    box-shadow 180ms ease,
-    filter 180ms ease,
-    opacity 180ms ease;
+    box-shadow 220ms ease,
+    filter 220ms ease,
+    opacity 220ms ease,
+    border-color 220ms ease;
 }
+/* Automatically darken non-active cards */
+.r3dCard:not(.isActive){
+  filter: brightness(.68) saturate(.95);
+  opacity: .80;
+}
+
+/* Active card – glow + stronger presence */
+.r3dCard.isActive{
+  filter: none;
+  opacity: 1;
+
+  border-color: rgba(124,252,0,.25);
+
+  box-shadow:
+    0 28px 80px rgba(0,0,0,.82),
+    0 0 0 1px rgba(124,252,0,.08),
+    0 0 40px rgba(124,252,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.05),
+    inset 0 -10px 22px rgba(0,0,0,.50);
+}
+
 
 .r3dCard::after{
   /* subtle inner sheen */
@@ -4318,8 +4351,6 @@ function updateCarouselTransforms(){
     // make active card pop slightly
     const isActive = (i === activeDayIndex);
 card.classList.toggle("isActive", isActive);
-card.style.filter = isActive ? "none" : "brightness(.82) blur(.3px)";
-card.style.opacity = isActive ? "1" : ".85";
   });
 }
 
