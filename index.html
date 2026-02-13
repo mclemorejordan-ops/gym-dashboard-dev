@@ -843,7 +843,62 @@
         localStorage.removeItem(STORAGE_KEY);
       }
     };
+    /********************
+     * Backup / Import (Step 10)
+     ********************/
+    function downloadTextFile(filename, text, mime="application/json"){
+      const blob = new Blob([text], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 250);
+    }
 
+    function exportBackupJSON(){
+      // Keep export simple: full state snapshot
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        app: "gym-dashboard-dev",
+        data: state
+      };
+      return JSON.stringify(payload, null, 2);
+    }
+
+    function validateImportedState(obj){
+      // Accept either raw state or wrapped { data: state }
+      const imported = (obj && typeof obj === "object" && "data" in obj) ? obj.data : obj;
+
+      if(!imported || typeof imported !== "object") throw new Error("Invalid JSON object.");
+      if(typeof imported.schemaVersion !== "number") throw new Error("Invalid backup: missing schemaVersion.");
+
+      // Must contain expected top-level fields (loose validation)
+      if(!("profile" in imported)) throw new Error("Invalid backup: missing profile.");
+      if(!("routines" in imported)) throw new Error("Invalid backup: missing routines.");
+      if(!("exerciseLibrary" in imported)) throw new Error("Invalid backup: missing exerciseLibrary.");
+      if(!("logs" in imported)) throw new Error("Invalid backup: missing logs.");
+      if(!("attendance" in imported)) throw new Error("Invalid backup: missing attendance.");
+
+      return imported;
+    }
+
+    function importBackupJSON(jsonText){
+      let parsed;
+      try{
+        parsed = JSON.parse(jsonText);
+      }catch(e){
+        throw new Error("Could not parse JSON. Make sure it’s valid.");
+      }
+
+      const importedState = validateImportedState(parsed);
+
+      // Overwrite local storage + live state
+      state = importedState;
+      Storage.save(state);
+    }
     let state = Storage.load();
 
     /********************
@@ -3902,12 +3957,141 @@
           }
         }
       },
-      More(){
+         More(){
+        function openImportPasteModal(){
+          const ta = el("textarea", {
+            style:"width:100%; min-height: 260px; border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: rgba(255,255,255,.92); font-size: 12px; outline:none; resize: vertical;",
+            placeholder:"Paste your backup JSON here…"
+          });
+
+          const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+          Modal.open({
+            title: "Import from paste",
+            bodyNode: el("div", {}, [
+              el("div", { class:"note", text:"This will overwrite your current data in this browser." }),
+              el("div", { style:"height:10px" }),
+              ta,
+              err,
+              el("div", { style:"height:12px" }),
+              el("div", { class:"btnrow" }, [
+                el("button", {
+                  class:"btn danger",
+                  onClick: () => {
+                    err.style.display = "none";
+                    try{
+                      importBackupJSON(ta.value || "");
+                      Modal.close();
+                      navigate("home");
+                    }catch(e){
+                      err.textContent = e.message || "Import failed.";
+                      err.style.display = "block";
+                    }
+                  }
+                }, ["Import (overwrite)"]),
+                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+              ])
+            ])
+          });
+        }
+
+        function openImportFileModal(){
+          const input = el("input", { type:"file", accept:"application/json,.json" });
+          const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+          Modal.open({
+            title: "Import from file",
+            bodyNode: el("div", {}, [
+              el("div", { class:"note", text:"Choose a .json backup file. Import overwrites current data." }),
+              el("div", { style:"height:10px" }),
+              input,
+              err,
+              el("div", { style:"height:12px" }),
+              el("div", { class:"btnrow" }, [
+                el("button", {
+                  class:"btn danger",
+                  onClick: async () => {
+                    err.style.display = "none";
+                    try{
+                      const f = input.files?.[0];
+                      if(!f) throw new Error("Select a JSON file first.");
+                      const txt = await f.text();
+                      importBackupJSON(txt);
+                      Modal.close();
+                      navigate("home");
+                    }catch(e){
+                      err.textContent = e.message || "Import failed.";
+                      err.style.display = "block";
+                    }
+                  }
+                }, ["Import (overwrite)"]),
+                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+              ])
+            ])
+          });
+        }
+
         return el("div", { class:"grid" }, [
+          // Backup / Import card
           el("div", { class:"card" }, [
-            el("h2", { text:"More" }),
-            el("div", { class:"muted", text:"Next: Weight, Attendance calendar, Backup/Import JSON, Settings." })
+            el("h2", { text:"Backup / Import" }),
+            el("div", { class:"note", text:"Export your full app data as JSON. Import will overwrite your current data in this browser." }),
+            el("div", { style:"height:10px" }),
+
+            el("div", { class:"btnrow" }, [
+              el("button", {
+                class:"btn primary",
+                onClick: () => {
+                  try{
+                    const txt = exportBackupJSON();
+                    const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+                    downloadTextFile(`gym-dashboard-backup_${stamp}.json`, txt);
+                  }catch(e){
+                    Modal.open({
+                      title:"Export failed",
+                      bodyNode: el("div", {}, [
+                        el("div", { class:"note", text: e.message || "Could not export backup." }),
+                        el("div", { style:"height:12px" }),
+                        el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+                      ])
+                    });
+                  }
+                }
+              }, ["Export JSON backup"]),
+
+              el("button", {
+                class:"btn",
+                onClick: () => {
+                  Modal.open({
+                    title: "Copy backup JSON",
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"note", text:"Copy/paste this JSON anywhere safe." }),
+                      el("div", { style:"height:10px" }),
+                      el("textarea", {
+                        style:"width:100%; min-height: 260px; border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: rgba(255,255,255,.92); font-size: 12px; outline:none; resize: vertical;",
+                      }, [exportBackupJSON()]),
+                      el("div", { style:"height:12px" }),
+                      el("button", { class:"btn primary", onClick: Modal.close }, ["Done"])
+                    ])
+                  });
+                }
+              }, ["View JSON"])
+            ]),
+
+            el("div", { style:"height:14px" }),
+            el("div", { class:"note", text:"Import options:" }),
+            el("div", { style:"height:8px" }),
+
+            el("div", { class:"btnrow" }, [
+              el("button", { class:"btn danger", onClick: openImportPasteModal }, ["Import (paste JSON)"]),
+              el("button", { class:"btn danger", onClick: openImportFileModal }, ["Import (upload file)"])
+            ]),
+
+            el("div", { style:"height:10px" }),
+            el("div", { class:"note", text:"Tip: Export a backup before you import." })
           ]),
+
+          // Debug card (keep your existing debug tools)
           el("div", { class:"card" }, [
             el("h2", { text:"Debug" }),
             el("div", { class:"btnrow" }, [
@@ -3947,9 +4131,7 @@
             ])
           ])
         ]);
-      }
-    };
-
+      },
     /********************
      * 8) Boot
      ********************/
