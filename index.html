@@ -1871,12 +1871,13 @@ function loadBWLogs(){
   if(!Array.isArray(raw)) return [];
   const cleaned = raw.map(x=>({
     date: safeISODate(x?.date),
-    value: toNum(x?.value, toNum(x?.bw, null))
+    bw: toNum(x?.bw, toNum(x?.value, null))
   }))
-  .filter(x=>x.date && Number.isFinite(x.value));
+  .filter(x=>x.date && Number.isFinite(x.bw));
   LS.set(KEY_BW, cleaned);
   return cleaned;
 }
+
 
 function loadAttendance(){
   const raw = LS.get(KEY_ATT, []);
@@ -2297,26 +2298,22 @@ function defaultProfile(){
 
 function loadProfile(){
   const raw = LS.get(KEY_PROFILE, null);
-  const base = {
-    name: "",
-    goalWeight: "",
-    proteinGoal: 160
-  };
+  const base = defaultProfile(); // ✅ use the real defaults
 
-  if(!raw || typeof raw !== "object") return base;
-
-  const name = String(raw.name || "").trim();
-  const goalWeight = (raw.goalWeight === null || raw.goalWeight === undefined) ? "" : String(raw.goalWeight).trim();
-  const proteinGoal = toNum(raw.proteinGoal, base.proteinGoal);
+  if(!raw || typeof raw !== "object") {
+    LS.set(KEY_PROFILE, base);
+    return base;
+  }
 
   const cleaned = {
     ...base,
-    name,
-    goalWeight,
-    proteinGoal: Math.max(0, proteinGoal)
+    name: String(raw.name || "").trim(),
+    units: "lbs", // locked
+    proteinGoal: Math.max(0, toNum(raw.proteinGoal, base.proteinGoal)),
+    weekStart: (raw.weekStart === "sun") ? "sun" : "mon",
+    hideRestDays: (raw.hideRestDays === false) ? false : true
   };
 
-  // Self-heal storage
   LS.set(KEY_PROFILE, cleaned);
   return cleaned;
 }
@@ -4980,7 +4977,7 @@ const rtExSuggestions = document.getElementById("rtExSuggestions");
 
   function openAddExercisePicker(){
   // ✅ remember where the Routine Editor modal is scrolled
-  const modalCard = document.querySelector("#rtModal > div");
+const modalCard = document.querySelector("#rtModal .rtBody");
   const prevScroll = modalCard ? modalCard.scrollTop : 0;
 
   // ✅ kill focus so iOS doesn’t scroll the page
@@ -5032,6 +5029,30 @@ function buildRoutineExerciseSuggestions(){
     rtExSuggestions.appendChild(opt);
   });
 }
+
+function renderRtDayTabs(){
+  if(!rtDayTabs || !draftRoutine) return;
+
+  rtDayTabs.innerHTML = "";
+
+  DAY_KEYS.forEach((k, idx)=>{
+    const day = draftRoutine.days?.[k] || { label:"", rest:false };
+    const b = document.createElement("div");
+    b.className = "tab" + (idx === editDayIndex ? " active" : "");
+    b.innerHTML = `
+      <span>${k}</span>
+      ${day.label ? `<span class="badge">${day.label}</span>` : ""}
+      ${day.rest ? `<span class="badge">Rest</span>` : ""}
+    `;
+    b.addEventListener("click", ()=>{
+      editDayIndex = idx;
+      renderRtDayTabs();
+      renderRtDayPanel();
+    });
+    rtDayTabs.appendChild(b);
+  });
+}
+  
 
 function openRoutineEditor(routineId){
   const r = routines.find(x=>x.id===routineId);
@@ -5181,18 +5202,21 @@ function renderRtDayPanel(){
       });
     }
 
-    if(btnSwap){
-      btnSwap.addEventListener("click", ()=>{
-        openExercisePicker({
-          onPick: (picked)=>{
-            const exName = canonicalExerciseName(picked);
-            day.exercises[idx].name = exName;
-            day.exercises[idx].type = getExerciseType(exName);
-            renderRtDayPanel();
-          }
-        });
-      });
-    }
+   if(btnSwap){
+  btnSwap.addEventListener("click", ()=>{
+    openExercisePicker({
+      title: "Swap exercise",
+      initial: day.exercises[idx].name || "",
+      onConfirm: (picked)=>{
+        const exName = canonicalExerciseName(picked);
+        day.exercises[idx].name = exName;
+        day.exercises[idx].type = getExerciseType(exName);
+        renderRtDayPanel();
+      }
+    });
+  });
+}
+
 
     if(btnRemove){
       btnRemove.addEventListener("click", ()=>{
