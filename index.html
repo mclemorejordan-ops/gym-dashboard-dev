@@ -12,14 +12,11 @@
 
   <title>Gym Dashboard</title>
 
-  <!-- Chart.js (used later in Progress/Weight) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <style>
     :root{
       --bg: #0b0f17;
-      --panel: rgba(255,255,255,.06);
-      --panel2: rgba(255,255,255,.09);
       --text: rgba(255,255,255,.92);
       --muted: rgba(255,255,255,.62);
       --hair: rgba(255,255,255,.10);
@@ -72,21 +69,9 @@
       padding: 4px 2px 6px 2px;
     }
 
-    .brand{
-      display:flex;
-      flex-direction:column;
-      gap: 2px;
-    }
-    .brand .title{
-      font-weight: 720;
-      letter-spacing: .2px;
-      font-size: 18px;
-      line-height: 1.15;
-    }
-    .brand .subtitle{
-      font-size: 12px;
-      color: var(--muted);
-    }
+    .brand{ display:flex; flex-direction:column; gap: 2px; }
+    .brand .title{ font-weight: 720; letter-spacing: .2px; font-size: 18px; line-height: 1.15; }
+    .brand .subtitle{ font-size: 12px; color: var(--muted); }
 
     .chip{
       display:inline-flex;
@@ -107,13 +92,8 @@
 
     main{ padding-top: 10px; }
 
-    .grid{
-      display:grid;
-      gap: 12px;
-    }
-    @media (min-width: 640px){
-      .grid.cols2{ grid-template-columns: 1fr 1fr; }
-    }
+    .grid{ display:grid; gap: 12px; }
+    @media (min-width: 640px){ .grid.cols2{ grid-template-columns: 1fr 1fr; } }
 
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
@@ -155,22 +135,7 @@
     .btn:active{ transform: translateY(1px); }
 
     .muted{ color: var(--muted); }
-    .kpi{
-      display:flex;
-      flex-direction:column;
-      gap: 4px;
-      padding: 8px 0 0 0;
-    }
-    .kpi .big{
-      font-size: 22px;
-      font-weight: 760;
-      letter-spacing: .2px;
-    }
-    .kpi .small{
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.35;
-    }
+    .note{ font-size: 12.5px; color: var(--muted); line-height: 1.35; }
 
     .form{ display:grid; gap: 10px; }
     .row2{ display:grid; gap: 10px; }
@@ -201,82 +166,6 @@
       box-shadow: 0 0 0 4px rgba(124,92,255,.14);
     }
 
-    .toggle{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
-      border-radius: 14px;
-      padding: 12px 12px;
-    }
-    .toggle .ttext{
-      display:flex;
-      flex-direction:column;
-      gap: 2px;
-    }
-    .toggle .ttext .a{ color: var(--text); font-weight: 700; font-size: 14px; }
-    .toggle .ttext .b{ color: var(--muted); font-size: 12px; line-height: 1.35; }
-    .switch{
-      width: 52px;
-      height: 30px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.14);
-      position: relative;
-      flex: 0 0 auto;
-      cursor:pointer;
-      user-select:none;
-    }
-    .switch::after{
-      content:"";
-      position:absolute;
-      top: 50%;
-      left: 3px;
-      transform: translateY(-50%);
-      width: 24px;
-      height: 24px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.82);
-      transition: left .16s ease, background .16s ease;
-    }
-    .switch.on{
-      background: rgba(124,92,255,.30);
-      border-color: rgba(124,92,255,.34);
-    }
-    .switch.on::after{
-      left: 25px;
-      background: rgba(255,255,255,.92);
-    }
-
-    .tplGrid{ display:grid; gap: 10px; }
-    @media (min-width: 640px){ .tplGrid{ grid-template-columns: 1fr 1fr; } }
-    .tpl{
-      border-radius: 16px;
-      padding: 12px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
-      cursor:pointer;
-      user-select:none;
-      transition: transform .06s ease;
-    }
-    .tpl:active{ transform: translateY(1px); }
-    .tpl .name{ font-weight: 780; letter-spacing: .2px; margin-bottom: 4px; }
-    .tpl .desc{ color: var(--muted); font-size: 12.5px; line-height: 1.35; }
-    .tpl.selected{
-      border-color: rgba(124,92,255,.34);
-      background: rgba(124,92,255,.12);
-      box-shadow: 0 0 0 4px rgba(124,92,255,.10);
-    }
-
-    .note{
-      font-size: 12.5px;
-      color: var(--muted);
-      line-height: 1.35;
-    }
-
-    /* Library UI */
     .seg{
       display:flex;
       gap: 8px;
@@ -304,43 +193,33 @@
       border: 1px solid rgba(124,92,255,.22);
     }
 
-    .list{
-      display:grid;
+    /* Routine editor */
+    .routineRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
       gap: 10px;
-    }
-    .item{
+      padding: 12px;
+      border-radius: 16px;
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.05);
-      border-radius: 16px;
-      padding: 12px;
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap: 12px;
     }
-    .item .left{
+    .routineRow .left{
       display:flex;
       flex-direction:column;
       gap: 4px;
-      min-width: 0;
+      min-width:0;
     }
-    .item .name{
+    .routineRow .name{
       font-weight: 820;
-      letter-spacing: .15px;
       overflow:hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 58vw;
+      max-width: 60vw;
     }
-    .item .meta{
-      font-size: 12.5px;
+    .routineRow .meta{
       color: var(--muted);
-      line-height: 1.35;
-    }
-    .item .actions{
-      display:flex;
-      gap: 8px;
-      flex: 0 0 auto;
+      font-size: 12.5px;
     }
     .mini{
       appearance:none;
@@ -355,9 +234,134 @@
       border: 1px solid rgba(255,255,255,.12);
       user-select:none;
     }
+    .mini.primary{
+      background: rgba(124,92,255,.18);
+      border-color: rgba(124,92,255,.28);
+    }
     .mini.danger{
       background: rgba(255,92,122,.14);
       border-color: rgba(255,92,122,.28);
+    }
+
+    .dayCard{
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      padding: 12px;
+      display:grid;
+      gap: 10px;
+    }
+    .dayHeader{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .dayHeader .dleft{
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+      min-width:0;
+    }
+    .dayHeader .dname{
+      font-weight: 840;
+      letter-spacing: .15px;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 62vw;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      width: fit-content;
+    }
+    .pill.rest{
+      color: rgba(255,255,255,.85);
+      background: rgba(255,209,102,.14);
+      border-color: rgba(255,209,102,.22);
+    }
+
+    .exList{ display:grid; gap: 8px; }
+    .exRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
+    .exRow .lname{
+      font-weight: 760;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 62vw;
+    }
+    .exRow .lmeta{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Modal */
+    .modalHost{
+      position: fixed;
+      inset: 0;
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      z-index: 80;
+      padding: 0 10px;
+    }
+    .modalHost.show{ display:flex; }
+    .backdrop{
+      position:absolute;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
+    }
+    .sheet{
+      position:relative;
+      width: min(780px, 100%);
+      max-height: 82vh;
+      overflow:auto;
+      background: rgba(16,20,30,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 22px 22px 0 0;
+      box-shadow: 0 22px 60px rgba(0,0,0,.65);
+      padding: 14px;
+      transform: translateY(10px);
+    }
+    .sheetHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      margin-bottom: 10px;
+    }
+    .sheetHeader .h{ font-weight: 760; letter-spacing: .2px; }
+    .xbtn{
+      appearance:none;
+      border:none;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 10px 12px;
+      cursor:pointer;
+      font-weight: 700;
     }
 
     /* Bottom nav */
@@ -420,214 +424,6 @@
       background: rgba(124,92,255,.22);
       border-color: rgba(124,92,255,.30);
     }
-
-    /* Modal */
-    .modalHost{
-      position: fixed;
-      inset: 0;
-      display:none;
-      align-items:flex-end;
-      justify-content:center;
-      z-index: 80;
-      padding: 0 10px;
-    }
-    .modalHost.show{ display:flex; }
-    .backdrop{
-      position:absolute;
-      inset:0;
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(8px);
-    }
-    .sheet{
-      position:relative;
-      width: min(780px, 100%);
-      max-height: 82vh;
-      overflow:auto;
-      background: rgba(16,20,30,.92);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 22px 22px 0 0;
-      box-shadow: 0 22px 60px rgba(0,0,0,.65);
-      padding: 14px;
-      transform: translateY(10px);
-    }
-    .sheetHeader{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255,255,255,.10);
-      margin-bottom: 10px;
-    }
-    .sheetHeader .h{
-      font-weight: 760;
-      letter-spacing: .2px;
-    }
-    .xbtn{
-      appearance:none;
-      border:none;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.12);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 10px 12px;
-      cursor:pointer;
-      font-weight: 700;
-    }
-    /* =========================
-   Step 4: Routine Editor UI
-   ========================= */
-.subseg{
-  display:flex;
-  gap: 8px;
-  padding: 6px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 16px;
-}
-
-.subsegbtn{
-  flex:1;
-  appearance:none;
-  border:none;
-  cursor:pointer;
-  border-radius: 12px;
-  padding: 10px 10px;
-  font-weight: 800;
-  font-size: 12.5px;
-  color: var(--muted);
-  background: transparent;
-  user-select:none;
-}
-
-.subsegbtn.active{
-  color: var(--text);
-  background: rgba(124,92,255,.16);
-  border: 1px solid rgba(124,92,255,.22);
-}
-
-.hr{
-  height: 1px;
-  background: rgba(255,255,255,.10);
-  margin: 10px 0;
-}
-
-.pillrow{ display:flex; gap: 8px; flex-wrap: wrap; }
-
-.pill{
-  display:inline-flex;
-  align-items:center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 750;
-  user-select:none;
-}
-
-.dayCard{
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.05);
-  border-radius: 16px;
-  padding: 12px;
-  display:grid;
-  gap: 10px;
-}
-
-.dayTop{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap: 10px;
-}
-
-.dayTitle{
-  font-weight: 900;
-  letter-spacing: .15px;
-  min-width: 0;
-}
-
-.daySub{
-  color: var(--muted);
-  font-size: 12.5px;
-  margin-top: 2px;
-}
-
-.badge{
-  display:inline-flex;
-  align-items:center;
-  padding: 7px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.06);
-  color: var(--text);
-}
-
-.badge.rest{
-  background: rgba(255,209,102,.12);
-  border-color: rgba(255,209,102,.22);
-}
-
-.smallBtn{
-  appearance:none;
-  border:none;
-  cursor:pointer;
-  border-radius: 12px;
-  padding: 10px 10px;
-  font-weight: 800;
-  font-size: 12px;
-  color: var(--text);
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.12);
-  user-select:none;
-}
-
-.smallBtn.primary{
-  background: rgba(124,92,255,.18);
-  border-color: rgba(124,92,255,.28);
-}
-
-.smallBtn.danger{
-  background: rgba(255,92,122,.14);
-  border-color: rgba(255,92,122,.28);
-}
-
-.exList{ display:grid; gap: 8px; }
-
-.exRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 10px;
-  padding: 10px 10px;
-  border-radius: 14px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.08);
-}
-
-.exRow .left{
-  display:flex;
-  flex-direction:column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.exRow .nm{
-  font-weight: 850;
-  overflow:hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 52vw;
-}
-.exRow .tp{
-  font-size: 12px;
-  color: var(--muted);
-}
   </style>
 </head>
 
@@ -650,7 +446,6 @@
     <div class="navbar" id="navbar"></div>
   </div>
 
-  <!-- Modal Host -->
   <div class="modalHost" id="modalHost" aria-hidden="true">
     <div class="backdrop" id="modalBackdrop"></div>
     <div class="sheet" role="dialog" aria-modal="true">
@@ -663,9 +458,6 @@
   </div>
 
   <script>
-    /********************
-     * 1) State + Storage
-     ********************/
     const STORAGE_KEY = "gymdash:v1";
 
     const DefaultState = () => ({
@@ -674,16 +466,8 @@
       profile: null,
       routines: [],
       activeRoutineId: null,
-      exerciseLibrary: {
-        weightlifting: [],
-        cardio: [],
-        core: []
-      },
-      logs: {
-        workouts: [],
-        weight: [],
-        protein: []
-      },
+      exerciseLibrary: { weightlifting: [], cardio: [], core: [] },
+      logs: { workouts: [], weight: [], protein: [] },
       attendance: []
     });
 
@@ -700,19 +484,12 @@
           return DefaultState();
         }
       },
-      save(state){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      },
-      reset(){
-        localStorage.removeItem(STORAGE_KEY);
-      }
+      save(state){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); },
+      reset(){ localStorage.removeItem(STORAGE_KEY); }
     };
 
     let state = Storage.load();
 
-    /********************
-     * 2) Helpers
-     ********************/
     const $ = (sel, root=document) => root.querySelector(sel);
 
     const el = (tag, attrs={}, children=[]) => {
@@ -723,20 +500,18 @@
         else if(k === "html") n.innerHTML = v;
         else if(k.startsWith("on") && typeof v === "function"){
           n.addEventListener(k.slice(2).toLowerCase(), v);
-        } else {
-          n.setAttribute(k, v);
-        }
+        } else n.setAttribute(k, v);
       }
       children.forEach(c => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
       return n;
     };
 
     const uid = (prefix="id") => `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
-
     const normName = (s) => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
+    const titleCase = (s) => (s||"").toString().replace(/_/g," ").replace(/\b\w/g, m => m.toUpperCase());
 
     /********************
-     * 3) Routine templates
+     * Routine templates (from onboarding)
      ********************/
     const RoutineTemplates = [
       { key:"ppl", name:"PPL", desc:"Push / Pull / Legs • 6 days + 1 rest",
@@ -781,7 +556,7 @@
         order: idx,
         label: d.label,
         isRest: !!d.isRest,
-        exercises: []
+        exercises: [] // [{ id, refType, refId, nameSnapshot }]
       }));
 
       return {
@@ -794,7 +569,7 @@
     }
 
     /********************
-     * 4) Exercise Library Module (Step 3)
+     * Exercise Library (from step 3)
      ********************/
     const ExerciseLibrary = {
       typeKeys: ["weightlifting","cardio","core"],
@@ -804,7 +579,6 @@
         return "Core";
       },
       ensureSeeded(){
-        // Only seed if ALL empty
         const lib = state.exerciseLibrary || (state.exerciseLibrary = { weightlifting:[], cardio:[], core:[] });
         const empty = (lib.weightlifting?.length||0) === 0 && (lib.cardio?.length||0) === 0 && (lib.core?.length||0) === 0;
         if(!empty) return;
@@ -831,9 +605,7 @@
 
         Storage.save(state);
       },
-      list(type){
-        return (state.exerciseLibrary?.[type] || []);
-      },
+      list(type){ return (state.exerciseLibrary?.[type] || []); },
       existsByName(type, name, excludeId=null){
         const n = normName(name);
         return this.list(type).some(x => normName(x.name) === n && x.id !== excludeId);
@@ -844,130 +616,106 @@
         state.exerciseLibrary[type].push(ex);
         Storage.save(state);
         return ex;
+      }
+    };
+
+    /********************
+     * Routine Manager (Step 4)
+     ********************/
+    const RoutineManager = {
+      getAll(){ return state.routines || (state.routines = []); },
+      getActive(){
+        const all = this.getAll();
+        return all.find(r => r.id === state.activeRoutineId) || all[0] || null;
       },
-      update(type, id, patch){
-        const arr = this.list(type);
-        const idx = arr.findIndex(x => x.id === id);
-        if(idx < 0) throw new Error("Exercise not found.");
-        const nextName = patch.name ?? arr[idx].name;
-        if(this.existsByName(type, nextName, id)) throw new Error("Another exercise with that name already exists.");
-        arr[idx] = { ...arr[idx], ...patch };
+      setActive(id){
+        state.activeRoutineId = id;
         Storage.save(state);
-        return arr[idx];
       },
-      remove(type, id){
-        const arr = this.list(type);
-        const idx = arr.findIndex(x => x.id === id);
+      createFromTemplate(templateKey, name){
+        const r = createRoutineFromTemplate(templateKey, name);
+        this.getAll().push(r);
+        state.activeRoutineId = r.id;
+        Storage.save(state);
+        return r;
+      },
+      duplicate(routineId){
+        const src = this.getAll().find(r => r.id === routineId);
+        if(!src) throw new Error("Routine not found.");
+        const copy = JSON.parse(JSON.stringify(src));
+        copy.id = uid("rt");
+        copy.name = `${src.name} (Copy)`;
+        copy.createdAt = Date.now();
+        copy.days.forEach(d => d.id = uid("day"));
+        this.getAll().push(copy);
+        state.activeRoutineId = copy.id;
+        Storage.save(state);
+        return copy;
+      },
+      rename(routineId, newName){
+        const r = this.getAll().find(x => x.id === routineId);
+        if(!r) throw new Error("Routine not found.");
+        r.name = (newName || "").trim() || r.name;
+        Storage.save(state);
+      },
+      remove(routineId){
+        const arr = this.getAll();
+        const idx = arr.findIndex(r => r.id === routineId);
         if(idx < 0) return;
         arr.splice(idx, 1);
+        if(state.activeRoutineId === routineId){
+          state.activeRoutineId = arr[0]?.id || null;
+        }
+        Storage.save(state);
+      },
+      toggleRest(routineId, dayId){
+        const r = this.getAll().find(x => x.id === routineId);
+        if(!r) return;
+        const d = r.days.find(x => x.id === dayId);
+        if(!d) return;
+        d.isRest = !d.isRest;
+        Storage.save(state);
+      },
+      setDayLabel(routineId, dayId, label){
+        const r = this.getAll().find(x => x.id === routineId);
+        if(!r) return;
+        const d = r.days.find(x => x.id === dayId);
+        if(!d) return;
+        d.label = (label || "").trim() || d.label;
+        Storage.save(state);
+      },
+      addExerciseToDay(routineId, dayId, exerciseType, exerciseId){
+        const r = this.getAll().find(x => x.id === routineId);
+        if(!r) throw new Error("Routine not found.");
+        const d = r.days.find(x => x.id === dayId);
+        if(!d) throw new Error("Day not found.");
+
+        const ex = ExerciseLibrary.list(exerciseType).find(x => x.id === exerciseId);
+        if(!ex) throw new Error("Exercise not found in library.");
+
+        d.exercises.push({
+          id: uid("rx"),
+          refType: exerciseType,
+          refId: ex.id,
+          nameSnapshot: ex.name
+        });
+
+        Storage.save(state);
+      },
+      removeExerciseFromDay(routineId, dayId, routineExerciseId){
+        const r = this.getAll().find(x => x.id === routineId);
+        if(!r) return;
+        const d = r.days.find(x => x.id === dayId);
+        if(!d) return;
+        const idx = d.exercises.findIndex(x => x.id === routineExerciseId);
+        if(idx < 0) return;
+        d.exercises.splice(idx, 1);
         Storage.save(state);
       }
     };
+
     /********************
- * 4B) Routine Manager (Step 4)
- ********************/
-const RoutineManager = {
-  getAll(){
-    return state.routines || (state.routines = []);
-  },
-  getActive(){
-    return this.getAll().find(r => r.id === state.activeRoutineId) || null;
-  },
-  setActive(id){
-    state.activeRoutineId = id;
-    Storage.save(state);
-  },
-  createFromTemplate(templateKey, routineName){
-    const r = createRoutineFromTemplate(templateKey, routineName);
-    this.getAll().push(r);
-    state.activeRoutineId = r.id;
-    Storage.save(state);
-    return r;
-  },
-  duplicate(routineId){
-    const src = this.getAll().find(r => r.id === routineId);
-    if(!src) throw new Error("Routine not found.");
-
-    const copy = JSON.parse(JSON.stringify(src));
-    copy.id = uid("rt");
-    copy.name = `${src.name} (Copy)`;
-    copy.createdAt = Date.now();
-    copy.days = (copy.days || []).map((d, idx) => ({
-      ...d,
-      id: uid("day"),
-      order: idx,
-      exercises: (d.exercises || []).map(x => ({ ...x, id: uid("rx") }))
-    }));
-
-    this.getAll().push(copy);
-    state.activeRoutineId = copy.id;
-    Storage.save(state);
-    return copy;
-  },
-  remove(routineId){
-    const arr = this.getAll();
-    const idx = arr.findIndex(r => r.id === routineId);
-    if(idx < 0) return;
-
-    arr.splice(idx, 1);
-
-    if(state.activeRoutineId === routineId){
-      state.activeRoutineId = arr[0]?.id || null;
-    }
-    Storage.save(state);
-  },
-  rename(routineId, newName){
-    const r = this.getAll().find(r => r.id === routineId);
-    if(!r) throw new Error("Routine not found.");
-    r.name = (newName || "").trim() || r.name;
-    Storage.save(state);
-  },
-  toggleRest(routineId, dayId){
-    const r = this.getAll().find(r => r.id === routineId);
-    if(!r) throw new Error("Routine not found.");
-    const d = (r.days || []).find(x => x.id === dayId);
-    if(!d) throw new Error("Day not found.");
-    d.isRest = !d.isRest;
-    Storage.save(state);
-  },
-  renameDay(routineId, dayId, label){
-    const r = this.getAll().find(r => r.id === routineId);
-    if(!r) throw new Error("Routine not found.");
-    const d = (r.days || []).find(x => x.id === dayId);
-    if(!d) throw new Error("Day not found.");
-    d.label = (label || "").trim() || d.label;
-    Storage.save(state);
-  },
-  addExerciseToDay({ routineId, dayId, exerciseId, type }){
-    const r = this.getAll().find(r => r.id === routineId);
-    if(!r) throw new Error("Routine not found.");
-    const d = (r.days || []).find(x => x.id === dayId);
-    if(!d) throw new Error("Day not found.");
-    d.exercises = d.exercises || [];
-    d.exercises.push({
-      id: uid("rx"),
-      exerciseId,
-      type
-    });
-    Storage.save(state);
-  },
-  removeExerciseFromDay({ routineId, dayId, routineExerciseId }){
-    const r = this.getAll().find(r => r.id === routineId);
-    if(!r) throw new Error("Routine not found.");
-    const d = (r.days || []).find(x => x.id === dayId);
-    if(!d) throw new Error("Day not found.");
-    d.exercises = d.exercises || [];
-    const idx = d.exercises.findIndex(x => x.id === routineExerciseId);
-    if(idx >= 0) d.exercises.splice(idx, 1);
-    Storage.save(state);
-  }
-};
-
-function getExerciseById(type, id){
-  return (state.exerciseLibrary?.[type] || []).find(x => x.id === id) || null;
-}
-    /********************
-     * 5) Modal
+     * Modal
      ********************/
     const Modal = {
       open({ title, bodyNode }){
@@ -986,12 +734,11 @@ function getExerciseById(type, id){
         $("#modalBody").innerHTML = "";
       }
     };
-
     $("#modalClose").addEventListener("click", Modal.close);
     $("#modalBackdrop").addEventListener("click", Modal.close);
 
     /********************
-     * 6) Router + Views
+     * Router
      ********************/
     const Routes = {
       home: { label: "Home" },
@@ -1000,7 +747,6 @@ function getExerciseById(type, id){
       progress: { label: "Progress" },
       more: { label: "More" }
     };
-
     let currentRoute = "home";
 
     function setChip(){
@@ -1012,16 +758,12 @@ function getExerciseById(type, id){
     function renderNav(){
       const nav = $("#navbar");
       nav.innerHTML = "";
-
       const disabled = !state.profile;
 
       Object.entries(Routes).forEach(([key, r]) => {
         nav.appendChild(el("button", {
           class: "navbtn" + (key === currentRoute ? " active" : ""),
-          onClick: () => {
-            if(disabled){ navigate("home"); return; }
-            navigate(key);
-          }
+          onClick: () => { if(disabled){ navigate("home"); return; } navigate(key); }
         }, [
           el("div", { class:"dot" }),
           el("div", { text: r.label })
@@ -1046,20 +788,19 @@ function getExerciseById(type, id){
       }
 
       if(currentRoute === "home") root.appendChild(Views.Home());
-      else if(currentRoute === "routine") root.appendChild(Views.Routine());
+      else if(currentRoute === "routine") root.appendChild(Views.RoutineEditor());
       else if(currentRoute === "log") root.appendChild(Views.Log());
       else if(currentRoute === "progress") root.appendChild(Views.Progress());
       else if(currentRoute === "more") root.appendChild(Views.More());
     }
 
     /********************
-     * 7) Views
+     * Views
      ********************/
     const Views = {
       Onboarding(){
         let hideRestDays = true;
         let selectedTpl = "ppl";
-
         const errorBox = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
 
         const switchNode = el("div", { class:"switch on" });
@@ -1110,7 +851,7 @@ function getExerciseById(type, id){
             return;
           }
 
-          const profile = {
+          state.profile = {
             name: cleanName,
             proteinGoal: Math.round(cleanProtein),
             weekStartsOn,
@@ -1119,14 +860,10 @@ function getExerciseById(type, id){
 
           const routineName = RoutineTemplates.find(t => t.key === selectedTpl)?.name || "Routine";
           const routine = createRoutineFromTemplate(selectedTpl, routineName);
-
-          state.profile = profile;
           state.routines = [routine];
           state.activeRoutineId = routine.id;
 
-          // Seed library if empty
           ExerciseLibrary.ensureSeeded();
-
           Storage.save(state);
           navigate("home");
         };
@@ -1134,10 +871,7 @@ function getExerciseById(type, id){
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"Welcome" }),
-            el("div", { class:"kpi" }, [
-              el("div", { class:"big", text:"Let’s set up your dashboard" }),
-              el("div", { class:"small", text:"Create your profile and choose a routine template. You can edit everything later." })
-            ])
+            el("div", { class:"note", text:"Create your profile and choose a routine template. You can edit everything later." })
           ]),
           el("div", { class:"card" }, [
             el("h2", { text:"Create profile" }),
@@ -1198,849 +932,387 @@ function getExerciseById(type, id){
         return el("div", { class:"grid cols2" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"Today" }),
-            el("div", { class:"kpi" }, [
-              el("div", { class:"big", text:"Today’s workout" }),
-              el("div", { class:"small", text:"Next step: auto-select workout from your routine + day-of-week." })
-            ]),
-            el("div", { style:"height:12px" }),
-            el("button", { class:"btn primary" }, ["Quick Check-In (coming)"])
+            el("div", { class:"note", text:"Step 5 will auto-select today’s workout based on day-of-week + your active routine." })
           ]),
           el("div", { class:"card" }, [
             el("h2", { text:"Protein" }),
-            el("div", { class:"kpi" }, [
-              el("div", { class:"big", text:"Ring + grams left" }),
-              el("div", { class:"small", text:`Goal: ${state.profile?.proteinGoal ?? 0}g/day (live updates coming)` })
-            ]),
-            el("div", { style:"height:12px" }),
-            el("button", { class:"btn" }, ["Add meals (coming)"])
-          ]),
-          el("div", { class:"card" }, [
-            el("h2", { text:"Attendance" }),
-            el("div", { class:"muted", text:"Weekly dots + tap check-in. Calendar view later." })
-          ]),
-          el("div", { class:"card" }, [
-            el("h2", { text:"Library" }),
-            el("div", { class:"muted", text:`Exercises saved: ${
-              (state.exerciseLibrary.weightlifting?.length||0) +
-              (state.exerciseLibrary.cardio?.length||0) +
-              (state.exerciseLibrary.core?.length||0)
-            }` })
+            el("div", { class:"note", text:`Goal: ${state.profile?.proteinGoal ?? 0}g/day (ring + meals later)` })
           ])
         ]);
       },
 
-  Routine(){
-  ExerciseLibrary.ensureSeeded();
+      RoutineEditor(){
+        ExerciseLibrary.ensureSeeded();
 
-  // local UI state for this view
-  let mode = "editor"; // "editor" | "library"
-  let activeRoutineId = state.activeRoutineId;
+        // Ensure we have at least 1 routine (in case user imported/edited data later)
+        if((state.routines?.length || 0) === 0){
+          const r = createRoutineFromTemplate("blank", "Blank");
+          state.routines = [r];
+          state.activeRoutineId = r.id;
+          Storage.save(state);
+        }
 
-  const root = el("div", { class:"grid" });
+        const routines = RoutineManager.getAll();
+        const active = RoutineManager.getActive();
+        if(!active) return el("div", { class:"card" }, [ el("h2", { text:"Routine" }), el("div", { class:"note", text:"No routine found." }) ]);
 
-  // ----- Sub tabs: Editor / Library
-  const subseg = el("div", { class:"subseg" });
-  const editorBtn = el("button", { class:"subsegbtn active" }, ["Routine"]);
-  const libraryBtn = el("button", { class:"subsegbtn" }, ["Library"]);
+        const hideRest = !!state.profile?.hideRestDays;
 
-  const contentHost = el("div", {});
-
-  function setMode(next){
-    mode = next;
-    editorBtn.classList.toggle("active", mode === "editor");
-    libraryBtn.classList.toggle("active", mode === "library");
-    renderContent();
-  }
-
-  editorBtn.addEventListener("click", () => setMode("editor"));
-  libraryBtn.addEventListener("click", () => setMode("library"));
-
-  subseg.appendChild(editorBtn);
-  subseg.appendChild(libraryBtn);
-
-  // ----- Header card
-  root.appendChild(el("div", { class:"card" }, [
-    el("h2", { text:"Routine" }),
-    el("div", { class:"note", text:"Manage multiple routines, mark rest days, and add exercises from your library." }),
-    el("div", { style:"height:10px" }),
-    subseg
-  ]));
-
-  root.appendChild(contentHost);
-
-  // ====== Editor UI ======
-  function renderEditor(){
-    contentHost.innerHTML = "";
-
-    const routines = RoutineManager.getAll();
-    if(!activeRoutineId && routines[0]?.id){
-      activeRoutineId = routines[0].id;
-      RoutineManager.setActive(activeRoutineId);
-    }
-
-    const active = RoutineManager.getActive();
-
-    // -- Routine selector card
-    const selectorCard = el("div", { class:"card" }, [
-      el("h2", { text:"Routines" })
-    ]);
-
-    const routineSelect = el("select", {});
-    routines.forEach(r => {
-      routineSelect.appendChild(el("option", { value:r.id, text:r.name }));
-    });
-    routineSelect.value = activeRoutineId || "";
-    routineSelect.addEventListener("change", () => {
-      activeRoutineId = routineSelect.value;
-      RoutineManager.setActive(activeRoutineId);
-      renderContent();
-    });
-
-    const renameBtn = el("button", {
-      class:"btn",
-      onClick: () => {
-        const r = RoutineManager.getActive();
-        if(!r) return;
-        const input = el("input", { type:"text", value:r.name });
-        Modal.open({
-          title: "Rename routine",
-          bodyNode: el("div", {}, [
-            el("label", {}, [ el("span", { text:"Name" }), input ]),
-            el("div", { style:"height:12px" }),
-            el("div", { class:"btnrow" }, [
-              el("button", {
-                class:"btn primary",
-                onClick: () => {
-                  RoutineManager.rename(r.id, input.value);
-                  Modal.close();
-                  renderContent();
-                }
-              }, ["Save"]),
-              el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-            ])
-          ])
+        const routineSelect = el("select", {});
+        routines.forEach(r => routineSelect.appendChild(el("option", { value:r.id, text:r.name })));
+        routineSelect.value = active.id;
+        routineSelect.addEventListener("change", () => {
+          RoutineManager.setActive(routineSelect.value);
+          renderView();
         });
-      }
-    }, ["Rename"]);
 
-    const newBtn = el("button", {
-      class:"btn primary",
-      onClick: () => openCreateRoutineModal()
-    }, ["New routine"]);
+        const openCreateRoutine = () => {
+          let selectedTpl = "ppl";
+          const nameInput = el("input", { type:"text", placeholder:"Routine name (optional)" });
 
-    const dupBtn = el("button", {
-      class:"btn",
-      onClick: () => {
-        const r = RoutineManager.getActive();
-        if(!r) return;
-        RoutineManager.duplicate(r.id);
-        activeRoutineId = state.activeRoutineId;
-        renderContent();
-      }
-    }, ["Duplicate"]);
+          const tplCards = el("div", { class:"tplGrid" });
+          const draw = () => {
+            tplCards.innerHTML = "";
+            RoutineTemplates.forEach(t => {
+              tplCards.appendChild(el("div", {
+                class:"tpl" + (t.key === selectedTpl ? " selected" : ""),
+                onClick: () => { selectedTpl = t.key; draw(); }
+              }, [
+                el("div", { class:"name", text:t.name }),
+                el("div", { class:"desc", text:t.desc })
+              ]));
+            });
+          };
+          draw();
 
-    const delBtn = el("button", {
-      class:"btn danger",
-      onClick: () => {
-        const r = RoutineManager.getActive();
-        if(!r) return;
-        Modal.open({
-          title: "Delete routine?",
-          bodyNode: el("div", {}, [
-            el("div", { class:"note", text:`This deletes "${r.name}". This can’t be undone.` }),
-            el("div", { style:"height:12px" }),
-            el("div", { class:"btnrow" }, [
+          Modal.open({
+            title: "Create routine",
+            bodyNode: el("div", {}, [
+              el("div", { class:"form" }, [
+                el("label", {}, [ el("span", { text:"Name" }), nameInput ])
+              ]),
+              el("div", { style:"height:10px" }),
+              tplCards,
+              el("div", { style:"height:12px" }),
+              el("div", { class:"btnrow" }, [
+                el("button", {
+                  class:"btn primary",
+                  onClick: () => {
+                    const nm = (nameInput.value || "").trim();
+                    const tplName = RoutineTemplates.find(t => t.key === selectedTpl)?.name || "Routine";
+                    RoutineManager.createFromTemplate(selectedTpl, nm || tplName);
+                    Modal.close();
+                    renderView();
+                  }
+                }, ["Create"]),
+                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+              ])
+            ])
+          });
+        };
+
+        const openRenameRoutine = () => {
+          const nameInput = el("input", { type:"text", value: active.name });
+          Modal.open({
+            title: "Rename routine",
+            bodyNode: el("div", {}, [
+              el("div", { class:"form" }, [
+                el("label", {}, [ el("span", { text:"Name" }), nameInput ])
+              ]),
+              el("div", { style:"height:12px" }),
+              el("div", { class:"btnrow" }, [
+                el("button", {
+                  class:"btn primary",
+                  onClick: () => {
+                    RoutineManager.rename(active.id, nameInput.value);
+                    Modal.close();
+                    renderView();
+                  }
+                }, ["Save"]),
+                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+              ])
+            ])
+          });
+        };
+
+        const openLibraryModal = () => {
+          Modal.open({ title: "Exercise Library", bodyNode: buildLibraryManagerModal() });
+        };
+
+        const openDayEditModal = (day) => {
+          const labelInput = el("input", { type:"text", value: day.label });
+          Modal.open({
+            title: "Edit day",
+            bodyNode: el("div", {}, [
+              el("div", { class:"form" }, [
+                el("label", {}, [ el("span", { text:"Day label" }), labelInput ])
+              ]),
+              el("div", { style:"height:12px" }),
+              el("div", { class:"btnrow" }, [
+                el("button", {
+                  class:"btn primary",
+                  onClick: () => {
+                    RoutineManager.setDayLabel(active.id, day.id, labelInput.value);
+                    Modal.close();
+                    renderView();
+                  }
+                }, ["Save"]),
+                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+              ])
+            ])
+          });
+        };
+
+        const openAddExercisesModal = (day, multi=false) => {
+          Modal.open({
+            title: multi ? `Add multiple exercises` : `Add exercise`,
+            bodyNode: buildExercisePickerModal({
+              onPick: (picked) => {
+                // picked can be a single {type,id} or array
+                try{
+                  if(Array.isArray(picked)){
+                    picked.forEach(p => RoutineManager.addExerciseToDay(active.id, day.id, p.type, p.id));
+                  } else {
+                    RoutineManager.addExerciseToDay(active.id, day.id, picked.type, picked.id);
+                  }
+                  Modal.close();
+                  renderView();
+                }catch(e){
+                  const box = $("#pickerError");
+                  if(box){
+                    box.textContent = e.message || "Unable to add.";
+                    box.style.display = "block";
+                  }
+                }
+              }
+            })
+          });
+        };
+
+        // Days list
+        const daysHost = el("div", { class:"grid" });
+
+        const sortedDays = [...active.days].sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
+        const visibleDays = hideRest ? sortedDays.filter(d => !d.isRest) : sortedDays;
+
+        visibleDays.forEach(day => {
+          const exHost = el("div", { class:"exList" });
+
+          if(day.isRest){
+            exHost.appendChild(el("div", { class:"note", text:"Rest day" }));
+          } else if((day.exercises?.length || 0) === 0){
+            exHost.appendChild(el("div", { class:"note", text:"No exercises yet. Add from your library." }));
+          } else {
+            day.exercises.forEach(rx => {
+              exHost.appendChild(el("div", { class:"exRow" }, [
+                el("div", { style:"display:flex; flex-direction:column; gap:2px; min-width:0;" }, [
+                  el("div", { class:"lname", text: rx.nameSnapshot || "Exercise" }),
+                  el("div", { class:"lmeta", text: `${titleCase(rx.refType)}` })
+                ]),
+                el("button", {
+                  class:"mini danger",
+                  onClick: () => {
+                    RoutineManager.removeExerciseFromDay(active.id, day.id, rx.id);
+                    renderView();
+                  }
+                }, ["Remove"])
+              ]));
+            });
+          }
+
+          const dayCard = el("div", { class:"dayCard" }, [
+            el("div", { class:"dayHeader" }, [
+              el("div", { class:"dleft" }, [
+                el("div", { class:"dname", text: day.label }),
+                day.isRest ? el("div", { class:"pill rest", text:"Rest Day" }) : el("div", { class:"pill", text:`Exercises: ${day.exercises?.length || 0}` })
+              ]),
+              el("div", { class:"btnrow" }, [
+                el("button", { class:"mini", onClick: () => openDayEditModal(day) }, ["Edit"]),
+                el("button", {
+                  class:"mini",
+                  onClick: () => { RoutineManager.toggleRest(active.id, day.id); renderView(); }
+                }, [day.isRest ? "Unrest" : "Rest"]),
+                el("button", { class:"mini primary", onClick: () => openAddExercisesModal(day, false) }, ["+1"]),
+                el("button", { class:"mini primary", onClick: () => openAddExercisesModal(day, true) }, ["+Multi"])
+              ])
+            ]),
+            exHost
+          ]);
+
+          daysHost.appendChild(dayCard);
+        });
+
+        // Routine header card
+        const headerCard = el("div", { class:"card" }, [
+          el("h2", { text:"Routine Editor" }),
+          el("div", { class:"row2" }, [
+            el("label", {}, [ el("span", { text:"Active routine" }), routineSelect ]),
+            el("div", { style:"display:flex; align-items:end; justify-content:flex-end; gap:10px; flex-wrap:wrap;" }, [
+              el("button", { class:"btn primary", onClick: openCreateRoutine }, ["Create"]),
+              el("button", { class:"btn", onClick: openRenameRoutine }, ["Rename"]),
+              el("button", {
+                class:"btn",
+                onClick: () => { RoutineManager.duplicate(active.id); renderView(); }
+              }, ["Duplicate"]),
               el("button", {
                 class:"btn danger",
                 onClick: () => {
-                  RoutineManager.remove(r.id);
-                  activeRoutineId = state.activeRoutineId;
-                  Modal.close();
-                  renderContent();
-                }
-              }, ["Delete"]),
-              el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-            ])
-          ])
-        });
-      }
-    }, ["Delete"]);
-
-    selectorCard.appendChild(el("div", { class:"row2" }, [
-      el("label", {}, [ el("span", { text:"Active routine" }), routineSelect ]),
-      el("div", { style:"display:flex; align-items:end; gap:10px; flex-wrap:wrap;" }, [
-        newBtn, renameBtn, dupBtn, delBtn
-      ])
-    ]));
-
-    contentHost.appendChild(selectorCard);
-
-    // -- Routine days editor
-    if(!active){
-      contentHost.appendChild(el("div", { class:"card" }, [
-        el("h2", { text:"No routine" }),
-        el("div", { class:"note", text:"Create a routine to begin." })
-      ]));
-      return;
-    }
-
-    const daysCard = el("div", { class:"card" }, [
-      el("h2", { text:"Days" }),
-      el("div", { class:"note", text:"Tap a day to edit its name, rest status, and exercises." }),
-      el("div", { class:"hr" })
-    ]);
-
-    const hideRest = !!state.profile?.hideRestDays;
-
-    const dayList = el("div", { class:"list" });
-
-    (active.days || [])
-      .slice()
-      .sort((a,b) => (a.order??0) - (b.order??0))
-      .forEach(day => {
-        if(hideRest && day.isRest) return;
-
-        const badge = day.isRest ? el("div", { class:"badge rest", text:"Rest" }) : el("div", { class:"badge", text:"Workout" });
-
-        const top = el("div", { class:"dayTop" }, [
-          el("div", {}, [
-            el("div", { class:"dayTitle", text: day.label || "Day" }),
-            el("div", { class:"daySub", text: `${(day.exercises?.length||0)} exercises` })
-          ]),
-          badge
-        ]);
-
-        const actions = el("div", { class:"pillrow" }, [
-          el("button", { class:"smallBtn", onClick: () => openRenameDayModal(active.id, day.id, day.label) }, ["Rename day"]),
-          el("button", { class:"smallBtn", onClick: () => { RoutineManager.toggleRest(active.id, day.id); renderContent(); } }, [day.isRest ? "Unmark rest" : "Mark rest"]),
-          el("button", { class:"smallBtn primary", onClick: () => openExercisePicker({ routineId: active.id, dayId: day.id, multi:false }) }, ["Add exercise"]),
-          el("button", { class:"smallBtn", onClick: () => openExercisePicker({ routineId: active.id, dayId: day.id, multi:true }) }, ["Multi add"])
-        ]);
-
-        const exList = el("div", { class:"exList" });
-
-        (day.exercises || []).forEach(rx => {
-          const ex = getExerciseById(rx.type, rx.exerciseId);
-          const nm = ex?.name || "(Missing exercise)";
-          const tp = rx.type === "weightlifting" ? "Weightlifting" : rx.type === "cardio" ? "Cardio" : "Core";
-
-          exList.appendChild(el("div", { class:"exRow" }, [
-            el("div", { class:"left" }, [
-              el("div", { class:"nm", text: nm }),
-              el("div", { class:"tp", text: tp })
-            ]),
-            el("button", {
-              class:"smallBtn danger",
-              onClick: () => {
-                RoutineManager.removeExerciseFromDay({
-                  routineId: active.id,
-                  dayId: day.id,
-                  routineExerciseId: rx.id
-                });
-                renderContent();
-              }
-            }, ["Remove"])
-          ]));
-        });
-
-        if((day.exercises?.length||0) === 0){
-          exList.appendChild(el("div", { class:"note", text:"No exercises yet. Add one." }));
-        }
-
-        const card = el("div", { class:"dayCard" }, [ top, actions, exList ]);
-        dayList.appendChild(card);
-      });
-
-    if(dayList.children.length === 0){
-      dayList.appendChild(el("div", { class:"note", text:"All days are hidden (Hide rest days is ON and every day is Rest), or no days exist." }));
-    }
-
-    daysCard.appendChild(dayList);
-    contentHost.appendChild(daysCard);
-  }
-
-  function openRenameDayModal(routineId, dayId, currentLabel){
-    const input = el("input", { type:"text", value: currentLabel || "" });
-    Modal.open({
-      title: "Rename day",
-      bodyNode: el("div", {}, [
-        el("label", {}, [ el("span", { text:"Day label" }), input ]),
-        el("div", { style:"height:12px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", {
-            class:"btn primary",
-            onClick: () => {
-              RoutineManager.renameDay(routineId, dayId, input.value);
-              Modal.close();
-              renderContent();
-            }
-          }, ["Save"]),
-          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-        ])
-      ])
-    });
-  }
-
-  function openCreateRoutineModal(){
-    let selectedTpl = "ppl";
-    const nameInput = el("input", { type:"text", placeholder:"Routine name (optional)" });
-
-    const tplHost = el("div", { class:"tplGrid" });
-
-    const renderTpl = () => {
-      tplHost.innerHTML = "";
-      RoutineTemplates.forEach(t => {
-        tplHost.appendChild(el("div", {
-          class: "tpl" + (t.key === selectedTpl ? " selected" : ""),
-          onClick: () => { selectedTpl = t.key; renderTpl(); }
-        }, [
-          el("div", { class:"name", text: t.name }),
-          el("div", { class:"desc", text: t.desc })
-        ]));
-      });
-    };
-    renderTpl();
-
-    Modal.open({
-      title: "Create routine",
-      bodyNode: el("div", {}, [
-        el("div", { class:"note", text:"Pick a template. You can customize days and exercises afterward." }),
-        el("div", { style:"height:10px" }),
-        tplHost,
-        el("div", { style:"height:10px" }),
-        el("label", {}, [ el("span", { text:"Name (optional)" }), nameInput ]),
-        el("div", { style:"height:12px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", {
-            class:"btn primary",
-            onClick: () => {
-              const tplName = RoutineTemplates.find(t => t.key === selectedTpl)?.name || "Routine";
-              const nm = (nameInput.value || "").trim() || tplName;
-              RoutineManager.createFromTemplate(selectedTpl, nm);
-              activeRoutineId = state.activeRoutineId;
-              Modal.close();
-              renderContent();
-            }
-          }, ["Create"]),
-          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-        ])
-      ])
-    });
-  }
-
-  // ====== Exercise Picker Modal (single + multi) ======
-  function openExercisePicker({ routineId, dayId, multi }){
-    let type = "weightlifting";
-    let q = "";
-    const selected = new Set();
-
-    const typeSeg = el("div", { class:"seg" });
-    const segButtons = {};
-    ["weightlifting","cardio","core"].forEach(t => {
-      const b = el("button", {
-        class:"segbtn" + (t === type ? " active" : ""),
-        onClick: () => {
-          type = t;
-          Object.entries(segButtons).forEach(([k, btn]) => btn.classList.toggle("active", k === type));
-          renderList();
-        }
-      }, [t === "weightlifting" ? "Weightlifting" : t === "cardio" ? "Cardio" : "Core"]);
-      segButtons[t] = b;
-      typeSeg.appendChild(b);
-    });
-
-    const search = el("input", { type:"text", placeholder:"Search library…" });
-    search.addEventListener("input", () => { q = search.value || ""; renderList(); });
-
-    const listHost = el("div", { class:"list" });
-
-    function filtered(){
-      const items = [...(state.exerciseLibrary?.[type] || [])];
-      items.sort((a,b) => (a.name||"").localeCompare(b.name||""));
-      const nq = (q||"").trim().toLowerCase();
-      if(!nq) return items;
-      return items.filter(x => (x.name||"").toLowerCase().includes(nq));
-    }
-
-    function renderList(){
-      listHost.innerHTML = "";
-      const items = filtered();
-
-      if(items.length === 0){
-        listHost.appendChild(el("div", { class:"note", text:"No matches. You can add a new exercise to the library from the Library tab." }));
-        return;
-      }
-
-      items.forEach(ex => {
-        const isSel = selected.has(ex.id);
-
-        listHost.appendChild(el("div", { class:"item" }, [
-          el("div", { class:"left" }, [
-            el("div", { class:"name", text: ex.name }),
-            el("div", { class:"meta", text: type === "weightlifting" ? (ex.primaryMuscle ? `Muscle: ${ex.primaryMuscle}` : "Weightlifting") :
-                                   type === "cardio" ? (ex.modality ? `Mode: ${ex.modality}` : "Cardio") :
-                                   (ex.equipment ? `Equipment: ${ex.equipment}` : "Core") })
-          ]),
-          el("div", { class:"actions" }, [
-            el("button", {
-              class:"mini " + (multi ? "" : "primary"),
-              onClick: () => {
-                if(multi){
-                  if(isSel) selected.delete(ex.id); else selected.add(ex.id);
-                  renderList();
-                }else{
-                  RoutineManager.addExerciseToDay({ routineId, dayId, exerciseId: ex.id, type });
-                  Modal.close();
-                  renderContent();
-                }
-              }
-            }, [ multi ? (isSel ? "Selected" : "Select") : "Add" ])
-          ])
-        ]));
-      });
-    }
-
-    renderList();
-
-    Modal.open({
-      title: multi ? "Multi add exercises" : "Add exercise",
-      bodyNode: el("div", {}, [
-        typeSeg,
-        el("div", { style:"height:10px" }),
-        el("label", {}, [ el("span", { text:"Search" }), search ]),
-        el("div", { style:"height:10px" }),
-        listHost,
-        el("div", { style:"height:12px" }),
-        el("div", { class:"btnrow" }, [
-          multi ? el("button", {
-            class:"btn primary",
-            onClick: () => {
-              const ids = [...selected];
-              ids.forEach(id => RoutineManager.addExerciseToDay({ routineId, dayId, exerciseId: id, type }));
-              Modal.close();
-              renderContent();
-            }
-          }, ["Add selected"]) : el("span", {}),
-          el("button", { class:"btn", onClick: Modal.close }, ["Close"])
-        ])
-      ])
-    });
-  }
-
-  // ====== Library mode (reuses your existing library screen by flipping mode)
-  function renderLibrary(){
-    // Re-render the existing Step 3 screen by temporarily calling the old implementation:
-    // Easiest/cleanest approach without restructuring: navigate user to the Routine tab library mode
-    // We'll reuse the existing list style and "Add exercise" via modal from your Step 3 view.
-    //
-    // NOTE: This is a minimal library view (search + add/edit/delete) maintained inside Routine tab.
-    contentHost.innerHTML = "";
-
-    let tab = "weightlifting";
-    let query = "";
-
-    const listHost = el("div", { class:"list" });
-
-    const searchInput = el("input", { type:"text", placeholder:"Search exercises…" });
-    searchInput.addEventListener("input", () => {
-      query = searchInput.value || "";
-      renderList();
-    });
-
-    const seg = el("div", { class:"seg" });
-    const segButtons = {};
-    ["weightlifting","cardio","core"].forEach(t => {
-      const b = el("button", {
-        class:"segbtn" + (t === tab ? " active" : ""),
-        onClick: () => {
-          tab = t;
-          Object.entries(segButtons).forEach(([k, btn]) => btn.classList.toggle("active", k === tab));
-          renderList();
-        }
-      }, [t === "weightlifting" ? "Weightlifting" : t === "cardio" ? "Cardio" : "Core"]);
-      segButtons[t] = b;
-      seg.appendChild(b);
-    });
-
-    const getFiltered = () => {
-      const q = (query || "").trim().toLowerCase();
-      const items = [...(state.exerciseLibrary?.[tab] || [])].sort((a,b) => (a.name||"").localeCompare(b.name||""));
-      if(!q) return items;
-      return items.filter(x => (x.name||"").toLowerCase().includes(q));
-    };
-
-    const openAddModal = () => {
-      Modal.open({
-        title: `Add ${tab === "weightlifting" ? "Weightlifting" : tab === "cardio" ? "Cardio" : "Core"} exercise`,
-        bodyNode: buildExerciseFormUI({
-          type: tab,
-          mode: "add",
-          initial: null,
-          onSave: (data) => {
-            try{
-              ExerciseLibrary.add(tab, data);
-              Modal.close();
-              renderLibrary();
-            }catch(e){
-              const box = $("#formError");
-              if(box){ box.textContent = e.message || "Unable to add."; box.style.display="block"; }
-            }
-          }
-        })
-      });
-    };
-
-    const openEditModal = (ex) => {
-      Modal.open({
-        title: `Edit: ${ex.name}`,
-        bodyNode: buildExerciseFormUI({
-          type: tab,
-          mode: "edit",
-          initial: ex,
-          onSave: (data) => {
-            try{
-              ExerciseLibrary.update(tab, ex.id, data);
-              Modal.close();
-              renderLibrary();
-            }catch(e){
-              const box = $("#formError");
-              if(box){ box.textContent = e.message || "Unable to save."; box.style.display="block"; }
-            }
-          }
-        })
-      });
-    };
-
-    function formatMeta(ex){
-      if(ex.type === "weightlifting"){
-        const a = ex.equipment ? `Equipment: ${ex.equipment}` : "Equipment: —";
-        const b = ex.primaryMuscle ? `Muscle: ${ex.primaryMuscle}` : "Muscle: —";
-        const c = typeof ex.isCompound === "boolean" ? (ex.isCompound ? "Compound" : "Isolation") : "—";
-        return `${a} • ${b} • ${c}`;
-      }
-      if(ex.type === "cardio"){
-        const a = ex.modality ? `Mode: ${ex.modality}` : "Mode: —";
-        const b = ex.supportsIncline ? "Incline: Yes" : "Incline: No";
-        return `${a} • ${b}`;
-      }
-      return ex.equipment ? `Equipment: ${ex.equipment}` : "Equipment: —";
-    }
-
-    function renderList(){
-      listHost.innerHTML = "";
-      const items = getFiltered();
-      if(items.length === 0){
-        listHost.appendChild(el("div", { class:"note", text:"No exercises found. Try another search or add one." }));
-        return;
-      }
-      items.forEach(ex => {
-        listHost.appendChild(el("div", { class:"item" }, [
-          el("div", { class:"left" }, [
-            el("div", { class:"name", text: ex.name }),
-            el("div", { class:"meta", text: formatMeta(ex) })
-          ]),
-          el("div", { class:"actions" }, [
-            el("button", { class:"mini", onClick: () => openEditModal(ex) }, ["Edit"]),
-            el("button", {
-              class:"mini danger",
-              onClick: () => {
-                Modal.open({
-                  title: "Delete exercise?",
-                  bodyNode: el("div", {}, [
-                    el("div", { class:"note", text:`This removes "${ex.name}" from your library.` }),
-                    el("div", { style:"height:12px" }),
-                    el("div", { class:"btnrow" }, [
-                      el("button", {
-                        class:"btn danger",
-                        onClick: () => {
-                          ExerciseLibrary.remove(tab, ex.id);
-                          Modal.close();
-                          renderLibrary();
-                        }
-                      }, ["Delete"]),
-                      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                  Modal.open({
+                    title: "Delete routine?",
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"note", text:`Delete "${active.name}"? This cannot be undone.` }),
+                      el("div", { style:"height:12px" }),
+                      el("div", { class:"btnrow" }, [
+                        el("button", {
+                          class:"btn danger",
+                          onClick: () => {
+                            RoutineManager.remove(active.id);
+                            Modal.close();
+                            renderView();
+                          }
+                        }, ["Delete"]),
+                        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                      ])
                     ])
-                  ])
-                });
-              }
-            }, ["Delete"])
+                  });
+                }
+              }, ["Delete"])
+            ])
+          ]),
+          el("div", { style:"height:10px" }),
+          el("div", { class:"btnrow" }, [
+            el("button", { class:"btn", onClick: openLibraryModal }, ["Open Exercise Library"]),
+          ]),
+          el("div", { style:"height:6px" }),
+          el("div", { class:"note", text: hideRest ? "Rest days are hidden (Profile setting). Toggle rest/unrest to adjust." : "Rest days are visible." })
+        ]);
+
+        return el("div", { class:"grid" }, [
+          headerCard,
+          el("div", { class:"card" }, [
+            el("h2", { text:"Days" }),
+            el("div", { class:"note", text:"Add exercises from your library. Use +Multi to add several at once." }),
+            el("div", { style:"height:10px" }),
+            daysHost
           ])
-        ]));
-      });
-    }
+        ]);
 
-    renderList();
+        /***************
+         * Modal builders
+         ***************/
+        function buildLibraryManagerModal(){
+          // Lightweight viewer + add for now
+          let tab = "weightlifting";
+          let query = "";
+          const listHost = el("div", { class:"grid" });
+          const searchInput = el("input", { type:"text", placeholder:"Search…" });
+          searchInput.addEventListener("input", () => { query = searchInput.value || ""; draw(); });
 
-    contentHost.appendChild(el("div", { class:"card" }, [
-      el("h2", { text:"Exercise Library" }),
-      seg,
-      el("div", { style:"height:10px" }),
-      el("div", { class:"row2" }, [
-        el("label", {}, [ el("span", { text:"Search" }), searchInput ]),
-        el("div", { style:"display:flex; align-items:end;" }, [
-          el("button", { class:"btn primary", onClick: openAddModal }, ["Add exercise"])
-        ])
-      ])
-    ]));
+          const seg = el("div", { class:"seg" });
+          const segButtons = {};
+          ExerciseLibrary.typeKeys.forEach(t => {
+            const b = el("button", {
+              class:"segbtn" + (t === tab ? " active" : ""),
+              onClick: () => { tab = t; Object.entries(segButtons).forEach(([k,btn])=>btn.classList.toggle("active",k===tab)); draw(); }
+            }, [ExerciseLibrary.typeLabel(t)]);
+            segButtons[t]=b;
+            seg.appendChild(b);
+          });
 
-    contentHost.appendChild(el("div", { class:"card" }, [
-      el("h2", { text:"Results" }),
-      listHost
-    ]));
-  }
+          const openAdd = () => {
+            Modal.open({
+              title: `Add ${ExerciseLibrary.typeLabel(tab)} exercise`,
+              bodyNode: buildAddExerciseForm(tab, () => { Modal.close(); Modal.open({ title:"Exercise Library", bodyNode: buildLibraryManagerModal() }); })
+            });
+          };
 
-  // ====== Shared Exercise Form UI used by Library editor ======
-  function buildExerciseFormUI({ type, mode, initial, onSave }){
-    const err = el("div", { id:"formError", class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+          function getFiltered(){
+            const q = normName(query);
+            const items = [...ExerciseLibrary.list(tab)].sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+            if(!q) return items;
+            return items.filter(x => normName(x.name).includes(q));
+          }
 
-    const nameInput = el("input", { type:"text", placeholder:"Exercise name" });
-    nameInput.value = initial?.name || "";
+          function draw(){
+            listHost.innerHTML = "";
+            const items = getFiltered();
+            listHost.appendChild(el("div", { class:"note", text: `${items.length} shown` }));
 
-    const form = el("div", { class:"form" });
-    form.appendChild(el("label", {}, [ el("span", { text:"Name" }), nameInput ]));
+            items.forEach(x => {
+              listHost.appendChild(el("div", { class:"routineRow" }, [
+                el("div", { class:"left" }, [
+                  el("div", { class:"name", text:x.name }),
+                  el("div", { class:"meta", text: x.type === "cardio" ? `Mode: ${titleCase(x.modality||"—")}` :
+                                          x.type === "weightlifting" ? `Equipment: ${titleCase(x.equipment||"—")} • Muscle: ${titleCase(x.primaryMuscle||"—")}` :
+                                          `Equipment: ${titleCase(x.equipment||"—")}` })
+                ])
+              ]));
+            });
 
-    if(type === "weightlifting"){
-      const equipment = el("select", {});
-      ["dumbbell","barbell","machine","cable","bodyweight","other"].forEach(v => {
-        equipment.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
-      });
-      equipment.value = initial?.equipment || "dumbbell";
-
-      const muscle = el("select", {});
-      ["chest","back","legs","shoulders","biceps","triceps","glutes","hamstrings","quads","calves","full body","other"].forEach(v => {
-        muscle.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
-      });
-      muscle.value = initial?.primaryMuscle || "chest";
-
-      let isCompound = (typeof initial?.isCompound === "boolean") ? initial.isCompound : true;
-      const compoundSwitch = el("div", { class:"switch " + (isCompound ? "on" : "") });
-      compoundSwitch.addEventListener("click", () => {
-        isCompound = !isCompound;
-        compoundSwitch.classList.toggle("on", isCompound);
-      });
-
-      form.appendChild(el("div", { class:"row2" }, [
-        el("label", {}, [ el("span", { text:"Equipment" }), equipment ]),
-        el("label", {}, [ el("span", { text:"Primary muscle" }), muscle ])
-      ]));
-
-      form.appendChild(el("div", { class:"toggle" }, [
-        el("div", { class:"ttext" }, [
-          el("div", { class:"a", text:"Compound lift" }),
-          el("div", { class:"b", text:"Used later for volume/PR logic and templates." })
-        ]),
-        compoundSwitch
-      ]));
-
-      form.appendChild(err);
-
-      return el("div", {}, [
-        form,
-        el("div", { style:"height:12px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", {
-            class:"btn primary",
-            onClick: () => {
-              err.style.display = "none";
-              const name = (nameInput.value || "").trim();
-              if(!name){ err.textContent = "Name is required."; err.style.display="block"; return; }
-              onSave({ name, equipment: equipment.value, primaryMuscle: muscle.value, isCompound });
+            if(items.length === 0){
+              listHost.appendChild(el("div", { class:"note", text:"No matches. Add a new exercise." }));
             }
-          }, [mode === "add" ? "Add exercise" : "Save changes"]),
-          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-        ])
-      ]);
-    }
-
-    if(type === "cardio"){
-      const modality = el("select", {});
-      ["run","bike","row","stairmaster","elliptical","walk","other"].forEach(v => {
-        modality.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
-      });
-      modality.value = initial?.modality || "run";
-
-      let supportsIncline = !!initial?.supportsIncline;
-      const inclineSwitch = el("div", { class:"switch " + (supportsIncline ? "on" : "") });
-      inclineSwitch.addEventListener("click", () => {
-        supportsIncline = !supportsIncline;
-        inclineSwitch.classList.toggle("on", supportsIncline);
-      });
-
-      form.appendChild(el("label", {}, [ el("span", { text:"Modality" }), modality ]));
-      form.appendChild(el("div", { class:"toggle" }, [
-        el("div", { class:"ttext" }, [
-          el("div", { class:"a", text:"Supports incline" }),
-          el("div", { class:"b", text:"If enabled, cardio logs can include incline." })
-        ]),
-        inclineSwitch
-      ]));
-
-      form.appendChild(err);
-
-      return el("div", {}, [
-        form,
-        el("div", { style:"height:12px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", {
-            class:"btn primary",
-            onClick: () => {
-              err.style.display = "none";
-              const name = (nameInput.value || "").trim();
-              if(!name){ err.textContent = "Name is required."; err.style.display="block"; return; }
-              onSave({ name, modality: modality.value, supportsIncline });
-            }
-          }, [mode === "add" ? "Add exercise" : "Save changes"]),
-          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-        ])
-      ]);
-    }
-
-    // core
-    const equipment = el("select", {});
-    ["bodyweight","weighted","cable","other"].forEach(v => {
-      equipment.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
-    });
-    equipment.value = initial?.equipment || "bodyweight";
-
-    form.appendChild(el("label", {}, [ el("span", { text:"Equipment" }), equipment ]));
-    form.appendChild(err);
-
-    return el("div", {}, [
-      form,
-      el("div", { style:"height:12px" }),
-      el("div", { class:"btnrow" }, [
-        el("button", {
-          class:"btn primary",
-          onClick: () => {
-            err.style.display = "none";
-            const name = (nameInput.value || "").trim();
-            if(!name){ err.textContent = "Name is required."; err.style.display="block"; return; }
-            onSave({ name, equipment: equipment.value });
           }
-        }, [mode === "add" ? "Add exercise" : "Save changes"]),
-        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-      ])
-    ]);
-  }
 
-  function renderContent(){
-    if(mode === "editor") renderEditor();
-    else renderLibrary();
-  }
+          draw();
 
-  // First render
-  renderContent();
-
-  return root;
-},
-        function formatExerciseMeta(ex){
-          if(ex.type === "weightlifting"){
-            const a = ex.equipment ? `Equipment: ${titleCase(ex.equipment)}` : "Equipment: —";
-            const b = ex.primaryMuscle ? `Muscle: ${titleCase(ex.primaryMuscle)}` : "Muscle: —";
-            const c = typeof ex.isCompound === "boolean" ? (ex.isCompound ? "Compound" : "Isolation") : "—";
-            return `${a} • ${b} • ${c}`;
-          }
-          if(ex.type === "cardio"){
-            const a = ex.modality ? `Mode: ${titleCase(ex.modality)}` : "Mode: —";
-            const b = ex.supportsIncline ? "Incline: Yes" : "Incline: No";
-            return `${a} • ${b}`;
-          }
-          // core
-          const a = ex.equipment ? `Equipment: ${titleCase(ex.equipment)}` : "Equipment: —";
-          return `${a}`;
+          return el("div", {}, [
+            el("div", { class:"note", text:"Manage your library here. Editing/removal will come in the next enhancement (kept stable for now)." }),
+            el("div", { style:"height:10px" }),
+            seg,
+            el("div", { style:"height:10px" }),
+            el("div", { class:"row2" }, [
+              el("label", {}, [ el("span", { text:"Search" }), searchInput ]),
+              el("div", { style:"display:flex; align-items:end;" }, [
+                el("button", { class:"btn primary", onClick: openAdd }, ["Add exercise"])
+              ])
+            ]),
+            el("div", { style:"height:10px" }),
+            listHost
+          ]);
         }
 
-        function titleCase(s){
-          return (s||"").toString().replace(/_/g," ").replace(/\b\w/g, m => m.toUpperCase());
-        }
-
-        function buildExerciseForm({ mode, type, initial, onSave }){
-          const err = el("div", { id:"formError", class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
-
+        function buildAddExerciseForm(type, onDone){
+          const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
           const nameInput = el("input", { type:"text", placeholder:"Exercise name" });
-          nameInput.value = initial?.name || "";
 
-          const form = el("div", { class:"form" });
+          const form = el("div", { class:"form" }, [
+            el("label", {}, [ el("span", { text:"Name" }), nameInput ])
+          ]);
 
-          // Common
-          form.appendChild(el("label", {}, [
-            el("span", { text:"Name" }),
-            nameInput
-          ]));
+          let payloadGet = null;
 
           if(type === "weightlifting"){
             const equipment = el("select", {});
-            ["dumbbell","barbell","machine","cable","bodyweight","other"].forEach(v => {
-              equipment.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
-            });
-            equipment.value = initial?.equipment || "dumbbell";
-
+            ["dumbbell","barbell","machine","cable","bodyweight","other"].forEach(v => equipment.appendChild(el("option",{value:v,text:titleCase(v)})));
             const muscle = el("select", {});
-            ["chest","back","legs","shoulders","biceps","triceps","glutes","hamstrings","quads","calves","full body","other"].forEach(v => {
-              muscle.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
-            });
-            muscle.value = initial?.primaryMuscle || "chest";
-
-            let isCompound = (typeof initial?.isCompound === "boolean") ? initial.isCompound : true;
-            const compoundSwitch = el("div", { class:"switch " + (isCompound ? "on" : "") });
-            compoundSwitch.addEventListener("click", () => {
-              isCompound = !isCompound;
-              compoundSwitch.classList.toggle("on", isCompound);
-            });
+            ["chest","back","legs","shoulders","biceps","triceps","glutes","hamstrings","quads","calves","full body","other"]
+              .forEach(v => muscle.appendChild(el("option",{value:v,text:titleCase(v)})));
+            let isCompound = true;
+            const sw = el("div", { class:"switch on" });
+            sw.addEventListener("click", ()=>{ isCompound=!isCompound; sw.classList.toggle("on", isCompound); });
 
             form.appendChild(el("div", { class:"row2" }, [
               el("label", {}, [ el("span", { text:"Equipment" }), equipment ]),
               el("label", {}, [ el("span", { text:"Primary muscle" }), muscle ])
             ]));
-
             form.appendChild(el("div", { class:"toggle" }, [
               el("div", { class:"ttext" }, [
                 el("div", { class:"a", text:"Compound lift" }),
-                el("div", { class:"b material", text:"Used later for volume/PR logic and routine templates." })
+                el("div", { class:"b", text:"Used later for volume/PR logic." })
               ]),
-              compoundSwitch
+              sw
             ]));
 
-            form.appendChild(err);
-
-            const saveBtn = el("button", {
-              class:"btn primary",
-              onClick: () => {
-                err.style.display = "none";
-                const name = (nameInput.value || "").trim();
-                if(!name){ err.textContent = "Name is required."; err.style.display="block"; return; }
-                onSave({
-                  name,
-                  equipment: equipment.value,
-                  primaryMuscle: muscle.value,
-                  isCompound
-                });
-              }
-            }, [mode === "add" ? "Add exercise" : "Save changes"]);
-
-            return el("div", {}, [
-              form,
-              el("div", { style:"height:12px" }),
-              el("div", { class:"btnrow" }, [
-                saveBtn,
-                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-              ])
-            ]);
+            payloadGet = () => ({ name:(nameInput.value||"").trim(), equipment:equipment.value, primaryMuscle:muscle.value, isCompound });
           }
 
           if(type === "cardio"){
             const modality = el("select", {});
-            ["run","bike","row","stairmaster","elliptical","walk","other"].forEach(v => {
-              modality.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
-            });
-            modality.value = initial?.modality || "run";
-
-            let supportsIncline = !!initial?.supportsIncline;
-            const inclineSwitch = el("div", { class:"switch " + (supportsIncline ? "on" : "") });
-            inclineSwitch.addEventListener("click", () => {
-              supportsIncline = !supportsIncline;
-              inclineSwitch.classList.toggle("on", supportsIncline);
-            });
+            ["run","bike","row","stairmaster","elliptical","walk","other"].forEach(v => modality.appendChild(el("option",{value:v,text:titleCase(v)})));
+            let supportsIncline = false;
+            const sw = el("div", { class:"switch" });
+            sw.addEventListener("click", ()=>{ supportsIncline=!supportsIncline; sw.classList.toggle("on", supportsIncline); });
 
             form.appendChild(el("label", {}, [ el("span", { text:"Modality" }), modality ]));
             form.appendChild(el("div", { class:"toggle" }, [
@@ -2048,100 +1320,192 @@ function getExerciseById(type, id){
                 el("div", { class:"a", text:"Supports incline" }),
                 el("div", { class:"b", text:"If enabled, cardio logs can include incline." })
               ]),
-              inclineSwitch
+              sw
             ]));
 
-            form.appendChild(err);
-
-            const saveBtn = el("button", {
-              class:"btn primary",
-              onClick: () => {
-                err.style.display = "none";
-                const name = (nameInput.value || "").trim();
-                if(!name){ err.textContent = "Name is required."; err.style.display="block"; return; }
-                onSave({
-                  name,
-                  modality: modality.value,
-                  supportsIncline
-                });
-              }
-            }, [mode === "add" ? "Add exercise" : "Save changes"]);
-
-            return el("div", {}, [
-              form,
-              el("div", { style:"height:12px" }),
-              el("div", { class:"btnrow" }, [
-                saveBtn,
-                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-              ])
-            ]);
+            payloadGet = () => ({ name:(nameInput.value||"").trim(), modality:modality.value, supportsIncline });
           }
 
-          // core
-          const equipment = el("select", {});
-          ["bodyweight","weighted","cable","other"].forEach(v => {
-            equipment.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
-          });
-          equipment.value = initial?.equipment || "bodyweight";
+          if(type === "core"){
+            const equipment = el("select", {});
+            ["bodyweight","weighted","cable","other"].forEach(v => equipment.appendChild(el("option",{value:v,text:titleCase(v)})));
+            form.appendChild(el("label", {}, [ el("span", { text:"Equipment" }), equipment ]));
+            payloadGet = () => ({ name:(nameInput.value||"").trim(), equipment:equipment.value });
+          }
 
-          form.appendChild(el("label", {}, [ el("span", { text:"Equipment" }), equipment ]));
-          form.appendChild(err);
-
-          const saveBtn = el("button", {
-            class:"btn primary",
-            onClick: () => {
-              err.style.display = "none";
-              const name = (nameInput.value || "").trim();
-              if(!name){ err.textContent = "Name is required."; err.style.display="block"; return; }
-              onSave({
-                name,
-                equipment: equipment.value
-              });
+          const save = () => {
+            err.style.display = "none";
+            const data = payloadGet ? payloadGet() : { name:(nameInput.value||"").trim() };
+            if(!data.name){
+              err.textContent = "Name is required.";
+              err.style.display = "block";
+              return;
             }
-          }, [mode === "add" ? "Add exercise" : "Save changes"]);
+            try{
+              ExerciseLibrary.add(type, data);
+              Storage.save(state);
+              onDone?.();
+            }catch(e){
+              err.textContent = e.message || "Unable to add exercise.";
+              err.style.display = "block";
+            }
+          };
 
           return el("div", {}, [
             form,
+            err,
             el("div", { style:"height:12px" }),
             el("div", { class:"btnrow" }, [
-              saveBtn,
-              el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+              el("button", { class:"btn primary", onClick: save }, ["Add"]),
+              el("button", { class:"btn", onClick: onDone || Modal.close }, ["Done"])
             ])
           ]);
         }
 
-        // initial render
-        renderList();
+        function buildExercisePickerModal({ onPick }){
+          let tab = "weightlifting";
+          let query = "";
+          let multiMode = true; // we will support both by letting caller decide based on which button opened it
+          // Caller decides by title; we detect by modal title containing "multiple"
+          // (keeps API stable with minimal wiring)
+          multiMode = ($("#modalTitle")?.textContent || "").toLowerCase().includes("multiple");
 
-        return el("div", { class:"grid" }, [
-          el("div", { class:"card" }, [
-            el("h2", { text:"Exercise Library" }),
-            el("div", { class:"note", text:"This is your saved exercise list used by Routine + Log Sets. Add anything you don’t see here." }),
-            el("div", { style:"height:10px" }),
+          const selected = new Map(); // key: `${type}:${id}` -> {type,id,name}
+
+          const err = el("div", { id:"pickerError", class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+          const seg = el("div", { class:"seg" });
+          const segButtons = {};
+          ExerciseLibrary.typeKeys.forEach(t => {
+            const b = el("button", {
+              class:"segbtn" + (t === tab ? " active" : ""),
+              onClick: () => { tab = t; Object.entries(segButtons).forEach(([k,btn])=>btn.classList.toggle("active",k===tab)); draw(); }
+            }, [ExerciseLibrary.typeLabel(t)]);
+            segButtons[t]=b; seg.appendChild(b);
+          });
+
+          const searchInput = el("input", { type:"text", placeholder:"Search library…" });
+          searchInput.addEventListener("input", () => { query = searchInput.value || ""; draw(); });
+
+          const listHost = el("div", { class:"grid" });
+
+          const addNewInline = el("button", {
+            class:"btn",
+            onClick: () => {
+              Modal.open({
+                title: `Add ${ExerciseLibrary.typeLabel(tab)} exercise`,
+                bodyNode: buildAddExerciseForm(tab, () => {
+                  // After adding, reopen picker
+                  Modal.close();
+                  Modal.open({
+                    title: multiMode ? "Add multiple exercises" : "Add exercise",
+                    bodyNode: buildExercisePickerModal({ onPick })
+                  });
+                })
+              });
+            }
+          }, ["Add new exercise"]);
+
+          const doneBtn = el("button", {
+            class:"btn primary",
+            onClick: () => {
+              err.style.display = "none";
+              if(multiMode){
+                const arr = Array.from(selected.values()).map(x => ({ type:x.type, id:x.id }));
+                if(arr.length === 0){
+                  err.textContent = "Select at least one exercise.";
+                  err.style.display = "block";
+                  return;
+                }
+                onPick(arr);
+              } else {
+                const first = selected.values().next().value;
+                if(!first){
+                  err.textContent = "Select an exercise.";
+                  err.style.display = "block";
+                  return;
+                }
+                onPick({ type:first.type, id:first.id });
+              }
+            }
+          }, [multiMode ? "Add selected" : "Add"]);
+
+          function filtered(){
+            const q = normName(query);
+            const items = [...ExerciseLibrary.list(tab)].sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+            if(!q) return items;
+            return items.filter(x => normName(x.name).includes(q));
+          }
+
+          function draw(){
+            listHost.innerHTML = "";
+            const items = filtered();
+
+            listHost.appendChild(el("div", { class:"note", text: `${items.length} shown • ${multiMode ? (selected.size + " selected") : "tap one to select"}` }));
+
+            items.forEach(x => {
+              const key = `${tab}:${x.id}`;
+              const isSel = selected.has(key);
+
+              const row = el("div", {
+                class:"routineRow",
+                onClick: () => {
+                  err.style.display = "none";
+                  if(multiMode){
+                    if(isSel) selected.delete(key);
+                    else selected.set(key, { type: tab, id: x.id, name: x.name });
+                  } else {
+                    selected.clear();
+                    selected.set(key, { type: tab, id: x.id, name: x.name });
+                  }
+                  draw();
+                }
+              }, [
+                el("div", { class:"left" }, [
+                  el("div", { class:"name", text: x.name }),
+                  el("div", { class:"meta", text: tab === "cardio" ? `Mode: ${titleCase(x.modality||"—")}` :
+                                          tab === "weightlifting" ? `Equipment: ${titleCase(x.equipment||"—")} • Muscle: ${titleCase(x.primaryMuscle||"—")}` :
+                                          `Equipment: ${titleCase(x.equipment||"—")}` })
+                ]),
+                el("div", { class:"pill" + (isSel ? " rest" : ""), text: isSel ? "Selected" : "Tap" })
+              ]);
+
+              listHost.appendChild(row);
+            });
+
+            if(items.length === 0){
+              listHost.appendChild(el("div", { class:"note", text:"No matches. Add a new exercise." }));
+            }
+          }
+
+          draw();
+
+          return el("div", {}, [
             seg,
             el("div", { style:"height:10px" }),
             el("div", { class:"row2" }, [
-              el("label", {}, [
-                el("span", { text:"Search" }),
-                searchInput
-              ]),
-              el("div", { style:"display:flex; align-items:end;" }, [
-                el("button", { class:"btn primary", onClick: openAddModal }, ["Add exercise"])
+              el("label", {}, [ el("span", { text:"Search" }), searchInput ]),
+              el("div", { style:"display:flex; align-items:end; justify-content:flex-end; gap:10px; flex-wrap:wrap;" }, [
+                addNewInline
               ])
+            ]),
+            err,
+            el("div", { style:"height:10px" }),
+            listHost,
+            el("div", { style:"height:12px" }),
+            el("div", { class:"btnrow" }, [
+              doneBtn,
+              el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
             ])
-          ]),
-          el("div", { class:"card" }, [
-            el("h2", { text:"Results" }),
-            listHost
-          ])
-        ]);
+          ]);
+        }
       },
 
       Log(){
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"Log Sets" }),
-            el("div", { class:"muted", text:"Next step: Weightlifting/Cardio/Core logging flows + PR tracking + history modal." })
+            el("div", { class:"note", text:"Next step: log sets per exercise type + PR engine." })
           ])
         ]);
       },
@@ -2150,7 +1514,7 @@ function getExerciseById(type, id){
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"Progress" }),
-            el("div", { class:"muted", text:"Next step: Table + Graph (Chart.js) + export PNG." })
+            el("div", { class:"note", text:"Next step: chart + table views." })
           ])
         ]);
       },
@@ -2159,10 +1523,6 @@ function getExerciseById(type, id){
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"More" }),
-            el("div", { class:"muted", text:"Next: Weight, Attendance calendar, Backup/Import JSON, Settings." })
-          ]),
-          el("div", { class:"card" }, [
-            el("h2", { text:"Debug" }),
             el("div", { class:"btnrow" }, [
               el("button", {
                 class:"btn",
@@ -2204,11 +1564,9 @@ function getExerciseById(type, id){
     };
 
     /********************
-     * 8) Boot
+     * Boot
      ********************/
-    // If already onboarded and library is empty, seed it (won't overwrite non-empty)
     if(state.profile) ExerciseLibrary.ensureSeeded();
-
     renderNav();
     renderView();
   </script>
