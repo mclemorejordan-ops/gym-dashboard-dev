@@ -1133,189 +1133,172 @@
       const p = getProteinForDate(dateISO);
       return (p.meals || []).reduce((sum,m) => sum + (Number(m.grams)||0), 0);
     }
-        /********************
-     * 4d) Log Sets + PR Engine (Step 6)
+    /********************
+     * 4d) Log Engine + PR Engine (Step 6)  ✅ FIXED
      ********************/
-    const Logs = {
+    const LogEngine = {
       ensure(){
         state.logs = state.logs || { workouts: [], weight: [], protein: [] };
         state.logs.workouts = state.logs.workouts || [];
       },
 
-      addWorkout(entry){
+      addEntry(entry){
         this.ensure();
-        const e = {
-          id: uid("wlog"),
-          createdAt: Date.now(),
-          ...entry
-        };
-        state.logs.workouts.push(e);
+        state.logs.workouts.push(entry);
         Storage.save(state);
-        return e;
       },
 
-      listWorkouts(){
-        this.ensure();
-        return state.logs.workouts;
-      },
-
-      byExercise(type, exerciseId){
+      entriesForExercise(type, exerciseId){
         this.ensure();
         return state.logs.workouts
-          .filter(w => w.exerciseType === type && w.exerciseId === exerciseId)
-          .sort((a,b) => (a.dateISO || "").localeCompare(b.dateISO || "") || (a.createdAt - b.createdAt));
+          .filter(e => e.type === type && e.exerciseId === exerciseId)
+          .sort((a,b) => (b.dateISO || "").localeCompare(a.dateISO || "") || (b.createdAt||0)-(a.createdAt||0));
       },
 
-      recent(limit=12){
-        this.ensure();
-        const arr = [...state.logs.workouts];
-        arr.sort((a,b) => (b.createdAt - a.createdAt));
-        return arr.slice(0, limit);
+      lifetimeBests(type, exerciseId){
+        const entries = this.entriesForExercise(type, exerciseId);
+        const bests = {
+          bestWeight: null,
+          best1RM: null,
+          bestVolume: null,
+          bestPace: null
+        };
+
+        for(const e of entries){
+          if(e?.summary){
+            if(type === "weightlifting"){
+              if(Number.isFinite(e.summary.bestWeight)) bests.bestWeight = Math.max(bests.bestWeight ?? -Infinity, e.summary.bestWeight);
+              if(Number.isFinite(e.summary.best1RM)) bests.best1RM = Math.max(bests.best1RM ?? -Infinity, e.summary.best1RM);
+              if(Number.isFinite(e.summary.totalVolume)) bests.bestVolume = Math.max(bests.bestVolume ?? -Infinity, e.summary.totalVolume);
+            } else if(type === "cardio"){
+              if(Number.isFinite(e.summary.paceSecPerUnit)){
+                bests.bestPace = Math.min(bests.bestPace ?? Infinity, e.summary.paceSecPerUnit);
+              }
+            } else if(type === "core"){
+              if(Number.isFinite(e.summary.totalVolume)) bests.bestVolume = Math.max(bests.bestVolume ?? -Infinity, e.summary.totalVolume);
+            }
+          }
+        }
+
+        if(bests.bestWeight === -Infinity) bests.bestWeight = null;
+        if(bests.best1RM === -Infinity) bests.best1RM = null;
+        if(bests.bestVolume === -Infinity) bests.bestVolume = null;
+        if(bests.bestPace === Infinity) bests.bestPace = null;
+
+        return bests;
       },
 
-      deleteWorkout(id){
-        this.ensure();
-        const idx = state.logs.workouts.findIndex(w => w.id === id);
-        if(idx >= 0){
-          state.logs.workouts.splice(idx, 1);
-          Storage.save(state);
-        }
-      }
-    };
+      computeWeightliftingSummary(sets){
+        const cleanSets = (sets || []).map(s => ({
+          weight: Number(s.weight) || 0,
+          reps: Math.max(0, Math.floor(Number(s.reps) || 0))
+        }));
 
-    const PR = {
-      // Compute stats for a workout entry (single exercise session)
-      stats(entry){
-        const t = entry.exerciseType;
+        let totalVolume = 0;
+        let bestWeight = 0;
+        let best1RM = 0;
 
-        if(t === "weightlifting"){
-          let topWeight = 0;
-          let best1RM = 0;
-          let volume = 0;
-
-          (entry.sets || []).forEach(s => {
-            const w = Number(s.weight) || 0;
-            const r = Number(s.reps) || 0;
-            if(w > topWeight) topWeight = w;
-            const epley = w > 0 && r > 0 ? (w * (1 + (r / 30))) : 0;
-            if(epley > best1RM) best1RM = epley;
-            volume += (w * r);
-          });
-
-          return {
-            topWeight,
-            est1RM: round2(best1RM),
-            volume: round2(volume)
-          };
+        for(const s of cleanSets){
+          totalVolume += (s.weight * s.reps);
+          bestWeight = Math.max(bestWeight, s.weight);
+          const epley = (s.reps > 0) ? (s.weight * (1 + (s.reps / 30))) : 0;
+          best1RM = Math.max(best1RM, epley);
         }
 
-        if(t === "cardio"){
-          const timeMin = Number(entry.cardio?.timeMin) || 0;
-          const distance = Number(entry.cardio?.distance) || 0;
-          const incline = entry.cardio?.incline == null ? null : Number(entry.cardio?.incline);
-          const pace = (timeMin > 0 && distance > 0) ? (timeMin / distance) : 0; // min per unit
-          return {
-            timeMin: round2(timeMin),
-            distance: round2(distance),
-            incline: (incline == null || Number.isNaN(incline)) ? null : round2(incline),
-            pace: round3(pace) // lower is better
-          };
-        }
-
-        // core
-        const sets = Number(entry.core?.sets) || 0;
-        const reps = Number(entry.core?.reps) || 0;
-        const timeSec = Number(entry.core?.timeSec) || 0;
-        const weight = Number(entry.core?.weight) || 0;
         return {
-          sets,
-          reps,
-          timeSec,
-          weight
+          totalVolume: round2(totalVolume),
+          bestWeight: round2(bestWeight),
+          best1RM: round2(best1RM)
         };
       },
 
-      // Compare this entry to a prior-best snapshot; return which metrics are PR
-      prFlags(type, stats, priorBest){
-        const flags = {};
+      computeCardioSummary(sets){
+        const clean = (sets || []).map(s => ({
+          timeSec: Math.max(0, Math.floor(Number(s.timeSec) || 0)),
+          distance: Number(s.distance) || 0,
+          incline: Number.isFinite(Number(s.incline)) ? Number(s.incline) : null
+        }));
 
-        if(type === "weightlifting"){
-          flags.topWeight = stats.topWeight > (priorBest?.topWeight || 0);
-          flags.est1RM = stats.est1RM > (priorBest?.est1RM || 0);
-          flags.volume = stats.volume > (priorBest?.volume || 0);
-          return flags;
-        }
+        const s = clean[0] || { timeSec:0, distance:0, incline:null };
+        const pace = (s.distance > 0) ? (s.timeSec / s.distance) : null;
 
-        if(type === "cardio"){
-          // PR rules: distance max, time max? typically pace lower is better and distance higher is better
-          flags.distance = stats.distance > (priorBest?.distance || 0);
-          flags.timeMin = stats.timeMin > (priorBest?.timeMin || 0);
-          // pace PR: smaller pace is better, but only if pace > 0
-          const priorPace = priorBest?.pace || 0;
-          flags.pace = (stats.pace > 0) && (priorPace === 0 || stats.pace < priorPace);
-          return flags;
-        }
-
-        // core
-        flags.sets = stats.sets > (priorBest?.sets || 0);
-        flags.reps = stats.reps > (priorBest?.reps || 0);
-        flags.timeSec = stats.timeSec > (priorBest?.timeSec || 0);
-        flags.weight = stats.weight > (priorBest?.weight || 0);
-        return flags;
+        return {
+          timeSec: s.timeSec,
+          distance: round2(s.distance),
+          incline: s.incline,
+          paceSecPerUnit: (pace === null) ? null : round2(pace)
+        };
       },
 
-      // Recompute best stats for an exercise across ALL logs (used by history modal + save)
-      bestForExercise(type, exerciseId){
-        const history = Logs.byExercise(type, exerciseId);
-        let best = null;
+      computeCoreSummary(sets){
+        const clean = (sets || []).map(s => ({
+          sets: Math.max(0, Math.floor(Number(s.sets) || 0)),
+          reps: Math.max(0, Math.floor(Number(s.reps) || 0)),
+          timeSec: Math.max(0, Math.floor(Number(s.timeSec) || 0)),
+          weight: Number(s.weight) || 0
+        }));
 
-        history.forEach(entry => {
-          const s = PR.stats(entry);
-          if(!best) best = { ...s };
-          else best = mergeBest(type, best, s);
-        });
+        let totalVolume = 0;
+        for(const s of clean){
+          if(s.reps > 0){
+            const w = (s.weight > 0) ? s.weight : 1;
+            totalVolume += (s.reps * s.sets * w);
+          }else{
+            totalVolume += s.timeSec;
+          }
+        }
 
-        return best;
+        return { totalVolume: round2(totalVolume) };
+      },
+
+      computePRFlags(type, exerciseId, summary){
+        const prev = this.lifetimeBests(type, exerciseId);
+
+        const pr = {
+          isPRWeight: false,
+          isPR1RM: false,
+          isPRVolume: false,
+          isPRPace: false
+        };
+
+        if(type === "weightlifting"){
+          if(Number.isFinite(summary.bestWeight)){
+            pr.isPRWeight = (prev.bestWeight === null) ? (summary.bestWeight > 0) : (summary.bestWeight > prev.bestWeight);
+          }
+          if(Number.isFinite(summary.best1RM)){
+            pr.isPR1RM = (prev.best1RM === null) ? (summary.best1RM > 0) : (summary.best1RM > prev.best1RM);
+          }
+          if(Number.isFinite(summary.totalVolume)){
+            pr.isPRVolume = (prev.bestVolume === null) ? (summary.totalVolume > 0) : (summary.totalVolume > prev.bestVolume);
+          }
+        } else if(type === "cardio"){
+          if(summary.paceSecPerUnit !== null && Number.isFinite(summary.paceSecPerUnit)){
+            pr.isPRPace = (prev.bestPace === null) ? (summary.paceSecPerUnit > 0) : (summary.paceSecPerUnit < prev.bestPace);
+          }
+        } else if(type === "core"){
+          if(Number.isFinite(summary.totalVolume)){
+            pr.isPRVolume = (prev.bestVolume === null) ? (summary.totalVolume > 0) : (summary.totalVolume > prev.bestVolume);
+          }
+        }
+
+        return pr;
       }
     };
 
-    function mergeBest(type, best, next){
-      const out = { ...best };
-      if(type === "weightlifting"){
-        out.topWeight = Math.max(best.topWeight || 0, next.topWeight || 0);
-        out.est1RM = Math.max(best.est1RM || 0, next.est1RM || 0);
-        out.volume = Math.max(best.volume || 0, next.volume || 0);
-        return out;
-      }
-      if(type === "cardio"){
-        out.distance = Math.max(best.distance || 0, next.distance || 0);
-        out.timeMin = Math.max(best.timeMin || 0, next.timeMin || 0);
-        // pace lower is better (but ignore 0s)
-        const bp = best.pace || 0;
-        const np = next.pace || 0;
-        if(bp === 0) out.pace = np;
-        else if(np === 0) out.pace = bp;
-        else out.pace = Math.min(bp, np);
-        // incline not tracked as PR metric in best
-        return out;
-      }
-      // core
-      out.sets = Math.max(best.sets || 0, next.sets || 0);
-      out.reps = Math.max(best.reps || 0, next.reps || 0);
-      out.timeSec = Math.max(best.timeSec || 0, next.timeSec || 0);
-      out.weight = Math.max(best.weight || 0, next.weight || 0);
-      return out;
+    function round2(n){
+      return Math.round((Number(n) || 0) * 100) / 100;
     }
 
-    function round2(n){ return Math.round((Number(n)||0)*100)/100; }
-    function round3(n){ return Math.round((Number(n)||0)*1000)/1000; }
+    function formatTime(sec){
+      const s = Math.max(0, Math.floor(Number(sec) || 0));
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${m}:${String(r).padStart(2,"0")}`;
+    }
 
-    function fmtPaceMinPerUnit(p){
-      if(!p || p <= 0) return "—";
-      const totalSec = Math.round(p * 60);
-      const mm = Math.floor(totalSec / 60);
-      const ss = String(totalSec % 60).padStart(2,"0");
-      return `${mm}:${ss} / unit`;
+    function formatPace(paceSecPerUnit){
+      if(paceSecPerUnit === null || !Number.isFinite(paceSecPerUnit)) return "—";
+      return `${formatTime(paceSecPerUnit)} / unit`;
     }
     /********************
      * 5) Modal
