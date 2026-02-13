@@ -1,137 +1,16 @@
-
 <!doctype html>
 
 
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Gym Dashboard</title>
+<meta name="viewport" content="
+  width=device-width,
+  initial-scale=1,
+  maximum-scale=1
+">
+  <title>Gym Dashboard</title>
   <style>
-
- /* ===========================
-   FIXED 2-ROW HEADER (NO WRAP)
-=========================== */
-.appHeader{
-  position: sticky;
-  top: 0;
-  z-index: 60;
-  padding: calc(env(safe-area-inset-top) + 14px) 16px 10px;
-
-  background: linear-gradient(
-    to bottom,
-    rgba(7,7,8,.92),
-    rgba(7,7,8,.55),
-    rgba(7,7,8,0)
-  );
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-/* Row 1: title + version (fixed positions) */
-.hdrRow1{
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:12px;
-
-  /* IMPORTANT */
-  flex-wrap:nowrap;
-  min-height: 32px;
-}
-
-.hdrRow1 h1{
-  margin:0;
-  font-size:26px;
-  font-weight:800;
-  letter-spacing:.2px;
-  color: var(--text);
-
-  /* prevent wrap */
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.hdrVersion{
-  color: var(--muted);
-  font-size: 13px;
-  white-space:nowrap;
-  flex: 0 0 auto;
-}
-
-/* Row 2: single line summary, never wraps */
-.hdrRow2{
-  margin-top: 6px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-
-  flex-wrap:nowrap;
-  min-height: 22px;
-}
-
-.hdrLeft{
-  display:flex;
-  align-items:center;
-  gap:8px;
-
-  /* prevent wrap */
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  min-width: 0;
-}
-
-.hdrDay{
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
-  flex: 0 0 auto;
-}
-
-.hdrProtein{
-  color: var(--muted);
-  font-size: 13px;
-  flex: 0 0 auto;
-}
-
-.hdrSep{
-  color: rgba(255,255,255,.18);
-  font-size: 13px;
-  flex: 0 0 auto;
-}
-
-/* Status block has fixed width so the left side never shifts */
-.hdrStatus{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:8px;
-
-  width: 170px;       /* key: keeps layout stable */
-  flex: 0 0 170px;
-
-  white-space:nowrap;
-}
-
-.hdrDot{
-  width: 20px;
-  text-align:center;
-  flex: 0 0 20px;
-}
-
-.hdrOnline{
-  font-size: 13px;
-  font-weight: 700;
-}
-
-/* color states */
-.hdrStatus.good .hdrOnline{ color: var(--good); }
-.hdrStatus.warn .hdrOnline{ color: var(--warn); }
-.hdrStatus.bad  .hdrOnline{ color: var(--bad); }
-
     
   :root{
   --bg0:#070708;
@@ -429,124 +308,6 @@ main > *{
       flex-wrap:wrap;
       margin-top:10px;
     }
-    /* ===========================
-   SETTINGS UPDATES (PILLS)
-=========================== */
-.updatesGroupTitle{
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: .6px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.updatesPills{
-  display: grid;
-  gap: 8px;
-}
-
-.pillRow{
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: rgba(15,15,16,.9);
-  color: var(--text);
-  font-size: 13px;
-}
-
-.updatesActions{
-  display: grid;
-  gap: 8px;
-}
-
-.updatesActions button{
-  width: 100%;
-  border-radius: 999px;
-  padding: 12px 12px;
-  font-size: 13px;
-}
-
-
-/* ===========================
-   UPDATES DROPDOWN PANELS
-=========================== */
-.updatesDropPanel{
-  margin-top: 10px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(18,18,20,.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-.updatesDropHead{
-  display:flex;
-  align-items:center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.updatesDropTitle{
-  font-weight: 900;
-  font-size: 13px;
-}
-
-/* ===========================
-   UPDATE RESULT POPUP
-=========================== */
-.uModal{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-  z-index: 99999;
-  padding: 16px;
-
-  /* ✅ Always center the card on screen */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.uModalCard{
-  width: min(560px, 100%);
-  margin: 0;
-  background: rgba(18,18,20,.92);
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 16px;
-  padding: 12px;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 16px 50px rgba(0,0,0,.55);
-
-  /* ✅ If screen is short, card scrolls instead of going off screen */
-  max-height: calc(100dvh - 32px);
-  overflow: auto;
-}
-
-
-.uModalHead{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.uModalTitle{
-  font-weight: 900;
-  font-size: 14px;
-}
-
-.uModalActions{
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-    
     .pill{
       display:inline-flex;
       align-items:center;
@@ -652,214 +413,6 @@ main > *{
       font-size:11px;
       color:var(--muted);
     }
-
-    /* ===========================
-   ROUTINE — 3D DAY CAROUSEL (mobile-first)
-   - replaces #pplTabs UI, but keeps #pplList layout + Log Sets
-=========================== */
-
-.r3dStage{
-  height: 230px;
-  position: relative;
-  overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.r3dCarousel{
-  position:absolute;
-  left: 50%;
-  top: 110%;               /* your “perfect” position */
-  transform-style: preserve-3d;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  height: 100%;
-  touch-action: pan-y;
-  user-select:none;
-}
-
-.r3dCard{
-  position:absolute;
-  left: 50%;
-  top: 0;
-  transform-style: preserve-3d;
-
-  width: 220px;
-  height: 130px;
-  margin-left: -110px;
-
-  border-radius: 18px;
-
-  background: linear-gradient(
-    180deg,
-    #0d0d12 0%,
-    #08080c 60%,
-    #050508 100%
-  );
-
-  border: 1px solid rgba(255,255,255,.05);
-
-  box-shadow:
-    0 24px 70px rgba(0,0,0,.75),
-    inset 0 1px 0 rgba(255,255,255,.04),
-    inset 0 -12px 26px rgba(0,0,0,.55);
-
-  overflow: hidden;
-
-  transition:
-    transform 180ms ease,
-    box-shadow 220ms ease,
-    filter 220ms ease,
-    opacity 220ms ease,
-    border-color 220ms ease;
-}
-/* Automatically darken non-active cards */
-.r3dCard:not(.isActive){
-  filter: brightness(.68) saturate(.95);
-  opacity: .80;
-}
-
-/* Active card – glow + stronger presence */
-.r3dCard.isActive{
-  filter: none;
-  opacity: 1;
-
-  border-color: rgba(124,252,0,.25);
-
-  box-shadow:
-    0 28px 80px rgba(0,0,0,.82),
-    0 0 0 1px rgba(124,252,0,.08),
-    0 0 40px rgba(124,252,0,.18),
-    inset 0 1px 0 rgba(255,255,255,.05),
-    inset 0 -10px 22px rgba(0,0,0,.50);
-}
-
-
-.r3dCard::after{
-  /* subtle inner sheen */
-  content:"";
-  position:absolute;
-  inset:-2px;
-  background: radial-gradient(420px 220px at 20% 0%, rgba(124,252,0,.12), transparent 55%);
-  opacity:.45;
-  pointer-events:none;
-}
-
-.r3dCardInner{
-  position:relative;
-  height: 100%;
-  padding: 12px 14px;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-  gap:8px;
-  z-index: 1;
-}
-
-.r3dTop{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:10px;
-}
-
-.r3dDay{
-  font-weight: 950;
-  letter-spacing:.6px;
-  font-size: 14px;
-}
-
-.r3dLabel{
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 4px;
-}
-
-.r3dMeta{
-  color: var(--muted);
-  font-size: 12px;
-  margin-top: 6px;
-}
-    
-.r3dBadges{
-  display:flex;
-  gap:6px;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-}
-
-.r3dBadge{
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 999px;
-  padding: 4px 8px;
-  font-size: 11px;
-  color: var(--text);
-  background: rgba(255,255,255,.04);
-}
-
-.r3dBadge.rest{
-  border-color: rgba(255,255,255,.10);
-  color: var(--muted);
-}
-
-.r3dHint{
-  font-size: 11px;
-  color: rgba(255,255,255,.55);
-}
-
-/* ===========================
-   ROUTINE — DAY ROW (under 3D carousel)
-=========================== */
-#pplTabs{
-  display:grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap:8px;
-  margin: 10px 0 12px;
-}
-
-#pplTabs .dayChip{
-  border:1px solid var(--line);
-  border-radius: 12px;
-  padding:10px 0;
-  text-align:center;
-  font-size:12px;
-  font-weight:800;
-  letter-spacing:.6px;
-  color: var(--muted);
-  background:#0f0f10;
-  cursor:pointer;
-  user-select:none;
-}
-
-#pplTabs .dayChip.active{
-  color: var(--text);
-  border-color: rgba(124,252,0,.35);
-  box-shadow:
-    0 0 0 1px rgba(124,252,0,.18),
-    0 10px 24px rgba(0,0,0,.35);
-}
-
-#pplTabs .dayChip.rest{
-  opacity:.45;
-}
-
-#pplTabs .dayChip .miniDot{
-  display:block;
-  width:6px;
-  height:6px;
-  border-radius:50%;
-  margin:6px auto 0;
-  background: rgba(255,255,255,.22);
-}
-
-#pplTabs .dayChip.active .miniDot{
-  background: var(--good);
-}
-
-
-    
     .badge{
       display:inline-block;
       padding:4px 8px;
@@ -1166,41 +719,23 @@ main > *{
   margin-top:12px;
 }
 
-/* ===========================
-   WEEK ROW (perfect alignment)
-=========================== */
-.weekRow,
-.weekDots{
-  display:grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 14px;                 /* ONE gap value for both rows */
-  justify-items:center;
-  align-items:center;
-  max-width: 260px;          /* controls how wide the week row is */
-  margin: 10px auto 0;
-}
-
 .weekRow{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-top:10px;
   font-size:12px;
   color:var(--muted);
-  margin-top: 10px;
 }
 
 .weekDots{
-  margin-top: 8px;
+  display:flex;
+  justify-content:center;
+  gap:18px;
+  margin-top:8px;
+  align-items:center;
 }
 
-/* day letters */
-.wday{
-  opacity:.85;
-}
-.wday.today{
-  opacity: 1;
-  color: var(--text);
-  text-shadow: 0 0 10px rgba(124,252,0,.25);
-}
-
-/* dots */
 .wdot{
   width:10px;
   height:10px;
@@ -1218,21 +753,6 @@ main > *{
 .wdot.off{
   opacity:.35;
 }
-
-/* subtle premium highlight for TODAY dot */
-.wdot.today{
-  box-shadow: 0 0 0 2px rgba(124,252,0,.18);
-}
-
-/* rest-day marker (greyed) */
-.wdot.rest{
-  opacity: .18;
-  border-style: dashed;
-}
-.wdot.rest.on{
-  opacity: .45; /* if you checked in on a rest day, still show it but muted */
-}
-
 
 .kpiLine{
   display:flex;
@@ -1553,111 +1073,16 @@ header{
   border-color: rgba(124,252,0,.45);
 }
 
-    .r3dCard.isActive{
-  box-shadow:
-    0 0 0 2px rgba(124,252,0,.35),
-    0 18px 60px rgba(0,0,0,.60);
-}
-
-.r3dStage::after{
-  content:"";
-  position:absolute;
-  left:0; right:0; bottom:0;
-  height:90px;
-  background: linear-gradient(to bottom, transparent, rgba(0,0,0,.65));
-  pointer-events:none;
-}
-
-    /* ==================================================
-   MOBILE ROUTINE — UNIFIED DESKTOP MATCH
-   (ONLY applies on phones)
-================================================== */
-@media (max-width: 560px){
-
-  /* Remove harsh separation feel */
-  .r3dStage{
-    border: none;
-    background: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-
-  /* Bring cards into desktop-like centered view */
-  .r3dCarousel{
-    top: 65% !important;
-    transform: translate(-50%, -50%) scale(.86) !important;
-  }
-
-  /* Slightly tighten card proportions for phone */
-  .r3dCard{
-    width: 210px;
-    height: 125px;
-    margin-left: -105px;
-  }
-
-  /* Make entire Routine card feel continuous */
- #screen-routine .card{
-  background:
-    radial-gradient(420px 220px at 20% 0%, rgba(124,252,0,.12), transparent 55%),
-    linear-gradient(180deg, #151518, #101012);
-  border: 1px solid rgba(255,255,255,.08);
-}
-
-
-  /* Remove hard divider feel under carousel */
-  .r3dStage::after{
-    display:none;
-  }
-
-  /* Log Sets glow */
-  .exerciseItem button{
-    background: rgba(124,252,0,.12);
-    border-color: rgba(124,252,0,.35);
-    box-shadow:
-      0 0 0 1px rgba(124,252,0,.25),
-      0 6px 18px rgba(124,252,0,.18);
-  }
-
-  .exerciseItem button:hover{
-    border-color: rgba(124,252,0,.55);
-  }
-
-  /* Slightly reduce right-side stat text size for balance */
-  .exerciseItem .right{
-    font-size:11px;
-  }
-
-}
-
 
     
   </style>
 </head>
 
 <body>
-<header class="appHeader">
-  <!-- Row 1 -->
-  <div class="hdrRow1">
-    <h1 id="headerTitle">Gym Dashboard</h1>
-    <span class="hdrVersion mono" id="hdrVersion">—</span>
-  </div>
-
-  <!-- Row 2 (fixed layout) -->
-  <div class="hdrRow2">
-    <div class="hdrLeft">
-      <span class="hdrDay" id="hdrToday">—</span>
-      <span class="hdrSep">|</span>
-      <span class="hdrProtein" id="hdrProteinLine">—</span>
-      <span class="hdrSep">|</span>
-    </div>
-
-    <div class="hdrStatus" id="hdrStatus">
-      <span class="hdrDot" id="hdrDot">🟢</span>
-      <span class="hdrOnline" id="hdrOnline">—</span>
-    </div>
-  </div>
+<header>
+  <h1>Gym Dashboard</h1>
+  <div class="sub" id="headerSub">—</div>
 </header>
-
 
 <main>
 
@@ -1779,25 +1204,14 @@ header{
     <section class="card">
       <h2>This Week</h2>
 
-     <div class="weekRow" id="homeWeekRow">
-  <span class="wday" data-idx="0">M</span>
-  <span class="wday" data-idx="1">T</span>
-  <span class="wday" data-idx="2">W</span>
-  <span class="wday" data-idx="3">T</span>
-  <span class="wday" data-idx="4">F</span>
-  <span class="wday" data-idx="5">S</span>
-  <span class="wday" data-idx="6">S</span>
-</div>
-
+      <div class="weekRow">
+        <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+      </div>
 
       <div class="weekDots" id="homeWeekDots"></div>
 
      <div class="kpiLine">
-  <div style="display:flex; flex-direction:column; gap:4px;">
   <span class="muted" id="homeWeekCount">—</span>
-  <span class="muted" id="homeStreakLine">—</span>
-</div>
-
 
   <div style="display:flex; gap:8px; align-items:center;">
     <button class="miniBtn" type="button" id="homeCheckInBtn">✅ Check In</button>
@@ -1991,17 +1405,11 @@ header{
         </div>
       </div>
 
-<!-- 3D Carousel (replaces tabs) -->
-<div class="r3dStage" id="r3dStage">
-  <div class="r3dCarousel" id="r3dCarousel"></div>
-</div>
-
-<!-- keep your existing list exactly as-is -->
-<div class="splitTabs" id="pplTabs"></div>
+      <div class="splitTabs" id="pplTabs"></div>
       <div class="exerciseList" id="pplList"></div>
 
       <div class="notice" style="margin-top:10px;">
-        Tip: Tap “Log Set” on an exercise to record sets/reps/weight. PR is based on your lifetime max for that exercise.
+        Tip: Tap “Log Sets” on an exercise to record sets/reps/weight. PR is based on your lifetime max for that exercise.
       </div>
     </section>
   </section>
@@ -2043,27 +1451,12 @@ header{
 
       <div class="row" style="margin-top:8px;">
         <label>Metric (Graph)
-  <select id="liftMetric">
-    <!-- Strength -->
-    <option value="top" selected>Top Weight</option>
-    <option value="e1rm">Estimated 1RM (Epley)</option>
-    <option value="vol">Volume</option>
-
-    <!-- Cardio -->
-    <option value="cardio_duration">Cardio: Duration</option>
-    <option value="cardio_distance">Cardio: Distance</option>
-    <option value="cardio_pace">Cardio: Pace</option>
-
-    <!-- Core -->
-    <option value="core_reps">Core: Top Reps</option>
-    <option value="core_time">Core: Top Hold (sec)</option>
-  </select>
-</label>
-
-        <div class="small muted" style="margin-top:6px;">
-  Metric options adapt to the exercise type (Weightlifting / Cardio / Core).
-</div>
-
+          <select id="liftMetric">
+            <option value="top" selected>Top Weight</option>
+            <option value="e1rm">Estimated 1RM (Epley)</option>
+            <option value="vol">Volume</option>
+          </select>
+        </label>
 
         <label>Rows (Table)
           <select id="liftLimit">
@@ -2198,83 +1591,6 @@ header{
     </div>
   </section>
 
-    <!-- Updates -->
-  <section class="card" id="updatesCard">
-    <h2>Updates</h2>
-
-    <div class="updatesGroupTitle">Version</div>
-    <div class="updatesPills">
-      <div class="pillRow" id="upCurVer">🧾 Current Version: —</div>
-      <div class="pillRow" id="upPrevVer">🕘 Previous Version: —</div>
-      <div class="pillRow" id="upLatestVer">⬆️ Latest Available: —</div>
-    </div>
-
-    <div class="updatesGroupTitle" style="margin-top:12px;">Status</div>
-    <div class="updatesPills">
-      <div class="pillRow" id="upConn">🌐 Connection: —</div>
-      <div class="pillRow" id="upStatus">✅ Update Status: —</div>
-      <div class="pillRow" id="upChecked">🕒 Last Checked: —</div>
-    </div>
-
-    <div class="updatesGroupTitle" style="margin-top:12px;">Build</div>
-    <div class="updatesPills">
-      <div class="pillRow" id="upBuild">🧱 Build: —</div>
-      <div class="pillRow" id="upSW">🧩 Service Worker: —</div>
-    </div>
-
-    <div class="updatesGroupTitle" style="margin-top:12px;">Actions</div>
-    <div class="updatesActions">
-      <button id="upCheckNowBtn" class="tap">🔍 Check Now</button>
-      <button id="upUpdateNowBtn" class="tap">♻️ Update Now (Full Wipe & Reload)</button>
-    </div>
-
-    <div class="updatesGroupTitle" style="margin-top:12px;">Advanced</div>
-    <div class="updatesActions">
-      <button id="upClearCacheBtn" class="tap ghost">🧹 Clear Cache & Reload</button>
-      <button id="upShowResultBtn" class="tap ghost">📋 Show Last Update Result</button>
-      <button id="upDiagBtn" class="tap ghost">📈 Update Diagnostics</button>
-    </div>
-  
-    <!-- Inline dropdown panels (instead of popup) -->
-    <div id="upResultPanel" class="updatesDropPanel" style="display:none;">
-      <div class="updatesDropHead">
-        <div class="updatesDropTitle">Update Result</div>
-        <button id="upResultHideBtn" class="tap ghost" type="button">Hide</button>
-      </div>
-      <div class="updatesPills" style="margin-top:8px;">
-        <div class="pillRow" id="uResLine1">—</div>
-        <div class="pillRow" id="uResLine2">—</div>
-        <div class="pillRow" id="uResLine3">—</div>
-        <div class="pillRow" id="uResLine4">—</div>
-        <div class="pillRow" id="uResLine5">—</div>
-        <div class="pillRow" id="uResLine6"></div>
-      </div>
-      <div class="btnRow" style="margin-top:10px; justify-content:flex-end;">
-        <button id="uModalTryAgain" class="tap" type="button" style="display:none;">Try Again</button>
-      </div>
-    </div>
-
-    <div id="upDiagPanel" class="updatesDropPanel" style="display:none;">
-      <div class="updatesDropHead">
-        <div class="updatesDropTitle">Update Diagnostics</div>
-        <button id="upDiagHideBtn" class="tap ghost" type="button">Hide</button>
-      </div>
-      <div class="updatesPills" style="margin-top:8px;">
-        <div class="pillRow" id="uDiag1">—</div>
-        <div class="pillRow" id="uDiag2">—</div>
-        <div class="pillRow" id="uDiag3">—</div>
-        <div class="pillRow" id="uDiag4">—</div>
-        <div class="pillRow" id="uDiag5">—</div>
-      </div>
-    </div>
-
-  </section>
-
-
-      
-
-
-
   <!-- Reset -->
   <section class="card">
     <h2>Reset</h2>
@@ -2291,97 +1607,45 @@ header{
 
 
   <!-- ✅ KEEP YOUR MODALS EXACTLY AS-IS BELOW -->
-  <!-- LOG MODAL -->
-<div id="logModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
-  <div style="max-width:520px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
-    <div class="topRight">
-      <div>
-        <h2 style="margin:0;">Log</h2>
-        <div class="small muted" id="logRoutineLine">—</div>
-        <div class="small muted" id="logTypeLine">—</div>
+  <!-- LOG SETS MODAL -->
+  <div id="logModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
+    <div style="max-width:520px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+      <div class="topRight">
+        <div>
+          <h2 style="margin:0;">Log Sets</h2>
+          <div class="small muted" id="logRoutineLine">—</div>
+        </div>
       </div>
-    </div>
 
-    <div class="notice" style="margin-top:10px;">
-      <div><strong id="logModalExercise">—</strong></div>
-      <div class="small muted" id="logModalHint">Log what you did: weightlifting (sets/reps/weight), cardio (duration + distance), or core (reps or timed holds).</div>
-    </div>
-
-    <div id="logPrevBox" class="notice" style="margin-top:10px; display:none;">
-      <div class="small muted">Last time:</div>
-      <div id="logPrevText" class="mono">—</div>
-      <div class="btnRow" style="margin-top:8px;">
-        <button id="logCopyLastBtn" type="button">Copy last time</button>
-        <button id="logViewHistoryBtn" type="button" class="ghost">View history</button>
+      <div class="notice" style="margin-top:10px;">
+        <div><strong id="logModalExercise">—</strong></div>
+        <div class="small muted">Enter what you actually did. Add/remove sets as needed.</div>
       </div>
-    </div>
 
-    <div class="row" style="margin-top:10px;">
-      <label>Date
-        <input type="date" id="logModalDate" />
-      </label>
-    </div>
+      <div id="logPrevBox" class="notice" style="margin-top:10px; display:none;">
+        <div class="small muted">Last time:</div>
+        <div id="logPrevText" class="mono">—</div>
+        <div class="btnRow" style="margin-top:8px;">
+          <button id="logCopyLastBtn" type="button">Copy last time</button>
+          <button id="logViewHistoryBtn" type="button" class="ghost">View history</button>
+        </div>
+      </div>
 
-    <!-- CARDIO -->
-    <div id="logCardioBox" style="margin-top:10px; display:none;">
-      <div class="row" style="align-items:end;">
-        <label>Duration (min)
-          <input id="logCardioMin" type="number" min="0" inputmode="numeric" placeholder="e.g., 20" />
-        </label>
-        <label>Duration (sec)
-          <input id="logCardioSec" type="number" min="0" max="59" inputmode="numeric" placeholder="0" />
-        </label>
-        <label>Distance (miles)
-          <input id="logCardioDist" type="number" step="0.01" min="0" inputmode="decimal" placeholder="e.g., 2.50" />
+      <div class="row" style="margin-top:10px;">
+        <label>Date
+          <input type="date" id="logModalDate" />
         </label>
       </div>
 
-      <div class="row" style="margin-top:8px;">
-        <label>PR metric (choose per entry)
-          <select id="logCardioPRMetric">
-            <option value="pace">Fastest pace</option>
-            <option value="distance">Longest distance</option>
-            <option value="duration">Longest duration</option>
-          </select>
-        </label>
-      </div>
-    </div>
+      <div id="logModalSets" style="margin-top:10px; display:grid; gap:8px;"></div>
 
-    <!-- CORE -->
-    <div id="logCoreBox" style="margin-top:10px; display:none;">
-      <div class="row" style="align-items:end;">
-        <label>Core mode
-          <select id="logCoreMode">
-            <option value="reps">Reps (sets x reps)</option>
-            <option value="time">Timed holds (sets x seconds)</option>
-          </select>
-        </label>
-        <label>Added weight (lbs) (optional)
-          <input id="logCoreAddedWeight" type="number" step="0.5" min="0" inputmode="decimal" placeholder="e.g., 10" />
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:8px;">
-        <label>PR metric (depends on exercise)
-          <select id="logCorePRMetric">
-            <option value="reps">Most reps</option>
-            <option value="time">Longest hold</option>
-          </select>
-        </label>
-      </div>
-    </div>
-
-    <!-- SETS (Strength + Core) -->
-    <div id="logModalSets" style="margin-top:10px; display:grid; gap:8px;"></div>
-
-    <div class="btnRow">
-      <button id="logAddSetBtn" class="tap">Add Set</button>
-      <button id="logSaveBtn" class="tap">Confirm & Save</button>
-      <button id="logModalClose" class="tap ghost" type="button">Close</button>
+     <div class="btnRow">
+  <button id="logAddSetBtn" class="tap">Add Set</button>
+  <button id="logSaveBtn" class="tap">Confirm & Save</button>
+  <button id="logModalClose" class="tap ghost" type="button">Close</button>
+</div>
     </div>
   </div>
-</div>
-<!-- END LOG MODAL -->
 
   <!-- HISTORY MODAL -->
   <div id="histModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
@@ -2462,63 +1726,16 @@ header{
           <div class="hint">Tap to choose from your library</div>
         </div>
 
-<label style="width:160px;">Type
-  <select id="rtAddExType">
-    <option value="strength">Weightlifting</option>
-    <option value="cardio">Cardio</option>
-    <option value="core">Core</option>
-  </select>
-</label>
+        <label style="width:110px;">Sets
+          <input id="rtAddExSets" type="number" min="1" placeholder="3" />
+        </label>
 
-<!-- Strength fields -->
-<div id="rtAddStrengthFields" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-  <label style="width:110px;">Sets
-    <input id="rtAddExSets" type="number" min="1" placeholder="3" />
-  </label>
+        <label style="width:140px;">Reps
+          <input id="rtAddExReps" placeholder="8–10" />
+        </label>
 
-  <label style="width:140px;">Reps
-    <input id="rtAddExReps" placeholder="8–10" />
-  </label>
-</div>
-
-<!-- Cardio fields -->
-<div id="rtAddCardioFields" style="display:none; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-  <label style="width:120px;">Duration (min)
-    <input id="rtAddCardioMin" type="number" min="0" inputmode="numeric" placeholder="20" />
-  </label>
-
-  <label style="width:120px;">Duration (sec)
-    <input id="rtAddCardioSec" type="number" min="0" max="59" inputmode="numeric" placeholder="0" />
-  </label>
-
-  <label style="width:150px;">Distance (miles)
-    <input id="rtAddCardioDist" type="number" step="0.01" min="0" inputmode="decimal" placeholder="2.50" />
-  </label>
-</div>
-
-<!-- Core fields -->
-<div id="rtAddCoreFields" style="display:none; gap:10px; align-items:flex-end; flex-wrap:wrap;">
-  <label style="width:110px;">Sets
-    <input id="rtAddCoreSets" type="number" min="1" placeholder="3" />
-  </label>
-
-  <label style="width:180px;">Core mode
-    <select id="rtAddCoreMode">
-      <option value="reps">Reps (sets x reps)</option>
-      <option value="time">Timed holds (sets x seconds)</option>
-    </select>
-  </label>
-
-  <label id="rtAddCoreRepsWrap" style="width:140px;">Reps
-    <input id="rtAddCoreReps" placeholder="12–15" />
-  </label>
-
-  <label id="rtAddCoreSecWrap" style="width:160px; display:none;">Seconds
-    <input id="rtAddCoreSec" type="number" min="0" inputmode="numeric" placeholder="45" />
-  </label>
-</div>
-
-<button id="rtAddExBtn" class="tap">Add</button>
+        <button id="rtAddExBtn" class="tap">Add</button>
+        <button id="rtAddMultiBtn" class="ghost tap" type="button">Add Multiple</button>
       </div>
 
       <div id="rtExList" style="margin-top:12px; display:grid; gap:10px;"></div>
@@ -2560,11 +1777,31 @@ header{
   </div>
 </div>
 
-</main>
-<script>
-(function(){
-'use strict';
+  <!-- BATCH ADD MODAL (Multi-add sets/reps screen) -->
+<div id="batchAddModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; padding:16px;">
+  <div style="max-width:640px; margin:16px auto; background:#121214; border:1px solid #202124; border-radius:14px; padding:12px;">
+    <div class="topRight">
+      <h2 style="margin:0;">Add Multiple Exercises</h2>
+      <button id="batchAddCloseBtn" type="button">Close</button>
+    </div>
 
+    <div class="notice" style="margin-top:10px;">
+      <div class="small muted">Set the Sets + Reps for each exercise, then confirm.</div>
+    </div>
+
+    <div id="batchAddList" style="margin-top:10px; display:grid; gap:8px;"></div>
+
+    <div class="btnRow">
+      <button id="batchAddConfirmBtn" type="button">Add to Day</button>
+      <button id="batchAddCancelBtn" type="button" class="ghost">Cancel</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
 /* ---------------------------
    Storage helpers
 ---------------------------- */
@@ -2599,19 +1836,6 @@ const KEY_LAST_BACKUP = "gym_last_backup_v1";
 const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
 const KEY_CUSTOM_EX = "gym_custom_ex_v1";
 const KEY_APP_VERSION = "gym_app_version_v1"; // ✅ ADD THIS
-const KEY_APP_LAST_RELOAD = "gym_app_last_reload_v1";
-const KEY_APP_UPDATE_DISMISSED_UNTIL = "gym_app_update_dismissed_until_v1";
-
-const VERSION_CHECK_INTERVAL_MS = 60 * 1000;   // 1 min
-const AUTO_REFRESH_COUNTDOWN_S = 8;            // seconds
-const AUTO_REFRESH_COOLDOWN_MS = 30 * 1000;    // prevent reload loops
-
-const hdrVersion = document.getElementById("hdrVersion");
-const hdrProteinLine = document.getElementById("hdrProteinLine");
-const hdrToday   = document.getElementById("hdrToday");
-const hdrOnline  = document.getElementById("hdrOnline");
-const hdrStatus  = document.getElementById("hdrStatus");
-const hdrDot     = document.getElementById("hdrDot");
 
 
 let modalDepth = 0;
@@ -2858,43 +2082,25 @@ function saveProfile(next){
     ...next
   };
   LS.set(KEY_PROFILE, profile);
-  renderHeaderPills();
+  renderHeaderSub();
   refreshHome();
   hydrateSettingsUI(); // ✅ add this line
 }
 
 
-function getTodayWorkoutLabel(){
-  const ar = getActiveRoutine();
-  const todayIdx = getTodaySplitIndex();
-  const dayKey = DAY_KEYS[todayIdx];
-  const day = ar?.days?.[dayKey] || { label:"", rest:false };
+function renderHeaderSub(){
+  const sub = document.getElementById("headerSub");
+  if(!sub) return;
 
-  const label = String(day.label || "").trim();
-  // You said: “use the Day - Workout Day Label here”
-  // If rest day, show Rest (or label if present)
-  if(day.rest) return label || "Rest";
-  return label || dayKey; // fallback if no label set
-}
+  const restTxt = profile?.hideRestDays ? "Rest days hidden" : "Rest days shown";
+  const goal = Number(profile?.proteinGoal || 240) || 240;
 
-function renderHeaderPills(){
-  // Version
   const v = localStorage.getItem(KEY_APP_VERSION) || "";
-  if(hdrVersion) hdrVersion.textContent = v ? v : "—";
 
- // Protein line: "240g / 300g"
-const goal = getProteinGoal();
-const td = todayISO();
-const total = getProteinTotalForDate(td);
-if(hdrProteinLine) hdrProteinLine.textContent = `${total}g / ${goal}g`;
-
-  // Today label
-  const todayLabel = getTodayWorkoutLabel();
-  if(hdrToday) hdrToday.textContent = todayLabel;
-
-  // Online/offline text is set by setOnlineUI()
+  sub.textContent =
+    `Minimal tracker • Protein goal ${goal}g • ${restTxt}` +
+    (v ? ` • v${v}` : "");
 }
-
 
 
 
@@ -3044,61 +2250,20 @@ function refreshHome(){
     homeCheckInBtn.classList.toggle("ghost", checked);
   }
 
-  // week dots + count + streak + today highlight + rest-day markers
+  // week dots + count
   const weekStart = weekStartDate(new Date());
   const dots = [];
   for(let i=0;i<7;i++){
     dots.push(dateISOFrom(weekStart, i));
   }
 
-  const todayIso2 = todayISO();
-
-  // helper: ISO date -> routine dayKey (Mon..Sun)
-  function dayKeyFromISO(iso){
-    const d = parseISO(iso);
-    const dow = d.getDay(); // 0 Sun..6 Sat
-    // If week starts Sunday, index matches Sun..Sat, but your DAY_KEYS is Mon..Sun
-    if(profile.weekStart === "sun"){
-      // map: Sun(0)->Sun, Mon(1)->Mon, ... Sat(6)->Sat
-      if(dow === 0) return "Sun";
-      return DAY_KEYS[dow - 1]; // Mon..Sat
-    } else {
-      // week starts Monday: Mon(1)->Mon ... Sat(6)->Sat, Sun(0)->Sun
-      if(dow === 0) return "Sun";
-      return DAY_KEYS[dow - 1]; // Mon..Sat
-    }
-  }
-
-  function isRestDayISO(iso){
-    const key = dayKeyFromISO(iso);
-    const day = ar?.days?.[key];
-    return !!day?.rest;
-  }
-
   const attendedCount = dots.filter(d => attendance.has(d)).length;
 
-  // TODAY highlight on letters
-  const weekRowEl = document.getElementById("homeWeekRow");
-  if(weekRowEl){
-    const spans = weekRowEl.querySelectorAll(".wday");
-    spans.forEach((s, idx)=>{
-      const iso = dots[idx];
-      s.classList.toggle("today", iso === todayIso2);
-    });
-  }
-
-  // render dots
   if(homeWeekDots){
     homeWeekDots.innerHTML = "";
-    dots.forEach((d)=>{
+    dots.forEach(d=>{
       const dot = document.createElement("div");
-      const checked = attendance.has(d);
-      const rest = isRestDayISO(d);
-
-      dot.className = "wdot " + (checked ? "on" : "off");
-      if(d === todayIso2) dot.classList.add("today");
-      if(rest) dot.classList.add("rest");
-
+      dot.className = "wdot " + (attendance.has(d) ? "on" : "off");
       dot.title = d;
       homeWeekDots.appendChild(dot);
     });
@@ -3107,38 +2272,6 @@ function refreshHome(){
   if(homeWeekCount){
     homeWeekCount.textContent = `Workouts this week: ${attendedCount} / 7`;
   }
-
-  // streak + best streak (ignores rest days)
-  function calcStreaks(){
-    // current streak (walk backward)
-    let cur = 0;
-    for(let back=0; back<400; back++){
-      const iso = addDaysISO(todayIso2, -back);
-      if(isRestDayISO(iso)) continue;          // skip rest days
-      if(attendance.has(iso)) cur++;
-      else break;
-    }
-
-    // best streak (scan last ~400 days)
-    let best = 0;
-    let run = 0;
-    for(let back=399; back>=0; back--){
-      const iso = addDaysISO(todayIso2, -back);
-      if(isRestDayISO(iso)) continue;          // skip rest days
-      if(attendance.has(iso)) run++;
-      else run = 0;
-      if(run > best) best = run;
-    }
-
-    return {cur, best};
-  }
-
-  const {cur, best} = calcStreaks();
-  const homeStreakLine = document.getElementById("homeStreakLine");
-  if(homeStreakLine){
-    homeStreakLine.textContent = `🔥 Streak: ${cur}   🏆 Best: ${best}`;
-  }
-
 
   // ✅ Focus engine (Recovery warning > Stalled lift > Weekly countdown > Default)
   if(homeFocus){
@@ -3758,11 +2891,8 @@ function loadRoutines(){
       if(!Array.isArray(r.days[k].exercises)) r.days[k].exercises = [];
       if(typeof r.days[k].rest !== "boolean") r.days[k].rest = !!r.days[k].rest;
       if(typeof r.days[k].label !== "string") r.days[k].label = String(r.days[k].label||"");
-    r.days[k].exercises = r.days[k].exercises.map(e=>({
+      r.days[k].exercises = r.days[k].exercises.map(e=>({
         name: String(e.name||e.ex||""),
-        type: (String(e.type||"strength").toLowerCase()==="cardio"
-          ? "cardio"
-          : (String(e.type||"strength").toLowerCase()==="core" ? "core" : "strength")),
         sets: Number(e.sets)||0,
         reps: String(e.reps||""),
         notes: String(e.notes||"")
@@ -3913,7 +3043,7 @@ function renderBW(){
       tr.classList.add("tap");
 
       tr.innerHTML = `
-        <td class="mono">${escHTML(cur.date)}</td>
+        <td class="mono">${cur.date}</td>
         <td class="mono">${cur.bw.toFixed(1)}</td>
         <td class="mono">${prevBW===null ? "—" : prevBW.toFixed(1)}</td>
         <td class="mono ${cls}">${dltTxt} ${trend}</td>
@@ -4108,7 +3238,7 @@ pDate?.addEventListener("change", ()=>{
   }
 });
 
-document.getElementById("pSaveBtn")?.addEventListener("click", ()=>{
+document.getElementById("pSaveBtn").addEventListener("click", ()=>{
   const d = pDate.value || todayISO();
   proteinMap[d] = {
     morning:Number(pMorning.value)||0,
@@ -4118,14 +3248,9 @@ document.getElementById("pSaveBtn")?.addEventListener("click", ()=>{
     bed:Number(pBed.value)||0,
   };
   LS.set(KEY_PRO, proteinMap);
-
-  // ✅ ADD THESE
-  renderHeaderPills();  // updates "Xg / Goal"
-  refreshHome();        // updates home circle + focus text
-
-  alert("Saved ✅");
+refreshHome();
+alert("Saved ✅");
 });
-
 
 /* ---------------------------
    Lifts + PR helpers
@@ -4197,30 +3322,11 @@ ensureLiftCompatibility();
 }
 migrateCanonicalNames();
 
-function normalizeLiftType(t){
-  const v = String(t||"strength").toLowerCase();
-  if(v === "cardio") return "cardio";
-  if(v === "core") return "core";
-  return "strength";
-}
-
-function getExerciseEntries(exName, type=null){
+function liftStatsForExercise(exName){
   const n = normExName(exName);
-  let arr = lifts.filter(x => (x.exNorm || normExName(x.ex)) === n);
+  const exLifts = lifts.filter(x=> (x.exNorm || normExName(x.ex)) === n);
 
-  if(type){
-    const want = normalizeLiftType(type);
-    arr = arr.filter(x => normalizeLiftType(x.type) === want);
-  }
-
-  // newest first
-  arr.sort((a,b)=>b.date.localeCompare(a.date));
-  return arr;
-}
-
-function liftStatsForExercise(exName, type="strength"){
-  const t = normalizeLiftType(type);
-  const exLifts = getExerciseEntries(exName, t);
+  const life = exLifts.length ? Math.max(...exLifts.map(x=>Number(x.weight)||0)) : null;
 
   const thisWeekStart = new Date(); thisWeekStart.setDate(thisWeekStart.getDate()-7);
   const lastWeekStart = new Date(); lastWeekStart.setDate(lastWeekStart.getDate()-14);
@@ -4231,99 +3337,28 @@ function liftStatsForExercise(exName, type="strength"){
     return d >= lastWeekStart && d < thisWeekStart;
   });
 
-  // Strength: compare by weight (existing behavior)
-  if(t === "strength"){
-    const life = exLifts.length ? Math.max(...exLifts.map(x=>Number(x.weight)||0)) : null;
-    const thisWeekMax = thisWeek.length ? Math.max(...thisWeek.map(x=>Number(x.weight)||0)) : null;
-    const lastWeekMax = lastWeek.length ? Math.max(...lastWeek.map(x=>Number(x.weight)||0)) : null;
-    return { type:t, life, thisWeekMax, lastWeekMax, thisWeekPRs:0, lastWeekPRs:0 };
-  }
+  const thisWeekMax = thisWeek.length ? Math.max(...thisWeek.map(x=>Number(x.weight)||0)) : null;
+  const lastWeekMax = lastWeek.length ? Math.max(...lastWeek.map(x=>Number(x.weight)||0)) : null;
 
-  // Cardio/Core: PR is per-entry (pr:true). We'll show PR counts + last entry.
-  const thisWeekPRs = thisWeek.filter(x=>!!x.pr).length;
-  const lastWeekPRs = lastWeek.filter(x=>!!x.pr).length;
-
-  return { type:t, life:null, thisWeekMax:null, lastWeekMax:null, thisWeekPRs, lastWeekPRs };
+  return { life, thisWeekMax, lastWeekMax };
 }
 
-
-function getLastLiftForExercise(exName, type=null){
+function getLastLiftForExercise(exName){
   const n = normExName(exName);
   const exLifts = lifts
     .filter(x=> (x.exNorm || normExName(x.ex)) === n)
-    .filter(x=> {
-      if(!type) return true;
-      const t = String(x.type || "strength").toLowerCase();
-      return t === String(type).toLowerCase();
-    })
     .sort((a,b)=>b.date.localeCompare(a.date));
   return exLifts[0] || null;
 }
 
-function pad2(n){ return String(n).padStart(2,"0"); }
-function formatDurationSec(totalSec){
-  const s = Math.max(0, Number(totalSec)||0);
-  const m = Math.floor(s/60);
-  const r = Math.round(s%60);
-  return `${m}:${pad2(r)}`;
-}
-function paceSecPerMile(durationSec, distanceMiles){
-  const d = Number(distanceMiles)||0;
-  const t = Number(durationSec)||0;
-  if(!d || d <= 0 || !t || t <= 0) return 0;
-  return t / d;
-}
-function formatPace(secPerMile){
-  const s = Math.max(0, Number(secPerMile)||0);
-  if(!s) return "—";
-  const m = Math.floor(s/60);
-  const r = Math.round(s%60);
-  return `${m}:${pad2(r)} /mi`;
-}
-
-function formatLastEntryDetail(entry){
-  if(!entry) return "—";
-  const t = String(entry.type || "strength").toLowerCase();
-
-  if(t === "cardio"){
-    const dur = formatDurationSec(entry.durationSec || 0);
-    const dist = (Number(entry.distance)||0).toFixed(2);
-    const metric = String(entry.prMetric||"pace");
-    const pace = formatPace(entry.pace || paceSecPerMile(entry.durationSec, entry.distance));
-    const metricLabel = metric === "distance" ? "PR: distance" : (metric === "duration" ? "PR: duration" : "PR: pace");
-    return `${entry.date} • ${dur} • ${dist} mi • ${pace} • ${metricLabel}`;
-  }
-
-  if(t === "core"){
-    const mode = String(entry.coreMode||"reps");
-    const aw = Number(entry.addedWeight)||0;
-    const awTxt = aw > 0 ? ` • +${aw} lb` : "";
-    const metric = String(entry.prMetric|| (mode==="time" ? "time" : "reps"));
-    const metricLabel = metric === "time" ? "PR: hold" : "PR: reps";
-
-    if(mode === "time"){
-      const top = Number(entry.seconds)||0;
-      const details = Array.isArray(entry.details) && entry.details.length
-        ? entry.details.map((s,i)=>`S${i+1}:${Number(s.seconds)||0}s`).join("  ")
-        : "";
-      return `${entry.date} • Top: ${top}s${awTxt}${details ? " • " + details : ""} • ${metricLabel}`;
-    } else {
-      const top = Number(entry.reps)||0;
-      const details = Array.isArray(entry.details) && entry.details.length
-        ? entry.details.map((s,i)=>`S${i+1}:${Number(s.reps)||0}`).join("  ")
-        : "";
-      return `${entry.date} • Top: ${top} reps${awTxt}${details ? " • " + details : ""} • ${metricLabel}`;
-    }
-  }
-
-  // strength (existing behavior)
-  const topSet = (entry.weight && entry.reps) ? `${entry.weight} x ${entry.reps}` : "—";
-  const details = Array.isArray(entry.details) && entry.details.length
-    ? entry.details.map((s,i)=>`S${i+1}:${s.weight}x${s.reps}`).join("  ")
+function formatSetsDetail(lift){
+  if(!lift) return "—";
+  const topSet = (lift.weight && lift.reps) ? `${lift.weight} x ${lift.reps}` : "—";
+  const details = Array.isArray(lift.details) && lift.details.length
+    ? lift.details.map((s,i)=>`S${i+1}:${s.weight}x${s.reps}`).join("  ")
     : null;
-  return `${entry.date} • Top: ${topSet}${details ? " • " + details : ""}`;
+  return `${lift.date} • Top: ${topSet}${details ? " • " + details : ""}`;
 }
-
 
 /* ---------------------------
    Routine UI
@@ -4388,7 +3423,7 @@ function renderRoutineDropdown(forceId){
   }
 }
   
-routineSelect?.addEventListener("change", ()=>{
+routineSelect.addEventListener("change", ()=>{
   const val = routineSelect.value;
 
   // If they picked a template -> convert it into a REAL saved routine
@@ -4410,8 +3445,6 @@ routineSelect?.addEventListener("change", ()=>{
     renderLiftRoutineDropdown();
     buildRoutineExerciseSuggestions();
 
-   renderHeaderPills();
-    refreshHome();
     return;
   }
 
@@ -4421,14 +3454,10 @@ routineSelect?.addEventListener("change", ()=>{
   renderPPL();
   renderLiftRoutineDropdown();
   buildRoutineExerciseSuggestions();
-
-   // ✅ ADD
-  renderHeaderPills();
-  refreshHome(); 
 });
 
 
-newRoutineBtn?.addEventListener("click", ()=>{
+newRoutineBtn.addEventListener("click", ()=>{
   const base = defaultRoutine();
   base.name = `New Routine ${routines.length+1}`;
   base.source = "user";
@@ -4445,7 +3474,7 @@ newRoutineBtn?.addEventListener("click", ()=>{
   openRoutineEditor(base.id);
 });
 
-dupRoutineBtn?.addEventListener("click", ()=>{
+dupRoutineBtn.addEventListener("click", ()=>{
   const ar = getActiveRoutine();
   const copy = JSON.parse(JSON.stringify(ar));
   copy.source = "user";
@@ -4459,7 +3488,7 @@ dupRoutineBtn?.addEventListener("click", ()=>{
   renderLiftRoutineDropdown();
 });
 
-delRoutineBtn?.addEventListener("click", ()=>{
+delRoutineBtn.addEventListener("click", ()=>{
   if(routines.length <= 1){
     alert("You must keep at least one routine.");
     return;
@@ -4475,7 +3504,7 @@ delRoutineBtn?.addEventListener("click", ()=>{
   renderLiftRoutineDropdown();
 });
 
-editRoutineBtn?.addEventListener("click", ()=>{
+editRoutineBtn.addEventListener("click", ()=>{
   openRoutineEditor(getActiveRoutine().id);
 });
 
@@ -4491,270 +3520,36 @@ function getTodaySplitIndex(){
 const pplTabs = document.getElementById("pplTabs");
 const pplList = document.getElementById("pplList");
 
-  /* ---------------------------
-   3D Carousel (Routine day picker)
----------------------------- */
-const r3dStage = document.getElementById("r3dStage");
-const r3dCarousel = document.getElementById("r3dCarousel");
-
-let r3dAngle = 0;
-let r3dVelocity = 0;
-let r3dDrag = false;
-let r3dLastX = 0;
-let r3dLastT = 0;
-let r3dMomentumRAF = 0;
-
-const r3dRadius = 260;          // reduced depth (less distortion)
-const r3dStep = 360 / 7;        // 7 days
-const r3dTopPct = 22;           // matches your “perfect” position
-let r3dCards = [];
-
-function r3dDayText(k){
-  // k is "Mon"..."Sun" from DAY_KEYS
-  return k.toUpperCase();
-}
-  // ✅ ADD THIS RIGHT HERE
-function escHTML(s){
-  return String(s).replace(/[&<>"']/g, (c)=>(
-    c === "&" ? "&amp;" :
-    c === "<" ? "&lt;"  :
-    c === ">" ? "&gt;"  :
-    c === '"' ? "&quot;" : "&#39;"
-  ));
-}
-
-function renderRoutineCarousel(){
-  if(!r3dCarousel) return;
-
-  const ar = getActiveRoutine();
-  r3dCarousel.innerHTML = "";
-  r3dCards = [];
-
-  DAY_KEYS.forEach((k, idx)=>{
-const day = (ar && ar.days && ar.days[k]) ? ar.days[k] : {};
-const label = (day.label || "").trim();
-
-const card = document.createElement("div");
-card.className = "r3dCard";
-card.dataset.idx = String(idx);
-
-// ✅ Your routine model uses `day.exercises` (not `items`)
-const exercises = Array.isArray(day.exercises) ? day.exercises : [];
-const exCount = exercises.length;
-
-// ✅ Only a rest day if the routine marks it as rest
-const isRest = !!day.rest;
-
-
-    
-card.innerHTML = `
-  <div class="r3dCardInner">
-    <div class="r3dTop">
-      <div>
-        <div class="r3dDay">${r3dDayText(k)}</div>
-        <div class="r3dLabel">${escHTML(label ? label : "—")}</div>
-        <div class="r3dMeta">${exCount} ${exCount === 1 ? "exercise" : "exercises"}</div>
-      </div>
-
-      <div class="r3dBadges">
-        <span class="r3dBadge ${isRest ? "rest" : ""}">
-          ${isRest ? "Rest Day" : "Training Day"}
-        </span>
-        ${idx === activeDayIndex ? `<span class="r3dBadge">Active</span>` : ``}
-      </div>
-    </div>
-  </div>
-`;
-
-
-    // tap to select
-    card.addEventListener("click", ()=>{
-      activeDayIndex = idx;
-      snapCarouselToActive();
-      renderPPL();
-    });
-
-    r3dCarousel.appendChild(card);
-    r3dCards.push(card);
-  });
-
-  // start angle so active is centered
-  snapCarouselToActive(true);
-  updateCarouselTransforms();
-}
-
-function updateCarouselTransforms(){
-  const base = r3dAngle;
-
-  r3dCards.forEach((card, i)=>{
-    const a = (i * r3dStep) + base;
-    card.style.transform = `
-      rotateY(${a}deg)
-      translateZ(${r3dRadius}px)
-      rotateY(${-a}deg)
-    `;
-
-    // make active card pop slightly
-    const isActive = (i === activeDayIndex);
-card.classList.toggle("isActive", isActive);
-  });
-}
-
-function snapCarouselToActive(instant=false){
-  const target = -(activeDayIndex * r3dStep);
-
-  if(instant){
-    r3dAngle = target;
-    r3dVelocity = 0;
-    return;
-  }
-
-  // softer + longer (glide feel)
-  const start = r3dAngle;
-  const delta = target - start;
-  const t0 = performance.now();
-  const dur = 420;
-
-  function easeOutCubic(p){
-    return 1 - Math.pow(1 - p, 3);
-  }
-
-  function tick(t){
-    const p = Math.min(1, (t - t0) / dur);
-    r3dAngle = start + delta * easeOutCubic(p);
-    updateCarouselTransforms();
-    if(p < 1) requestAnimationFrame(tick);
-  }
-
-  requestAnimationFrame(tick);
-}
-
-
-
-function bindCarouselGestures(){
-  if(!r3dStage) return;
-
-const onDown = (clientX)=>{
-    // ✅ BUG FIX: stop any existing momentum loop so it can't snap later mid-drag
-    if(r3dMomentumRAF){
-      cancelAnimationFrame(r3dMomentumRAF);
-      r3dMomentumRAF = 0;
-    }
-
-    r3dDrag = true;
-    r3dLastX = clientX;
-    r3dLastT = performance.now();
-    r3dVelocity = 0;
-  };
-
-  const onMove = (clientX)=>{
-    if(!r3dDrag) return;
-    const now = performance.now();
-    const dx = clientX - r3dLastX;
-    r3dLastX = clientX;
-
-// smoother drag (less sensitive)
-r3dAngle += dx * 0.30;
-
-const dt = Math.max(16, now - r3dLastT);
-r3dLastT = now;
-
-// compute raw velocity, then smooth it (glide)
-const v = (dx / dt) * 32;
-r3dVelocity = (r3dVelocity * 0.55) + (v * 0.45);
-
-updateCarouselTransforms();
-
-  };
-const onUp = ()=>{
-  if(!r3dDrag) return;
-  r3dDrag = false;
-
-  const start = performance.now();
-  const friction = 0.965;
-
-  function momentum(t){
-    r3dVelocity *= friction;
-    r3dAngle += r3dVelocity * 0.34;
-    updateCarouselTransforms();
-
-    if (Math.abs(r3dVelocity) > 0.015 && (t - start) < 1200) {
-      r3dMomentumRAF = requestAnimationFrame(momentum);
-    } else {
-      const nearest = Math.round((-r3dAngle) / r3dStep);
-      activeDayIndex = (nearest % 7 + 7) % 7;
-      snapCarouselToActive();
-      renderPPL();
-    }
-  }
-
-  r3dMomentumRAF = requestAnimationFrame(momentum);
-};
-
-
-  // pointer (desktop)
-  r3dStage.addEventListener("pointerdown", (e)=> onDown(e.clientX));
-  window.addEventListener("pointermove", (e)=> onMove(e.clientX));
-  window.addEventListener("pointerup", onUp);
-
-  // ✅ BUG FIX: if the OS/browser cancels the pointer, we must end the gesture
-  window.addEventListener("pointercancel", onUp);
-
-  // touch (mobile)
-  r3dStage.addEventListener("touchstart", (e)=> onDown(e.touches[0].clientX), {passive:true});
-  r3dStage.addEventListener("touchmove", (e)=> onMove(e.touches[0].clientX), {passive:true});
-  r3dStage.addEventListener("touchend", onUp);
-
-  // ✅ BUG FIX: touch can also be cancelled (app switch, notif shade, gesture nav, etc.)
-  r3dStage.addEventListener("touchcancel", onUp);
-
-  // ✅ BUG FIX: if tab loses focus mid-drag, end gesture so it doesn't get stuck
-  window.addEventListener("blur", onUp);
-  document.addEventListener("visibilitychange", ()=> {
-    if(document.visibilityState !== "visible") onUp();
-  });
-}
-
-// call once
-bindCarouselGestures();
-
 function renderDayTabs(){
-  if(!pplTabs) return;
-
   pplTabs.innerHTML = "";
   const ar = getActiveRoutine();
 
   DAY_KEYS.forEach((k, idx)=>{
-    const day = (ar && ar.days && ar.days[k]) ? ar.days[k] : {};
-    const isRest = !!day.rest;
+    const day = ar.days[k];
+    const label = (day.label || "").trim();
+    const rest = !!day.rest;
 
     const b = document.createElement("div");
-    b.className = "dayChip" + (idx===activeDayIndex ? " active" : "") + (isRest ? " rest" : "");
-    b.title = isRest ? "Rest Day" : "Training Day";
+    b.className = "tab" + (idx===activeDayIndex ? " active" : "");
     b.innerHTML = `
-      <div>${k.toUpperCase()}</div>
-      <span class="miniDot"></span>
+      <span>${k}</span>
+      ${label ? `<span class="badge">${label}</span>` : ""}
+      ${rest ? `<span class="badge">Rest</span>` : ""}
     `;
-
     b.addEventListener("click", ()=>{
       activeDayIndex = idx;
-      snapCarouselToActive();   // keeps carousel aligned with the tap
-      renderPPL();              // refresh list + carousel + day row
+      renderPPL();
     });
-
     pplTabs.appendChild(b);
   });
 }
 
-
 function renderPPL(){
-renderRoutineCarousel();
-renderDayTabs(); // ✅ ADD THIS LINE
+  renderDayTabs();
 
   const ar = getActiveRoutine();
   const dayKey = DAY_KEYS[activeDayIndex];
-  const day = (ar && ar.days && ar.days[dayKey]) ? ar.days[dayKey] : {};
-
+  const day = ar.days[dayKey];
 
   pplList.innerHTML = "";
 
@@ -4762,7 +3557,7 @@ renderDayTabs(); // ✅ ADD THIS LINE
     const restCard = document.createElement("div");
     restCard.className = "notice";
     restCard.innerHTML = `
-            <div><strong>${escHTML(dayKey)}</strong> is marked as a Rest Day.</div>
+      <div><strong>${dayKey}</strong> is marked as a Rest Day.</div>
       <div class="small muted">Exercises are stored but hidden. Toggle rest off in the Routine Editor.</div>
     `;
     pplList.appendChild(restCard);
@@ -4781,114 +3576,50 @@ renderDayTabs(); // ✅ ADD THIS LINE
     return;
   }
 
-list.forEach(item=>{
-  const ex = item.name;
-  const exType = normalizeLiftType(item.type || "strength");
+  list.forEach(item=>{
+    const ex = item.name;
+    const {life, thisWeekMax, lastWeekMax} = liftStatsForExercise(ex);
 
-  const stats = liftStatsForExercise(ex, exType);
-
-  // Use last entry (type-specific) for right-side display
-  const lastEntry = getExerciseEntries(ex, exType)[0] || null;
-
-  let rightLines = "";
-  let prBadge = "";
-
-  if(exType === "strength"){
-    const {life, thisWeekMax, lastWeekMax} = stats;
     const isPRThisWeek = (life !== null && thisWeekMax !== null && thisWeekMax === life);
-    prBadge = isPRThisWeek ? `<span class="badge">🏆 PR (this week)</span>` : ``;
+    const prBadge = isPRThisWeek ? `<span class="badge">🏆 PR (this week)</span>` : ``;
 
-    rightLines = `
-      <div class="line2">This week: <span class="mono">${thisWeekMax===null?"—":thisWeekMax}</span> lbs</div>
-      <div class="line2">Last week: <span class="mono">${lastWeekMax===null?"—":lastWeekMax}</span> lbs</div>
-      <div class="line2">Lifetime max: <span class="mono">${life===null?"—":life}</span> lbs</div>
-    `;
-  }
-  else if(exType === "cardio"){
-    const dur = lastEntry ? (typeof formatDurationSec === "function" ? formatDurationSec(lastEntry.durationSec||0) : (lastEntry.durationSec||0)+"s") : "—";
-    const dist = lastEntry ? ((Number(lastEntry.distance)||0).toFixed(2) + " mi") : "—";
-    const pace = lastEntry && typeof formatPace === "function"
-      ? formatPace(lastEntry.pace || 0)
-      : (lastEntry && lastEntry.pace ? lastEntry.pace : "—");
-
-    prBadge = lastEntry && lastEntry.pr ? `<span class="badge">🏆 PR</span>` : ``;
-
-    rightLines = `
-      <div class="line2">Last: <span class="mono">${dur}</span> • <span class="mono">${dist}</span></div>
-      <div class="line2">Pace: <span class="mono">${pace}</span></div>
-      <div class="line2">PRs this week: <span class="mono">${stats.thisWeekPRs||0}</span></div>
-    `;
-  }
-  else { // core
-    const mode = lastEntry ? String(lastEntry.coreMode||"reps") : "reps";
-    const aw = lastEntry ? Number(lastEntry.addedWeight)||0 : 0;
-    const awTxt = aw>0 ? ` (+${aw}lb)` : "";
-    prBadge = lastEntry && lastEntry.pr ? `<span class="badge">🏆 PR</span>` : ``;
-
-    if(lastEntry){
-      if(mode === "time"){
-        rightLines = `
-          <div class="line2">Last: <span class="mono">${Number(lastEntry.seconds)||0}</span>s${awTxt}</div>
-          <div class="line2">PRs this week: <span class="mono">${stats.thisWeekPRs||0}</span></div>
-        `;
-      } else {
-        rightLines = `
-          <div class="line2">Last: <span class="mono">${Number(lastEntry.reps)||0}</span> reps${awTxt}</div>
-          <div class="line2">PRs this week: <span class="mono">${stats.thisWeekPRs||0}</span></div>
-        `;
-      }
-    } else {
-      rightLines = `
-        <div class="line2">Last: <span class="mono">—</span></div>
-        <div class="line2">PRs this week: <span class="mono">${stats.thisWeekPRs||0}</span></div>
-      `;
-    }
-  }
-
-  const card = document.createElement("div");
-  card.className = "exerciseItem";
-  card.innerHTML = `
-    <div class="left">
-      <div class="title">${escHTML(ex)}</div>
-<div class="meta">
-  <span class="badge">${exType === "strength" ? "Weightlifting" : (exType === "cardio" ? "Cardio" : "Core")}</span>
-
-  ${
-    exType === "cardio"
-      ? `<span>${item.notes ? escHTML(item.notes) : "Duration + Distance"}</span>`
-      : exType === "core"
-        ? `<span>${(item.sets || "—")} sets</span><span>•</span><span>${(item.reps || "—")} reps / seconds</span>`
-        : `<span>${(item.sets || "—")} sets</span><span>•</span><span>${(item.reps || "—")} reps</span>`
-  }
-
-  ${item.notes ? "" : ""}
-</div>
-
-    </div>
-    <div class="right">
-      ${rightLines}
-      <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
-        ${prBadge}
-        <button type="button" data-log="${ex}">${exType==="cardio"?"Log Cardio":(exType==="core"?"Log Core":"Log Set")}</button>
+    const card = document.createElement("div");
+    card.className = "exerciseItem";
+    card.innerHTML = `
+      <div class="left">
+        <div class="title">${ex}</div>
+        <div class="meta">
+          <span>${item.sets || "—"} sets</span>
+          <span>•</span>
+          <span>${item.reps || "—"} reps</span>
+          ${item.notes ? `<span class="badge">${item.notes}</span>` : ""}
+        </div>
       </div>
-    </div>
-  `;
+      <div class="right">
+        <div class="line2">This week: <span class="mono">${thisWeekMax===null?"—":thisWeekMax}</span> lbs</div>
+        <div class="line2">Last week: <span class="mono">${lastWeekMax===null?"—":lastWeekMax}</span> lbs</div>
+        <div class="line2">Lifetime max: <span class="mono">${life===null?"—":life}</span> lbs</div>
+        <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
+          ${prBadge}
+          <button type="button" data-log="${ex}">Log Sets</button>
+        </div>
+      </div>
+    `;
 
-  const logBtn = card.querySelector('button[data-log]');
-  if(logBtn){
-    logBtn.addEventListener("click", ()=>{
-      openLogModal(ex, Number(item.sets)||3, ar, dayKey, activeDayIndex);
-    });
-  }
+    const logBtn = card.querySelector('button[data-log]');
+    if(logBtn){
+      logBtn.addEventListener("click", ()=>{
+        openLogModal(ex, Number(item.sets)||3, ar, dayKey, activeDayIndex);
+      });
+    }
 
-  pplList.appendChild(card);
-});
-
+    pplList.appendChild(card);
+  });
 
   renderLiftSearchDropdown();
 }
 
-document.getElementById("startTodayBtn")?.addEventListener("click", ()=>{
+document.getElementById("startTodayBtn").addEventListener("click", ()=>{
   showScreen("routine");
   activeDayIndex = getTodaySplitIndex();
   renderPPL();
@@ -4964,14 +3695,10 @@ function renderLiftSearchDropdown(){
     liftSearch.appendChild(opt);
   });
   liftSearch.value = items.includes(prev) ? prev : "";
-
-  // keep Metric dropdown consistent with selected exercise
-  syncLiftMetricToSelectedExercise();
 }
-  liftSearch.addEventListener("change", ()=>{
-  syncLiftMetricToSelectedExercise();
-});
-
+/* ---------------------------
+   Exercise Picker (Add + Swap)
+---------------------------- */
 const exPickModal = document.getElementById("exPickModal");
 const exPickTitle = document.getElementById("exPickTitle");
 const exPickCloseBtn = document.getElementById("exPickCloseBtn");
@@ -4981,28 +3708,36 @@ const exPickSearch = document.getElementById("exPickSearch");
 const exPickList = document.getElementById("exPickList");
 
 let exPickSelected = "";                 // single mode selected
+let exPickSelectedSet = new Set();       // multi mode selected set
+let exPickMulti = false;                 // are we in multi mode?
 let exPickOnConfirm = null;
 
-function openExercisePicker({ title="Pick Exercise", initial="", onConfirm }){
+function openExercisePicker({ title="Pick Exercise", initial="", onConfirm, multi=false, initialMulti=[] }){
   exPickTitle.textContent = title;
 
+  exPickMulti = !!multi;
   exPickOnConfirm = onConfirm;
 
-  // reset selection
+  // reset selections
   exPickSelected = initial || "";
+  exPickSelectedSet = new Set(Array.isArray(initialMulti) ? initialMulti : []);
 
   exPickSearch.value = "";
   renderExercisePickerList();
-  lockBodyScroll();
+  lockBodyScroll();                 // ✅ ADD
   exPickModal.style.display = "block";
 }
 
+
 function closeExercisePicker(){
   exPickModal.style.display = "none";
-  unlockBodyScroll();
+  unlockBodyScroll(); // ✅ ADD THIS
   exPickSelected = "";
+  exPickSelectedSet = new Set();
+  exPickMulti = false;
   exPickOnConfirm = null;
 }
+
 
 function renderExercisePickerList(){
   const rawQ = String(exPickSearch.value || "").trim();
@@ -5013,37 +3748,31 @@ function renderExercisePickerList(){
 
   exPickList.innerHTML = "";
 
-  // "Create new" option when typing
+  // ✅ "Create new" option when typing
   if(rawQ){
     const exists = all.some(n => normExName(n) === normExName(rawQ));
     if(!exists){
       const create = document.createElement("div");
       create.className = "exPickItem";
-
-      // Build safely (no raw innerHTML with user input)
-      const row = document.createElement("div");
-      row.className = "exPickRow";
-
-      const label = document.createElement("span");
-      label.textContent = `➕ Create "${rawQ}"`;
-      row.appendChild(label);
-
-      create.appendChild(row);
-
+      create.innerHTML = `
+        <div class="exPickRow">
+          ${exPickMulti ? `<span class="exPickCheck">+</span>` : ``}
+          <span>➕ Create "<strong>${rawQ}</strong>"</span>
+        </div>
+      `;
       create.addEventListener("click", ()=>{
-        const created = addCustomExercise(rawQ);
-        if(!created) return;
+  const created = addCustomExercise(rawQ);
+  if(!created) return;
 
-        // create + immediately confirm + close
-        exPickSelected = created;
-
-        if(typeof exPickOnConfirm === "function"){
-          exPickOnConfirm(exPickSelected);
+        if(exPickMulti){
+          exPickSelectedSet.add(created);
+          renderExercisePickerList();
+        } else {
+          exPickSelected = created;
+          [...exPickList.querySelectorAll(".exPickItem")].forEach(x=>x.classList.remove("active"));
+          create.classList.add("active");
         }
-
-        closeExercisePicker();
       });
-
       exPickList.appendChild(create);
     }
   }
@@ -5056,110 +3785,208 @@ function renderExercisePickerList(){
   }
 
   filtered.forEach(name=>{
-    const isActive = (name === exPickSelected);
+    const isActive = exPickMulti ? exPickSelectedSet.has(name) : (name === exPickSelected);
 
     const div = document.createElement("div");
     div.className = "exPickItem" + (isActive ? " active" : "");
 
     div.innerHTML = `
       <div class="exPickRow">
-        <span>${escHTML(name)}</span>
+        ${exPickMulti ? `<span class="exPickCheck">${isActive ? "✓" : ""}</span>` : ``}
+        <span>${name}</span>
       </div>
     `;
 
     div.addEventListener("click", ()=>{
-      exPickSelected = name;
-      [...exPickList.querySelectorAll(".exPickItem")].forEach(x=>x.classList.remove("active"));
-      div.classList.add("active");
+      if(exPickMulti){
+        if(exPickSelectedSet.has(name)) exPickSelectedSet.delete(name);
+        else exPickSelectedSet.add(name);
+        renderExercisePickerList();
+      } else {
+        exPickSelected = name;
+        [...exPickList.querySelectorAll(".exPickItem")].forEach(x=>x.classList.remove("active"));
+        div.classList.add("active");
+      }
     });
 
     exPickList.appendChild(div);
   });
 }
 
+
 exPickSearch.addEventListener("input", renderExercisePickerList);
 
 exPickConfirmBtn.addEventListener("click", ()=>{
-  if(!exPickSelected){
-    alert("Pick an exercise first.");
+  if(exPickMulti){
+    const picked = [...exPickSelectedSet];
+
+    if(picked.length === 0){
+      alert("Select at least one exercise.");
+      return;
+    }
+
+    if(typeof exPickOnConfirm === "function"){
+      exPickOnConfirm(picked);
+    }
+
+    closeExercisePicker();
     return;
   }
 
-  if(typeof exPickOnConfirm === "function"){
-    exPickOnConfirm(exPickSelected);
+  // single mode
+if(!exPickSelected){
+  const typed = cleanExerciseName(exPickSearch.value);
+  if(!typed){
+    alert("Pick an exercise first.");
+    return;
+  }
+  exPickSelected = typed;
+}
+
+if(typeof exPickOnConfirm === "function"){
+  exPickOnConfirm(exPickSelected);
+}
+closeExercisePicker();
+});
+
+  /* ---------------------------
+   Batch Add Modal (Multi-add sets/reps)
+---------------------------- */
+const batchAddModal = document.getElementById("batchAddModal");
+const batchAddCloseBtn = document.getElementById("batchAddCloseBtn");
+const batchAddCancelBtn = document.getElementById("batchAddCancelBtn");
+const batchAddConfirmBtn = document.getElementById("batchAddConfirmBtn");
+const batchAddList = document.getElementById("batchAddList");
+
+let batchAddItems = []; // [{name, sets, reps}]
+
+function openBatchAddModal(names){
+  // ✅ normalize: accept array OR single string
+  const arr = Array.isArray(names)
+    ? names
+    : (typeof names === "string" && names.trim() ? [names.trim()] : []);
+
+  batchAddItems = arr.map(n=>({
+    name: canonicalExerciseName(n),
+    sets: "",
+    reps: ""
+  }));
+
+  renderBatchAddList();
+  lockBodyScroll();                 // ✅ ADD
+  batchAddModal.style.display = "block";
+}
+
+
+function closeBatchAddModal(){
+  batchAddModal.style.display = "none";
+  unlockBodyScroll();               // ✅ ADD
+  batchAddItems = [];
+}
+
+function renderBatchAddList(){
+  batchAddList.innerHTML = "";
+
+  batchAddItems.forEach((it, idx)=>{
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.background = "#0f0f10";
+    card.style.padding = "10px";
+
+    card.innerHTML = `
+      <div class="row" style="align-items:end;">
+        <div style="flex:2 1 220px;">
+          <div class="small muted">Exercise</div>
+          <div style="font-weight:700; margin-top:4px;">${it.name}</div>
+        </div>
+
+        <label style="flex:0 0 120px;">Sets
+          <input type="number" min="1" value="${it.sets}" data-bsets="${idx}" placeholder="3" />
+        </label>
+
+        <label style="flex:1 1 160px;">Reps
+          <input value="${it.reps}" data-breps="${idx}" placeholder="8–10" />
+        </label>
+
+        <button type="button" class="miniBtn danger" data-bremove="${idx}">Remove</button>
+      </div>
+    `;
+
+    batchAddList.appendChild(card);
+  });
+
+  // wire inputs
+  batchAddList.querySelectorAll("[data-bsets]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const i = Number(inp.getAttribute("data-bsets"));
+      batchAddItems[i].sets = inp.value;
+    });
+  });
+
+  batchAddList.querySelectorAll("[data-breps]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const i = Number(inp.getAttribute("data-breps"));
+      batchAddItems[i].reps = inp.value;
+    });
+  });
+
+  batchAddList.querySelectorAll("[data-bremove]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const i = Number(btn.getAttribute("data-bremove"));
+      batchAddItems.splice(i,1);
+      renderBatchAddList();
+    });
+  });
+  // auto-focus first sets input
+setTimeout(()=>{
+  batchAddList.querySelector("input[data-bsets]")?.focus();
+}, 0);
+}
+
+[batchAddCloseBtn, batchAddCancelBtn].forEach(btn=>{
+  btn?.addEventListener("click", closeBatchAddModal);
+});
+batchAddModal?.addEventListener("click", (e)=>{ if(e.target === batchAddModal) closeBatchAddModal(); });
+
+batchAddConfirmBtn?.addEventListener("click", ()=>{
+  // validate
+  for(const it of batchAddItems){
+    const sets = Number(it.sets);
+    const reps = String(it.reps || "").trim();
+    if(!sets || sets <= 0){
+      alert(`Enter sets for: ${it.name}`);
+      return;
+    }
+    if(!reps){
+      alert(`Enter reps for: ${it.name}`);
+      return;
+    }
   }
 
-  closeExercisePicker();
+  // add to current draft day
+  const k = DAY_KEYS[editDayIndex];
+  const day = draftRoutine.days[k];
+
+  batchAddItems.forEach(it=>{
+    day.exercises.push({
+      name: canonicalExerciseName(it.name),
+      sets: Number(it.sets),
+      reps: String(it.reps).trim(),
+      notes: ""
+    });
+  });
+
+  closeBatchAddModal();
+  renderRtDayPanel();
+  buildRoutineExerciseSuggestions();
+  renderLiftSearchDropdown();
 });
+
 
 [exPickCloseBtn, exPickCancelBtn].forEach(btn=>btn.addEventListener("click", closeExercisePicker));
 exPickModal.addEventListener("click", (e)=>{ if(e.target === exPickModal) closeExercisePicker(); });
 
-function progressExerciseType(exName){
-  const ex = String(exName || "").trim();
-  if(!ex) return ""; // no filter selected
-
-  const n = normExName(ex);
-
-  // 1) Prefer last logged entry type
-  const last = lifts
-    .filter(x => (x.exNorm || normExName(x.ex)) === n)
-    .sort((a,b)=>b.date.localeCompare(a.date))[0];
-
-  if(last && last.type) return normalizeLiftType(last.type);
-
-  // 2) Fallback: look in routines (type on exercise row)
-  for(const r of routines){
-    for(const k of DAY_KEYS){
-      const list = r.days?.[k]?.exercises || [];
-      const found = list.find(e => normExName(canonicalExerciseName(e.name||"")) === n);
-      if(found) return normalizeLiftType(found.type || "strength");
-    }
-  }
-
-  // default
-  return "strength";
-}
-
-function metricGroupForType(type){
-  const t = normalizeLiftType(type || "strength");
-  if(t === "cardio") return new Set(["cardio_duration","cardio_distance","cardio_pace"]);
-  if(t === "core") return new Set(["core_reps","core_time"]);
-  return new Set(["top","e1rm","vol"]);
-}
-
-function defaultMetricForType(type){
-  const t = normalizeLiftType(type || "strength");
-  if(t === "cardio") return "cardio_distance";
-  if(t === "core") return "core_reps";
-  return "top";
-}
-
-function syncLiftMetricToSelectedExercise(){
-  const ex = String(liftSearch.value || "").trim();
-
-  // If "All exercises", enable everything and don't force metric changes.
-  if(!ex){
-    [...liftMetric.options].forEach(o => o.disabled = false);
-    return;
-  }
-
-  const t = progressExerciseType(ex);
-  const allowed = metricGroupForType(t);
-
-  // Disable non-matching options (if they exist in the dropdown)
-  [...liftMetric.options].forEach(o=>{
-    o.disabled = !allowed.has(o.value);
-  });
-
-  // If current metric isn't allowed, switch to default for that type
-  if(!allowed.has(liftMetric.value)){
-    liftMetric.value = defaultMetricForType(t);
-  }
-}
-
-  
-  function renderLiftRoutineDropdown(){
+function renderLiftRoutineDropdown(){
   const prev = liftRoutine.value || "";
   liftRoutine.innerHTML = "";
 
@@ -5179,9 +4006,6 @@ function syncLiftMetricToSelectedExercise(){
 }
 
 function applyLiftFiltersFromUI(){
-  // Ensure metric matches the selected exercise type before applying
-  syncLiftMetricToSelectedExercise();
-
   appliedLiftFilters = {
     ex: (liftSearch.value || "").trim(),
     routineId: (liftRoutine.value || "").trim(),
@@ -5192,20 +4016,14 @@ function applyLiftFiltersFromUI(){
   };
 }
 
-
 function clearLiftFiltersUI(){
   liftSearch.value = "";
   liftRoutine.value = "";
   liftFrom.value = "";
   liftTo.value = "";
-
-  // reset metric + re-enable all metric options
   liftMetric.value = "top";
-  [...liftMetric.options].forEach(o => o.disabled = false);
-
   liftLimit.value = "25";
 }
-
 
 function getLiftFilteredData(){
   let arr = [...lifts];
@@ -5248,39 +4066,13 @@ function renderLiftsTable(){
   const visible = getLiftFilteredData();
 
   visible.forEach(x=>{
-    const t = String(x.type || "strength").toLowerCase();
-
-    let topSet = "—";
-    let setsTxt = "—";
-
-    if(t === "cardio"){
-      const dur = formatDurationSec(x.durationSec || 0);
-      const dist = (Number(x.distance)||0).toFixed(2);
-      const pace = formatPace(x.pace || paceSecPerMile(x.durationSec, x.distance));
-      topSet = `${dur} • ${dist} mi • ${pace}`;
-      setsTxt = String(x.prMetric || "pace");
-    } else if(t === "core"){
-      const mode = String(x.coreMode||"reps");
-      const aw = Number(x.addedWeight)||0;
-      const awTxt = aw > 0 ? ` (+${aw}lb)` : "";
-
-      if(mode === "time"){
-        topSet = `${Number(x.seconds)||0}s${awTxt}`;
-      } else {
-        topSet = `${Number(x.reps)||0} reps${awTxt}`;
-      }
-      setsTxt = String(x.sets ?? "—");
-    } else {
-      topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
-      setsTxt = String(x.sets ?? "—");
-    }
-
+    const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="mono">${x.date}</td>
-      <td><span class="clickEx" data-hist="${escHTML(x.ex)}">${escHTML(x.ex)}</span></td>
+      <td><span class="clickEx" data-hist="${x.ex}">${x.ex}</span></td>
       <td class="mono">${topSet}</td>
-      <td class="mono">${setsTxt}</td>
+      <td class="mono">${x.sets ?? "—"}</td>
       <td>${x.pr ? '<span class="badge">🏆</span>' : ''}</td>
       <td><button data-dellift="${x.id}">Delete</button></td>
     `;
@@ -5293,7 +4085,7 @@ function renderLiftsTable(){
       lifts = lifts.filter(x=>x.id!==id);
       LS.set(KEY_LIFTS, lifts);
       renderLiftSearchDropdown();
-      renderLifts();
+      renderLifts();   // rerun with applied filters
       renderPPL();
       buildRoutineExerciseSuggestions();
     });
@@ -5306,7 +4098,6 @@ function renderLiftsTable(){
     });
   });
 }
-
 
 /* ---- Graph helpers ---- */
 function estEpley1RM(weight, reps){
@@ -5373,64 +4164,24 @@ const weekSeparatorsPlugin = {
   }
 };
 
-function liftValueForMetric(x, metric){
-  const t = normalizeLiftType(x.type);
-
-  // Strength metrics
-  if(metric === "top"){
-    if(t !== "strength"){
-      // fallback: show a sensible number if someone graphs "Top Weight" for non-strength
-      if(t === "cardio") return Number(x.distance)||0;
-      if(t === "core") return Number(x.coreMode)==="time" ? (Number(x.seconds)||0) : (Number(x.reps)||0);
-      return 0;
-    }
-    return Number(x.weight)||0;
-  }
-  if(metric === "e1rm"){
-    return (t === "strength") ? estEpley1RM(x.weight, x.reps) : 0;
-  }
-  if(metric === "vol"){
-    return (t === "strength") ? calcVolume(x) : 0;
-  }
-
-  // Cardio metrics
-  if(metric === "cardio_duration") return (t === "cardio") ? Number(x.durationSec)||0 : 0;
-  if(metric === "cardio_distance") return (t === "cardio") ? Number(x.distance)||0 : 0;
-  if(metric === "cardio_pace") return (t === "cardio") ? Number(x.pace)||0 : 0;
-
-  // Core metrics
-  if(metric === "core_reps") return (t === "core") ? Number(x.reps)||0 : 0;
-  if(metric === "core_time") return (t === "core") ? Number(x.seconds)||0 : 0;
-
-  return 0;
-}
-
-function liftYLabel(metric){
-  if(metric === "e1rm") return "Est. 1RM (lbs)";
-  if(metric === "vol") return "Volume";
-  if(metric === "top") return "Top Weight (lbs)";
-
-  if(metric === "cardio_duration") return "Duration (sec)";
-  if(metric === "cardio_distance") return "Distance (miles)";
-  if(metric === "cardio_pace") return "Pace (sec/mi)";
-
-  if(metric === "core_reps") return "Top Reps";
-  if(metric === "core_time") return "Top Hold (sec)";
-
-  return "Value";
-}
-
 function renderLiftsGraph(){
   const visible = getLiftFilteredData()
-    .slice()
+    .slice() // copy
     .sort((a,b)=>a.date.localeCompare(b.date)); // oldest -> newest
 
   const labels = visible.map(x=>x.date);
 
   const metric = appliedLiftFilters.metric || "top";
-  const data = visible.map(x=> liftValueForMetric(x, metric));
+  const data = visible.map(x=>{
+    if(metric === "e1rm") return estEpley1RM(x.weight, x.reps);
+    if(metric === "vol") return calcVolume(x);
+    return Number(x.weight)||0; // top
+  });
 
-  const yLabel = liftYLabel(metric);
+  const yLabel =
+    metric === "e1rm" ? "Est. 1RM (lbs)" :
+    metric === "vol" ? "Volume" :
+    "Top Weight (lbs)";
 
   const ctx = document.getElementById("liftChart");
   if(liftChart) liftChart.destroy();
@@ -5460,8 +4211,12 @@ function renderLiftsGraph(){
     },
     plugins:[weekSeparatorsPlugin]
   });
-}
 
+  // If no data, show a friendly message
+  if(labels.length === 0){
+    // chart will just be empty; that's fine
+  }
+}
 
 function setLiftView(next){
   liftView = next;
@@ -5525,9 +4280,6 @@ const logModal = document.getElementById("logModal");
 const logModalClose = document.getElementById("logModalClose");
 const logModalExercise = document.getElementById("logModalExercise");
 const logRoutineLine = document.getElementById("logRoutineLine");
-const logTypeLine = document.getElementById("logTypeLine");
-const logModalHint = document.getElementById("logModalHint");
-
 const logModalDate = document.getElementById("logModalDate");
 const logModalSets = document.getElementById("logModalSets");
 const logAddSetBtn = document.getElementById("logAddSetBtn");
@@ -5538,71 +4290,46 @@ const logPrevText = document.getElementById("logPrevText");
 const logCopyLastBtn = document.getElementById("logCopyLastBtn");
 const logViewHistoryBtn = document.getElementById("logViewHistoryBtn");
 
-// Cardio controls
-const logCardioBox = document.getElementById("logCardioBox");
-const logCardioMin = document.getElementById("logCardioMin");
-const logCardioSec = document.getElementById("logCardioSec");
-const logCardioDist = document.getElementById("logCardioDist");
-const logCardioPRMetric = document.getElementById("logCardioPRMetric");
-
-// Core controls
-const logCoreBox = document.getElementById("logCoreBox");
-const logCoreMode = document.getElementById("logCoreMode");
-const logCoreAddedWeight = document.getElementById("logCoreAddedWeight");
-const logCorePRMetric = document.getElementById("logCorePRMetric");
-
 let modalExerciseName = null;
 let modalLastLift = null;
 let modalRoutine = null;
 let modalDayKey = null;
 let modalDayIndex = null;
 
-let modalExerciseType = "strength"; // strength | cardio | core
-let modalCoreMode = "reps";         // reps | time
+function openLogModal(exName, defaultSets=3, routineObj=null, dayKey="", dayIndex=0){
+  modalExerciseName = canonicalExerciseName(exName);
+  logModalExercise.textContent = modalExerciseName;
+  logRoutineLine.textContent = routineObj ? `${routineObj.name} • ${dayKey}` : "—";
+  modalRoutine = routineObj;
+  modalDayKey = dayKey;
+  modalDayIndex = dayIndex;
 
-function normalizeType(t){
-  const v = String(t||"strength").toLowerCase();
-  if(v === "cardio") return "cardio";
-  if(v === "core") return "core";
-  return "strength";
-}
+  logModalDate.value = dateForWeekdayIndex(dayIndex, new Date()) || todayISO();
 
-function logTypeLabel(t){
-  const v = normalizeType(t);
-  if(v === "cardio") return "Cardio";
-  if(v === "core") return "Core";
-  return "Weightlifting";
-}
-
-function getRoutineExerciseType(routineObj, dayKey, exName){
-  if(!routineObj || !routineObj.days || !routineObj.days[dayKey]) return "strength";
-  const exList = routineObj.days[dayKey].exercises || [];
-  const canon = canonicalExerciseName(exName);
-  const n = normExName(canon);
-  const found = exList.find(e => (normExName(canonicalExerciseName(e.name||"")) === n));
-  return normalizeType(found?.type || "strength");
-}
-
-function setLogUIForType(){
-  logTypeLine.textContent = `Type: ${logTypeLabel(modalExerciseType)}`;
-
-  // defaults / hints
-  if(modalExerciseType === "cardio"){
-    logModalHint.textContent = "Log your cardio (duration + distance).";
-  } else if(modalExerciseType === "core"){
-    logModalHint.textContent = "Log your core work (reps or timed holds). Add/remove sets as needed.";
+  modalLastLift = getLastLiftForExercise(modalExerciseName);
+  if(modalLastLift){
+    logPrevBox.style.display = "block";
+    logPrevText.textContent = formatSetsDetail(modalLastLift);
   } else {
-    logModalHint.textContent = "Log what you did: weightlifting (sets/reps/weight), cardio (duration + distance), or core (reps or timed holds).";
+    logPrevBox.style.display = "none";
+    logPrevText.textContent = "—";
   }
 
-  // show/hide sections
-  logCardioBox.style.display = (modalExerciseType === "cardio") ? "block" : "none";
-  logCoreBox.style.display = (modalExerciseType === "core") ? "block" : "none";
+  logModalSets.innerHTML = "";
+  for(let i=0;i<defaultSets;i++) addSetRow();
 
-  // sets UI
-  const setsVisible = (modalExerciseType !== "cardio");
-  logModalSets.style.display = setsVisible ? "grid" : "none";
-  logAddSetBtn.style.display = setsVisible ? "inline-flex" : "none";
+  lockBodyScroll();
+  logModal.style.display = "block";
+}
+
+  function closeLogModal(){
+  logModal.style.display = "none";
+  unlockBodyScroll();               // ✅ ADD
+  modalExerciseName = null;
+  modalLastLift = null;
+  modalRoutine = null;
+  modalDayKey = null;
+  modalDayIndex = null;
 }
 
 function renumberSetPills(){
@@ -5612,7 +4339,7 @@ function renumberSetPills(){
   });
 }
 
-function addSetRowStrength(weight="", reps=""){
+function addSetRow(weight="", reps=""){
   const idx = logModalSets.children.length + 1;
   const row = document.createElement("div");
   row.className = "row";
@@ -5620,10 +4347,10 @@ function addSetRowStrength(weight="", reps=""){
   row.innerHTML = `
     <span class="pill"><span class="muted">Set</span> <strong class="mono">${idx}</strong></span>
     <label>Weight (lbs)
-      <input type="number" step="0.5" inputmode="decimal" class="setWeight" placeholder="e.g., 75" value="${escHTML(weight)}" />
+      <input type="number" step="0.5" inputmode="decimal" class="setWeight" placeholder="e.g., 75" value="${weight}" />
     </label>
     <label>Reps
-      <input type="number" inputmode="numeric" class="setReps" placeholder="e.g., 8" value="${escHTML(reps)}" />
+      <input type="number" inputmode="numeric" class="setReps" placeholder="e.g., 8" value="${reps}" />
     </label>
     <button type="button" class="removeSetBtn">Remove</button>
   `;
@@ -5632,229 +4359,20 @@ function addSetRowStrength(weight="", reps=""){
     renumberSetPills();
   });
   logModalSets.appendChild(row);
-}
-
-function addSetRowCoreReps(reps=""){
-  const idx = logModalSets.children.length + 1;
-  const row = document.createElement("div");
-  row.className = "row";
-  row.style.alignItems = "end";
-  row.innerHTML = `
-    <span class="pill"><span class="muted">Set</span> <strong class="mono">${idx}</strong></span>
-    <label>Reps
-      <input type="number" inputmode="numeric" class="coreReps" placeholder="e.g., 12" value="${escHTML(reps)}" />
-    </label>
-    <button type="button" class="removeSetBtn">Remove</button>
-  `;
-  row.querySelector(".removeSetBtn").addEventListener("click", ()=>{
-    row.remove();
-    renumberSetPills();
-  });
-  logModalSets.appendChild(row);
-}
-
-function addSetRowCoreTime(seconds=""){
-  const idx = logModalSets.children.length + 1;
-  const row = document.createElement("div");
-  row.className = "row";
-  row.style.alignItems = "end";
-  row.innerHTML = `
-    <span class="pill"><span class="muted">Set</span> <strong class="mono">${idx}</strong></span>
-    <label>Seconds
-      <input type="number" inputmode="numeric" class="coreSeconds" placeholder="e.g., 45" value="${escHTML(seconds)}" />
-    </label>
-    <button type="button" class="removeSetBtn">Remove</button>
-  `;
-  row.querySelector(".removeSetBtn").addEventListener("click", ()=>{
-    row.remove();
-    renumberSetPills();
-  });
-  logModalSets.appendChild(row);
-}
-
-function addSetRow(){
-  if(modalExerciseType === "core"){
-    if(modalCoreMode === "time") addSetRowCoreTime("");
-    else addSetRowCoreReps("");
-    return;
-  }
-  // default = strength
-  addSetRowStrength("", "");
-}
-
-function cardioIsPR(exName, prMetric, durationSec, distanceMiles){
-  const n = normExName(exName);
-  const metric = String(prMetric||"pace");
-  const prior = lifts
-    .filter(x => normalizeType(x.type || "strength") === "cardio")
-    .filter(x => (x.exNorm || normExName(x.ex)) === n)
-    .filter(x => String(x.prMetric||"pace") === metric);
-
-  if(prior.length === 0) return true;
-
-  if(metric === "distance"){
-    const best = Math.max(...prior.map(x=>Number(x.distance)||0));
-    return (Number(distanceMiles)||0) > best;
-  }
-  if(metric === "duration"){
-    const best = Math.max(...prior.map(x=>Number(x.durationSec)||0));
-    return (Number(durationSec)||0) > best;
-  }
-  // pace: lower is better
-  const pace = paceSecPerMile(durationSec, distanceMiles);
-  if(!pace) return false;
-  const best = Math.min(...prior.map(x=>Number(x.pace)||paceSecPerMile(x.durationSec, x.distance)||Infinity));
-  return pace < best;
-}
-
-function coreIsPR(exName, prMetric, repsTop, secondsTop){
-  const n = normExName(exName);
-  const metric = String(prMetric||"reps");
-
-  const prior = lifts
-    .filter(x => normalizeType(x.type || "strength") === "core")
-    .filter(x => (x.exNorm || normExName(x.ex)) === n)
-    .filter(x => String(x.prMetric||"reps") === metric);
-
-  if(prior.length === 0) return true;
-
-  if(metric === "time"){
-    const best = Math.max(...prior.map(x=>Number(x.seconds)||0));
-    return (Number(secondsTop)||0) > best;
-  } else {
-    const best = Math.max(...prior.map(x=>Number(x.reps)||0));
-    return (Number(repsTop)||0) > best;
-  }
-}
-
-function openLogModal(exName, defaultSets=3, routineObj=null, dayKey="", dayIndex=0){
-  modalExerciseName = canonicalExerciseName(exName);
-  logModalExercise.textContent = modalExerciseName;
-
-  logRoutineLine.textContent = routineObj ? `${routineObj.name} • ${dayKey}` : "—";
-  modalRoutine = routineObj;
-  modalDayKey = dayKey;
-  modalDayIndex = dayIndex;
-
-  // determine type from routine
-  modalExerciseType = getRoutineExerciseType(routineObj, dayKey, modalExerciseName);
-
-  // default core mode from PR metric (safe defaults)
-  modalCoreMode = String(logCoreMode?.value||"reps");
-  setLogUIForType();
-
-  logModalDate.value = dateForWeekdayIndex(dayIndex, new Date()) || todayISO();
-
-  // last entry is type-aware
-  modalLastLift = getLastLiftForExercise(modalExerciseName, modalExerciseType);
-  if(modalLastLift){
-    logPrevBox.style.display = "block";
-    logPrevText.textContent = formatLastEntryDetail(modalLastLift);
-  } else {
-    logPrevBox.style.display = "none";
-    logPrevText.textContent = "—";
-  }
-
-  // build inputs
-  logModalSets.innerHTML = "";
-
-  // reset cardio/core inputs
-  if(logCardioMin) logCardioMin.value = "";
-  if(logCardioSec) logCardioSec.value = "";
-  if(logCardioDist) logCardioDist.value = "";
-  if(logCardioPRMetric) logCardioPRMetric.value = "pace";
-
-  if(logCoreMode) logCoreMode.value = "reps";
-  if(logCoreAddedWeight) logCoreAddedWeight.value = "";
-  if(logCorePRMetric) logCorePRMetric.value = "reps";
-  modalCoreMode = "reps";
-
-  if(modalExerciseType === "cardio"){
-    // no sets
-  } else {
-    for(let i=0;i<defaultSets;i++) addSetRow();
-  }
-
-  lockBodyScroll();
-  logModal.style.display = "block";
-}
-
-function closeLogModal(){
-  logModal.style.display = "none";
-  unlockBodyScroll();
-  modalExerciseName = null;
-  modalLastLift = null;
-  modalRoutine = null;
-  modalDayKey = null;
-  modalDayIndex = null;
-  modalExerciseType = "strength";
-  modalCoreMode = "reps";
 }
 
 logAddSetBtn.addEventListener("click", ()=> addSetRow());
 logModalClose.addEventListener("click", closeLogModal);
 logModal.addEventListener("click", (e)=>{ if(e.target === logModal) closeLogModal(); });
 
-if(logCoreMode){
-  logCoreMode.addEventListener("change", ()=>{
-    modalCoreMode = String(logCoreMode.value||"reps");
-    // rebuild set rows when switching core mode
-    if(modalExerciseType === "core"){
-      const existing = [...logModalSets.children];
-      logModalSets.innerHTML = "";
-      // keep same count
-      const count = Math.max(1, existing.length || 1);
-      for(let i=0;i<count;i++) addSetRow();
-      renumberSetPills();
-    }
-  });
-}
-
 logCopyLastBtn.addEventListener("click", ()=>{
   if(!modalLastLift) return;
-
-  // cardio copy
-  const t = normalizeType(modalLastLift.type || "strength");
-  if(t === "cardio"){
-    const total = Number(modalLastLift.durationSec)||0;
-    const m = Math.floor(total/60);
-    const s = Math.round(total%60);
-    if(logCardioMin) logCardioMin.value = String(m);
-    if(logCardioSec) logCardioSec.value = String(s);
-    if(logCardioDist) logCardioDist.value = String(Number(modalLastLift.distance)||0);
-    if(logCardioPRMetric) logCardioPRMetric.value = String(modalLastLift.prMetric||"pace");
-    return;
-  }
-
-  // core copy
-  if(t === "core"){
-    if(logCoreMode) logCoreMode.value = String(modalLastLift.coreMode || "reps");
-    modalCoreMode = String(modalLastLift.coreMode || "reps");
-    if(logCoreAddedWeight) logCoreAddedWeight.value = String(Number(modalLastLift.addedWeight)||0 || "");
-    if(logCorePRMetric) logCorePRMetric.value = String(modalLastLift.prMetric || (modalCoreMode==="time" ? "time" : "reps"));
-
-    logModalSets.innerHTML = "";
-    if(Array.isArray(modalLastLift.details) && modalLastLift.details.length){
-      if(modalCoreMode === "time"){
-        modalLastLift.details.forEach(s=> addSetRowCoreTime(String(Number(s.seconds)||0 || "")));
-      } else {
-        modalLastLift.details.forEach(s=> addSetRowCoreReps(String(Number(s.reps)||0 || "")));
-      }
-    } else {
-      // fallback
-      if(modalCoreMode === "time") addSetRowCoreTime(String(Number(modalLastLift.seconds)||0 || ""));
-      else addSetRowCoreReps(String(Number(modalLastLift.reps)||0 || ""));
-    }
-    renumberSetPills();
-    return;
-  }
-
-  // strength copy (existing)
   logModalSets.innerHTML = "";
+
   if(Array.isArray(modalLastLift.details) && modalLastLift.details.length){
-    modalLastLift.details.forEach(s=> addSetRowStrength(String(s.weight ?? ""), String(s.reps ?? "")));
+    modalLastLift.details.forEach(s=> addSetRow(String(s.weight ?? ""), String(s.reps ?? "")));
   } else {
-    addSetRowStrength(String(modalLastLift.weight ?? ""), String(modalLastLift.reps ?? ""));
+    addSetRow(String(modalLastLift.weight ?? ""), String(modalLastLift.reps ?? ""));
   }
   renumberSetPills();
 });
@@ -5868,161 +4386,44 @@ logSaveBtn.addEventListener("click", ()=>{
   if(!modalExerciseName) return;
 
   const date = logModalDate.value || todayISO();
-  const type = modalExerciseType;
+  const setRows = [...logModalSets.querySelectorAll(".row")];
 
-  // CARDIO SAVE
-  if(type === "cardio"){
-    const mins = Number(logCardioMin?.value)||0;
-    const secs = Number(logCardioSec?.value)||0;
-    const durationSec = (mins*60) + Math.max(0, Math.min(59, secs));
-    const distance = Number(logCardioDist?.value)||0;
-    const prMetric = String(logCardioPRMetric?.value||"pace");
-
-    if(durationSec <= 0){
-      alert("Enter a valid duration.");
-      return;
+  const setsArr = [];
+  for(const r of setRows){
+    const w = Number(r.querySelector(".setWeight")?.value);
+    const reps = Number(r.querySelector(".setReps")?.value);
+    if(isFinite(w) && w > 0 && isFinite(reps) && reps > 0){
+      setsArr.push({weight:w, reps:reps});
     }
-    if(distance <= 0){
-      alert("Enter a valid distance (miles).");
-      return;
-    }
-
-    const pace = paceSecPerMile(durationSec, distance);
-    const isPR = cardioIsPR(modalExerciseName, prMetric, durationSec, distance);
-
-    lifts.push({
-      id: uid(),
-      date,
-      type: "cardio",
-      ex: modalExerciseName,
-      exNorm: normExName(modalExerciseName),
-      durationSec,
-      distance,
-      pace,
-      prMetric,
-      pr: isPR,
-      routineId: modalRoutine?.id || "",
-      routineName: modalRoutine?.name || "",
-      dayKey: modalDayKey || ""
-    });
-
-  } else if(type === "core"){
-    const coreMode = String(logCoreMode?.value||"reps");
-    const prMetric = String(logCorePRMetric?.value || (coreMode==="time" ? "time" : "reps"));
-    const addedWeight = Number(logCoreAddedWeight?.value)||0;
-
-    const setRows = [...logModalSets.querySelectorAll(".row")];
-    const details = [];
-
-    if(coreMode === "time"){
-      for(const r of setRows){
-        const sec = Number(r.querySelector(".coreSeconds")?.value);
-        if(isFinite(sec) && sec > 0) details.push({seconds: sec});
-      }
-      if(details.length === 0){
-        alert("Enter at least one valid set (seconds).");
-        return;
-      }
-      let topSec = details[0].seconds;
-      for(const s of details) if(s.seconds > topSec) topSec = s.seconds;
-
-      const isPR = coreIsPR(modalExerciseName, prMetric, 0, topSec);
-
-      lifts.push({
-        id: uid(),
-        date,
-        type: "core",
-        ex: modalExerciseName,
-        exNorm: normExName(modalExerciseName),
-        coreMode: "time",
-        seconds: topSec,
-        reps: 0,
-        sets: details.length,
-        addedWeight: addedWeight > 0 ? addedWeight : 0,
-        prMetric,
-        pr: isPR,
-        details,
-        routineId: modalRoutine?.id || "",
-        routineName: modalRoutine?.name || "",
-        dayKey: modalDayKey || ""
-      });
-
-    } else {
-      for(const r of setRows){
-        const reps = Number(r.querySelector(".coreReps")?.value);
-        if(isFinite(reps) && reps > 0) details.push({reps: reps});
-      }
-      if(details.length === 0){
-        alert("Enter at least one valid set (reps).");
-        return;
-      }
-      let topReps = details[0].reps;
-      for(const s of details) if(s.reps > topReps) topReps = s.reps;
-
-      const isPR = coreIsPR(modalExerciseName, prMetric, topReps, 0);
-
-      lifts.push({
-        id: uid(),
-        date,
-        type: "core",
-        ex: modalExerciseName,
-        exNorm: normExName(modalExerciseName),
-        coreMode: "reps",
-        reps: topReps,
-        seconds: 0,
-        sets: details.length,
-        addedWeight: addedWeight > 0 ? addedWeight : 0,
-        prMetric,
-        pr: isPR,
-        details,
-        routineId: modalRoutine?.id || "",
-        routineName: modalRoutine?.name || "",
-        dayKey: modalDayKey || ""
-      });
-    }
-
-  } else {
-    // STRENGTH SAVE (existing)
-    const setRows = [...logModalSets.querySelectorAll(".row")];
-
-    const setsArr = [];
-    for(const r of setRows){
-      const w = Number(r.querySelector(".setWeight")?.value);
-      const reps = Number(r.querySelector(".setReps")?.value);
-      if(isFinite(w) && w > 0 && isFinite(reps) && reps > 0){
-        setsArr.push({weight:w, reps:reps});
-      }
-    }
-
-    if(setsArr.length === 0){
-      alert("Enter at least one valid set (weight + reps).");
-      return;
-    }
-
-    let top = setsArr[0];
-    for(const s of setsArr){
-      if(s.weight > top.weight) top = s;
-    }
-
-    const {life} = liftStatsForExercise(modalExerciseName);
-    const isPR = (life === null) ? true : (top.weight > life);
-
-    lifts.push({
-      id: uid(),
-      date,
-      type: "strength",
-      ex: modalExerciseName,
-      exNorm: normExName(modalExerciseName),
-      sets: setsArr.length,
-      reps: top.reps,
-      weight: top.weight,
-      pr: isPR,
-      details: setsArr,
-      routineId: modalRoutine?.id || "",
-      routineName: modalRoutine?.name || "",
-      dayKey: modalDayKey || ""
-    });
   }
+
+  if(setsArr.length === 0){
+    alert("Enter at least one valid set (weight + reps).");
+    return;
+  }
+
+  let top = setsArr[0];
+  for(const s of setsArr){
+    if(s.weight > top.weight) top = s;
+  }
+
+  const {life} = liftStatsForExercise(modalExerciseName);
+  const isPR = (life === null) ? true : (top.weight > life);
+
+  lifts.push({
+    id: uid(),
+    date,
+    ex: modalExerciseName,
+    exNorm: normExName(modalExerciseName),
+    sets: setsArr.length,
+    reps: top.reps,
+    weight: top.weight,
+    pr: isPR,
+    details: setsArr,
+    routineId: modalRoutine?.id || "",
+    routineName: modalRoutine?.name || "",
+    dayKey: modalDayKey || ""
+  });
 
   lifts.sort((a,b)=>b.date.localeCompare(a.date));
   LS.set(KEY_LIFTS, lifts);
@@ -6031,12 +4432,17 @@ logSaveBtn.addEventListener("click", ()=>{
   closeLogModal();
 
   renderLiftSearchDropdown();
-  renderLifts();
+  renderLifts();      // Phase 4 respects applied filters
   renderPPL();
   window.scrollTo(0, prevScroll);
   buildRoutineExerciseSuggestions();
-});
 
+// ✅ Stay on Routine screen after saving
+// showScreen("lifts");
+// setTimeout(()=>{
+//   document.getElementById("liftTableWrap")?.scrollIntoView({behavior:"smooth", block:"start"});
+// }, 0);
+}); // ✅ closes logSaveBtn click handler
 
 /* ---------------------------
    History Modal
@@ -6067,42 +4473,10 @@ function openHistoryModal(exName){
   histTable.innerHTML = "";
 
   exLifts.forEach(x=>{
-    const t = String(x.type || "strength").toLowerCase();
-
-    let topSet = "—";
-    let allSets = "—";
-
-    if(t === "cardio"){
-      const dur = formatDurationSec(x.durationSec || 0);
-      const dist = (Number(x.distance)||0).toFixed(2);
-      const pace = formatPace(x.pace || paceSecPerMile(x.durationSec, x.distance));
-      topSet = `${dur} • ${dist} mi`;
-      allSets = `Pace: ${pace} • PR metric: ${String(x.prMetric||"pace")}`;
-    } else if(t === "core"){
-      const mode = String(x.coreMode||"reps");
-      const aw = Number(x.addedWeight)||0;
-      const awTxt = aw > 0 ? ` (+${aw}lb)` : "";
-      const metric = String(x.prMetric|| (mode==="time" ? "time" : "reps"));
-
-      if(mode === "time"){
-        topSet = `${Number(x.seconds)||0}s${awTxt}`;
-        allSets = Array.isArray(x.details) && x.details.length
-          ? x.details.map((s,i)=>`S${i+1}:${Number(s.seconds)||0}s`).join("  ")
-          : "—";
-      } else {
-        topSet = `${Number(x.reps)||0} reps${awTxt}`;
-        allSets = Array.isArray(x.details) && x.details.length
-          ? x.details.map((s,i)=>`S${i+1}:${Number(s.reps)||0}`).join("  ")
-          : "—";
-      }
-      allSets += ` • PR metric: ${metric}`;
-    } else {
-      // strength
-      topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
-      allSets = Array.isArray(x.details) && x.details.length
-        ? x.details.map((s,i)=>`S${i+1}:${s.weight}x${s.reps}`).join("  ")
-        : "—";
-    }
+    const topSet = (x.weight && x.reps) ? `${x.weight} x ${x.reps}` : "—";
+    const allSets = Array.isArray(x.details) && x.details.length
+      ? x.details.map((s,i)=>`S${i+1}:${s.weight}x${s.reps}`).join("  ")
+      : "—";
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -6114,10 +4488,9 @@ function openHistoryModal(exName){
     histTable.appendChild(tr);
   });
 
-  lockBodyScroll();
+  lockBodyScroll();                 // ✅ required
   histModal.style.display = "block";
 }
-
 
 /* ---------------------------
    Routine Editor (unchanged)
@@ -6133,106 +4506,15 @@ const rtDayLabel = document.getElementById("rtDayLabel");
 const rtRestToggle = document.getElementById("rtRestToggle");
 const rtDayRestNotice = document.getElementById("rtDayRestNotice");
 
-const rtAddStrengthFields = document.getElementById("rtAddStrengthFields");
-const rtAddCardioFields = document.getElementById("rtAddCardioFields");
-const rtAddCoreFields = document.getElementById("rtAddCoreFields");
-
-const rtAddCardioMin = document.getElementById("rtAddCardioMin");
-const rtAddCardioSec = document.getElementById("rtAddCardioSec");
-const rtAddCardioDist = document.getElementById("rtAddCardioDist");
-
-const rtAddCoreSets = document.getElementById("rtAddCoreSets");
-const rtAddCoreMode = document.getElementById("rtAddCoreMode");
-const rtAddCoreReps = document.getElementById("rtAddCoreReps");
-const rtAddCoreSec = document.getElementById("rtAddCoreSec");
-const rtAddCoreRepsWrap = document.getElementById("rtAddCoreRepsWrap");
-const rtAddCoreSecWrap = document.getElementById("rtAddCoreSecWrap");
-
+const rtAddExName = document.getElementById("rtAddExName");
+const rtAddExSets = document.getElementById("rtAddExSets");
+const rtAddExReps = document.getElementById("rtAddExReps");
 const rtAddExBtn = document.getElementById("rtAddExBtn");
 const rtExList = document.getElementById("rtExList");
 const rtAddMultiBtn = document.getElementById("rtAddMultiBtn");
 const rtExSuggestions = document.getElementById("rtExSuggestions");
 
-  setRtAddMode(rtAddExType?.value || "strength");
-
-function applyRtAddTypeHints(type){
-  const t = String(type || "strength").toLowerCase();
-  const mode = (t === "cardio") ? "cardio" : (t === "core" ? "core" : "strength");
-
-  // Keep existing required fields/validation logic intact.
-  // We only adjust helpful defaults + placeholders so the green box “adapts”.
-  if(mode === "cardio"){
-    if(rtAddExSets && (!rtAddExSets.value || Number(rtAddExSets.value) <= 0)) rtAddExSets.value = "1";
-    if(rtAddExReps) rtAddExReps.placeholder = "e.g., 20 min • 2.50 mi (Duration + Distance)";
-  } else if(mode === "core"){
-    if(rtAddExSets && (!rtAddExSets.value || Number(rtAddExSets.value) <= 0)) rtAddExSets.value = "3";
-    if(rtAddExReps) rtAddExReps.placeholder = "e.g., 12–15 (or 45 sec holds)";
-  } else {
-    if(rtAddExSets && (!rtAddExSets.value || Number(rtAddExSets.value) <= 0)) rtAddExSets.value = "3";
-    if(rtAddExReps) rtAddExReps.placeholder = "e.g., 8–10";
-  }
-}
-
-function inferRoutineEditorTypeForExercise(exName){
-  const canon = canonicalExerciseName(String(exName || "").trim());
-  if(!canon) return "strength";
-
-  // 1) Prefer the most recent lift type for that exercise (best signal)
-  const lastAny = getLastLiftForExercise(canon, null);
-  if(lastAny && lastAny.type){
-    return normalizeLiftType(lastAny.type);
-  }
-
-  // 2) Otherwise, look for it in existing routines (stored routine exercise type)
-  for(const r of (routines || [])){
-    const days = r?.days || {};
-    for(const k of DAY_KEYS){
-      const exList = days?.[k]?.exercises;
-      if(!Array.isArray(exList)) continue;
-      for(const ex of exList){
-        if(normExName(ex?.name) === normExName(canon)){
-          return normalizeLiftType(ex?.type);
-        }
-      }
-    }
-  }
-
-  // 3) Default
-  return "strength";
-}
-
-function setRtAddMode(mode){
-  const m = (String(mode||"strength").toLowerCase() === "cardio")
-    ? "cardio"
-    : (String(mode||"strength").toLowerCase() === "core" ? "core" : "strength");
-
-  if(rtAddStrengthFields) rtAddStrengthFields.style.display = (m === "strength") ? "flex" : "none";
-  if(rtAddCardioFields) rtAddCardioFields.style.display = (m === "cardio") ? "flex" : "none";
-  if(rtAddCoreFields) rtAddCoreFields.style.display = (m === "core") ? "flex" : "none";
-
-  // Core sub-mode toggle
-  if(m === "core"){
-    const coreMode = String(rtAddCoreMode?.value || "reps").toLowerCase();
-    if(rtAddCoreRepsWrap) rtAddCoreRepsWrap.style.display = (coreMode === "time") ? "none" : "block";
-    if(rtAddCoreSecWrap)  rtAddCoreSecWrap.style.display  = (coreMode === "time") ? "block" : "none";
-  }
-}
-
-function inferRoutineEditorTypeForExercise(exName){
-  const canon = canonicalExerciseName(String(exName || "").trim());
-  if(!canon) return "strength";
-
-  // Prefer most recent logged entry type (best signal)
-  const lastAny = getLastLiftForExercise(canon, null);
-  if(lastAny && lastAny.type){
-    return normalizeLiftType(lastAny.type);
-  }
-
-  // Otherwise fall back to "strength"
-  return "strength";
-}
-
-function openAddExercisePicker(){
+  function openAddExercisePicker(){
   // ✅ remember where the Routine Editor modal is scrolled
   const modalCard = document.querySelector("#rtModal > div");
   const prevScroll = modalCard ? modalCard.scrollTop : 0;
@@ -6240,19 +4522,12 @@ function openAddExercisePicker(){
   // ✅ kill focus so iOS doesn’t scroll the page
   rtAddExName.blur();
 
+  // ✅ open picker
   openExercisePicker({
     title: "Pick exercise to add",
     initial: rtAddExName.value,
     onConfirm: (picked)=>{
-      const canon = canonicalExerciseName(picked);
-      rtAddExName.value = canon;
-
-      // ✅ auto-populate Type based on last logged type (if any)
-      const inferred = inferRoutineEditorTypeForExercise(canon);
-      if(rtAddExType) rtAddExType.value = inferred;
-
-      // ✅ show the correct field group for that type
-      setRtAddMode(inferred);
+      rtAddExName.value = picked;
 
       // ✅ restore modal scroll after pick
       setTimeout(()=>{
@@ -6260,19 +4535,6 @@ function openAddExercisePicker(){
       }, 0);
     }
   });
-
-  // ✅ restore immediately too (covers iOS “jump” before picker paints)
-  setTimeout(()=>{
-    if(modalCard) modalCard.scrollTop = prevScroll;
-  }, 0);
-}
-
-
-// If user manually changes Type in the green box, keep the fields “adapted”
-rtAddExType?.addEventListener("change", ()=>{
-  applyRtAddTypeHints(rtAddExType.value);
-});
-
 
   // ✅ restore immediately too (covers iOS “jump” before picker paints)
   setTimeout(()=>{
@@ -6292,25 +4554,10 @@ rtAddExName.addEventListener("focus", (e)=>{
   openAddExercisePicker();
 });
 
-  rtAddExType?.addEventListener("change", ()=>{
-  setRtAddMode(rtAddExType.value);
-});
-
-rtAddCoreMode?.addEventListener("change", ()=>{
-  setRtAddMode(rtAddExType?.value || "core");
-});
-
   
 let editRoutineId = null;
 let editDayIndex = 0;
 let draftRoutine = null;
-
-  function exTypeLabel(t){
-  const v = String(t||"strength").toLowerCase();
-  if(v === "cardio") return "Cardio";
-  if(v === "core") return "Core";
-  return "Weightlifting";
-}
 
 function buildRoutineExerciseSuggestions(){
   const list = collectAllExerciseNames();
@@ -6365,7 +4612,7 @@ function renderRtDayTabs(){
     b.className = "tab" + (idx===editDayIndex ? " active" : "");
     b.innerHTML = `
       <span>${k}</span>
-      ${label ? `<span class="badge">${escHTML(label)}</span>` : ""}
+      ${label ? `<span class="badge">${label}</span>` : ""}
       ${rest ? `<span class="badge">Rest</span>` : ""}
     `;
     b.addEventListener("click", ()=>{
@@ -6400,34 +4647,25 @@ function renderRtDayPanel(){
     const wrap = document.createElement("div");
     wrap.className = "rtExCard";
 
-wrap.innerHTML = `
-  <div class="rtExTop">
-    <div class="rtExName">${escHTML(ex.name || "Exercise")}</div>
-    <span class="badge">${exTypeLabel(ex.type)} • ${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps</span>
-  </div>
+    wrap.innerHTML = `
+      <div class="rtExTop">
+        <div class="rtExName">${ex.name || "Exercise"}</div>
+        <span class="badge">${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps</span>
+      </div>
 
-  <div class="row" style="margin-top:10px; align-items:end;">
-    <label style="flex:2 1 240px;">Name
-      <input data-field="name" value="${ex.name || ""}" />
-    </label>
+      <div class="row" style="margin-top:10px; align-items:end;">
+        <label style="flex:2 1 240px;">Name
+          <input data-field="name" value="${ex.name || ""}" />
+        </label>
 
-    <label style="flex:0 0 160px;">Type
-      <select data-field="type">
-        <option value="strength" ${ex.type==="strength"?"selected":""}>Weightlifting</option>
-        <option value="cardio" ${ex.type==="cardio"?"selected":""}>Cardio</option>
-        <option value="core" ${ex.type==="core"?"selected":""}>Core</option>
-      </select>
-    </label>
+        <label style="flex:0 0 120px;">Sets
+          <input data-field="sets" type="number" min="1" value="${ex.sets || ""}" />
+        </label>
 
-    <label style="flex:0 0 120px;">Sets
-      <input data-field="sets" type="number" min="1" value="${ex.sets || ""}" />
-    </label>
-
-    <label style="flex:1 1 160px;">Reps
-      <input data-field="reps" value="${ex.reps || ""}" />
-    </label>
-  </div>
-
+        <label style="flex:1 1 160px;">Reps
+          <input data-field="reps" value="${ex.reps || ""}" />
+        </label>
+      </div>
 
       <div class="row" style="margin-top:8px;">
         <label style="flex:1 1 100%;">Notes
@@ -6445,20 +4683,16 @@ wrap.innerHTML = `
 
     // keep the rest of your event listeners EXACTLY as-is below
 
-wrap.querySelectorAll("[data-field]").forEach(inp=>{
-  inp.addEventListener("input", ()=>{
-    const field = inp.getAttribute("data-field");
-    if(field === "sets"){
-      day.exercises[idx][field] = Number(inp.value)||0;
-    }else if(field === "type"){
-      const v = String(inp.value||"strength").toLowerCase();
-      day.exercises[idx][field] = (v==="cardio") ? "cardio" : (v==="core" ? "core" : "strength");
-    }else{
-      day.exercises[idx][field] = inp.value;
-    }
-  });
-});
-
+    wrap.querySelectorAll("[data-field]").forEach(inp=>{
+      inp.addEventListener("input", ()=>{
+        const field = inp.getAttribute("data-field");
+        if(field === "sets"){
+          day.exercises[idx][field] = Number(inp.value)||0;
+        }else{
+          day.exercises[idx][field] = inp.value;
+        }
+      });
+    });
 
     wrap.querySelector("[data-up]")?.addEventListener("click", ()=>{
       if(idx<=0) return;
@@ -6511,12 +4745,6 @@ rtRestToggle.addEventListener("change", ()=>{
   }
   rtDayRestNotice.style.display = draftRoutine.days[k].rest ? "block" : "none";
   renderRtDayTabs();
-
-  // ✅ ADD (live update if editing today's rest toggle)
-  if(editDayIndex === getTodaySplitIndex()){
-    renderHeaderPills();
-    refreshHome();
-  }
 });
 
 rtAddExBtn.addEventListener("click", ()=>{
@@ -6524,87 +4752,22 @@ rtAddExBtn.addEventListener("click", ()=>{
   const day = draftRoutine.days[k];
 
   const name = canonicalExerciseName(String(rtAddExName.value||"").trim());
-  const type = (String(rtAddExType?.value||"strength").toLowerCase()==="cardio")
-    ? "cardio"
-    : (String(rtAddExType?.value||"strength").toLowerCase()==="core" ? "core" : "strength");
+  const sets = Number(rtAddExSets.value)||0;
+  const reps = String(rtAddExReps.value||"").trim();
 
   if(!name) return alert("Enter an exercise name.");
+  if(!sets || sets <= 0) return alert("Enter sets (number).");
+  if(!reps) return alert("Enter reps (e.g., 8–10).");
 
-  // Build routine fields in the existing schema (sets + reps),
-  // but populated from the correct UI inputs.
-  let sets = 0;
-  let reps = "";
-
-  if(type === "strength"){
-    sets = Number(rtAddExSets?.value)||0;
-    reps = String(rtAddExReps?.value||"").trim();
-
-    if(!sets || sets <= 0) return alert("Enter sets (number).");
-    if(!reps) return alert("Enter reps (e.g., 8–10).");
-  }
-
-  if(type === "cardio"){
-    const min = Number(rtAddCardioMin?.value)||0;
-    const sec = Number(rtAddCardioSec?.value)||0;
-    const dist = Number(rtAddCardioDist?.value)||0;
-
-    const durTotal = (min*60) + sec;
-
-    // Cardio is not sets-based, but keep schema stable
-    sets = 1;
-
-    // Require at least duration or distance
-    if(durTotal <= 0 && dist <= 0) return alert("Enter cardio duration and/or distance.");
-
-    const durStr = (durTotal > 0) ? `${min}:${String(sec).padStart(2,"0")}` : "";
-    const distStr = (dist > 0) ? `${dist.toFixed(2)} mi` : "";
-
-    reps = [durStr, distStr].filter(Boolean).join(" • ");
-  }
-
-  if(type === "core"){
-    sets = Number(rtAddCoreSets?.value)||0;
-    const coreMode = String(rtAddCoreMode?.value || "reps").toLowerCase();
-
-    if(!sets || sets <= 0) return alert("Enter sets (number).");
-
-    if(coreMode === "time"){
-      const s = Number(rtAddCoreSec?.value)||0;
-      if(!s || s <= 0) return alert("Enter seconds for timed holds.");
-      reps = `${s} sec`;
-    } else {
-      const r = String(rtAddCoreReps?.value||"").trim();
-      if(!r) return alert("Enter reps (e.g., 12–15).");
-      reps = r;
-    }
-  }
-
-  day.exercises.push({name, type, sets, reps, notes:""});
-
-  // Reset inputs
+  day.exercises.push({name, sets, reps, notes:""});
   rtAddExName.value = "";
-
-  if(rtAddExSets) rtAddExSets.value = "";
-  if(rtAddExReps) rtAddExReps.value = "";
-
-  if(rtAddCardioMin) rtAddCardioMin.value = "";
-  if(rtAddCardioSec) rtAddCardioSec.value = "";
-  if(rtAddCardioDist) rtAddCardioDist.value = "";
-
-  if(rtAddCoreSets) rtAddCoreSets.value = "";
-  if(rtAddCoreReps) rtAddCoreReps.value = "";
-  if(rtAddCoreSec) rtAddCoreSec.value = "";
-  if(rtAddCoreMode) rtAddCoreMode.value = "reps";
-
-  if(rtAddExType) rtAddExType.value = "strength";
-  setRtAddMode("strength");
+  rtAddExSets.value = "";
+  rtAddExReps.value = "";
 
   renderRtDayPanel();
   buildRoutineExerciseSuggestions();
   renderLiftSearchDropdown();
 });
-
-
 
   rtAddMultiBtn?.addEventListener("click", ()=>{
   openExercisePicker({
@@ -6635,16 +4798,12 @@ rtSaveBtn.addEventListener("click", ()=>{
   setActiveRoutine(draftRoutine.id);
 
   closeRoutineEditor();
-renderRoutineDropdown();
-renderPPL();
-renderLiftRoutineDropdown();
-buildRoutineExerciseSuggestions();
+  renderRoutineDropdown();
+  renderPPL();
+  renderLiftRoutineDropdown();
+  buildRoutineExerciseSuggestions();
 
-// ✅ ADD: update header + home immediately (no manual refresh)
-renderHeaderPills();
-refreshHome();
-
-// If onboarding is not done yet, finish it and send to Home
+  // If onboarding is not done yet, finish it and send to Home
 if(!isOnboardingDone()){
   setOnboardingDone();
   refreshHome();
@@ -6699,7 +4858,7 @@ function downloadJSON(filename, obj){
   a.remove();
   URL.revokeObjectURL(url);
 }
-backupNowBtn?.addEventListener("click", ()=>{
+backupNowBtn.addEventListener("click", ()=>{
   const payload = buildExportPayload();
   const stamp = localISODate(new Date());
   downloadJSON(`gym-dashboard-${stamp}.json`, payload);
@@ -6708,11 +4867,11 @@ backupNowBtn?.addEventListener("click", ()=>{
   localStorage.setItem(KEY_LAST_BACKUP, new Date().toISOString());
   renderLastBackup();
 });
-importBtn?.addEventListener("click", ()=>{
+importBtn.addEventListener("click", ()=>{
   importFile.value = "";
   importFile.click();
 });
-importFile?.addEventListener("change", async ()=>{
+importFile.addEventListener("change", async ()=>{
   const file = importFile.files?.[0];
   if(!file) return;
 
@@ -6781,7 +4940,7 @@ hydrateOnboardingInputs();
   }
 });
 
-document.getElementById("settingsResetBtn")?.addEventListener("click", ()=>{
+document.getElementById("settingsResetBtn").addEventListener("click", ()=>{
   const ok = confirm("Reset ALL saved gym data on this device/browser?");
   if(!ok) return;
   localStorage.removeItem(KEY_BW);
@@ -6838,16 +4997,9 @@ function routeInitialScreen(){
 }
 
   /* ---------------------------
-   App Version + Update Banner (Production-grade)
-   - version.json should be deployed alongside index.html
-   - version.json example: { "version": "2026.02.11.1" }
-   - We cache-bust + no-store to avoid stale reads.
-   - When a new version is detected:
-       1) show the banner
-       2) attempt to update a Service Worker (if present)
-       3) auto-refresh with a short countdown (user can postpone)
+   App Version + Update Banner
+   - bump APP_VERSION on each deploy
 ---------------------------- */
-
 function showUpdateBanner(){
   const b = document.getElementById("updateBanner");
   if(b) b.style.display = "block";
@@ -6858,597 +5010,46 @@ function hideUpdateBanner(){
   if(b) b.style.display = "none";
 }
 
-function setUpdateBannerSub(text){
-  const sub = document.querySelector("#updateBanner .updateSub");
-  if(sub) sub.textContent = text;
-}
-
-function canAutoReloadNow(){
-  // Prevent infinite refresh loops:
-  const lastReload = Number(localStorage.getItem(KEY_APP_LAST_RELOAD) || "0");
-  if(lastReload && (Date.now() - lastReload) < AUTO_REFRESH_COOLDOWN_MS) return false;
-
-  // If user postponed recently, respect it
-  const dismissedUntil = Number(localStorage.getItem(KEY_APP_UPDATE_DISMISSED_UNTIL) || "0");
-  if(dismissedUntil && Date.now() < dismissedUntil) return false;
-
-  // If tab is hidden, wait until it becomes visible
-  if(document.visibilityState !== "visible") return false;
-
-  // If offline, don’t force reload
-  if(navigator && navigator.onLine === false) return false;
-
-  return true;
-}
-
-async function tryUpdateServiceWorker(){
-  // Optional: only relevant if you register a SW somewhere else.
-  // Safe no-op if SW is not used.
+async function checkForUpdate(){
   try{
-    if(!("serviceWorker" in navigator)) return;
-
-    const reg = await navigator.serviceWorker.getRegistration();
-    if(!reg) return;
-
-    // Ask browser to check for an updated SW script
-    await reg.update();
-
-    // If there’s a waiting SW, ask it to activate immediately.
-    if(reg.waiting){
-      reg.waiting.postMessage({ type: "SKIP_WAITING" });
-    }
-  }catch(e){
-    // Non-fatal — version.json-based reload still works.
-    console.log("tryUpdateServiceWorker error:", e);
-  }
-}
-
-let _versionPollTimer = null;
-let _autoReloadTimer = null;
-let _autoReloadTick = null;
-
-function clearAutoReloadTimers(){
-  if(_autoReloadTimer){ clearTimeout(_autoReloadTimer); _autoReloadTimer = null; }
-  if(_autoReloadTick){ clearInterval(_autoReloadTick); _autoReloadTick = null; }
-}
-
-function scheduleAutoReload(){
-  clearAutoReloadTimers();
-
-  // If we can't auto reload, explain WHY (better UX)
-  if(!canAutoReloadNow()){
-    if(document.visibilityState !== "visible"){
-      setUpdateBannerSub("Update available. Return to this tab to refresh.");
-    }else if(navigator && navigator.onLine === false){
-      setUpdateBannerSub("Update available. Reconnect to refresh.");
-    }else{
-      setUpdateBannerSub("Update available. Tap Refresh to load it.");
-    }
-    return;
-  }
-
-  let remaining = AUTO_REFRESH_COUNTDOWN_S;
-  setUpdateBannerSub(`Auto-refreshing in ${remaining}s… (click banner to postpone)`);
-
-  // ✅ IMPORTANT: only stop the interval at 0 — DO NOT clear the timeout here
-  _autoReloadTick = setInterval(()=>{
-    remaining -= 1;
-
-    if(remaining <= 0){
-      clearInterval(_autoReloadTick);
-      _autoReloadTick = null;
-      return;
-    }
-
-    setUpdateBannerSub(`Auto-refreshing in ${remaining}s… (click banner to postpone)`);
-  }, 1000);
-
-  _autoReloadTimer = setTimeout(()=>{
-    clearAutoReloadTimers();
-    localStorage.setItem(KEY_APP_LAST_RELOAD, String(Date.now()));
-
-    // ✅ Cache-busted reload (more reliable than location.reload())
-    const u = new URL(location.href);
-    u.searchParams.set("v", String(Date.now()));
-    location.replace(u.toString());
-  }, AUTO_REFRESH_COUNTDOWN_S * 1000);
-}
-
-
-function postponeAutoReload(minutes=10){
-  clearAutoReloadTimers();
-  const until = Date.now() + (minutes * 60 * 1000);
-  localStorage.setItem(KEY_APP_UPDATE_DISMISSED_UNTIL, String(until));
-  setUpdateBannerSub(`Update available. Postponed for ${minutes} minutes.`);
-}
-
-async function getLatestVersion(){
-  const url = "./version.json?ts=" + Date.now();
-
-  try{
+    const url = "./version.json?ts=" + Date.now();
     const res = await fetch(url, { cache: "no-store" });
 
     if(!res.ok){
-      appHasService = false;
-      updateConnectivityIndicators();
       console.log("version.json fetch failed:", res.status, url);
-      return null;
+      return;
     }
 
     const data = await res.json();
     const latest = String(data.version || "").trim();
-
-    // If we can fetch and parse version.json, we DEFINITELY have service.
-    appHasService = true;
-    updateConnectivityIndicators();
-
     if(!latest){
       console.log("version.json missing 'version' field:", data);
-      return null;
+      return;
     }
-    return latest;
-
-  }catch(e){
-    appHasService = false;
-    updateConnectivityIndicators();
-    console.log("version.json fetch error:", e);
-    return null;
-  }
-}
-
-async function checkForUpdate(){
-  try{
-    const latest = await getLatestVersion();
-    if(!latest) return;
 
     const last = localStorage.getItem(KEY_APP_VERSION);
 
-    // First run: store and render, no banner.
+    console.log("Version check:", { last, latest });
+
     if(!last){
       localStorage.setItem(KEY_APP_VERSION, latest);
-      renderHeaderPills();
+      renderHeaderSub();
       return;
     }
 
     if(last !== latest){
-  // track previous version before overwriting
-  localStorage.setItem("gym_app_prev_version_v1", last);
-
-  showUpdateBanner();
-  localStorage.setItem(KEY_APP_VERSION, latest);
-  renderHeaderPills();
-
-
-      // Best-effort SW update (safe no-op if unused)
-      tryUpdateServiceWorker();
-
-      // Production behavior: auto-refresh with safeguards
-      scheduleAutoReload();
+      showUpdateBanner();
+      localStorage.setItem(KEY_APP_VERSION, latest);
+      renderHeaderSub();
       return;
     }
 
-    // No update
-    renderHeaderPills();
+    renderHeaderSub();
   }catch(e){
     console.log("checkForUpdate error:", e);
   }
 }
-  let appHasService = true; // "service" = can actually reach version.json
 
-function setOnlineUI(isOnline, hasService){
-  if(!hdrOnline || !hdrStatus || !hdrDot) return;
-
-  hdrStatus.classList.remove("good","warn","bad");
-
-  if(!isOnline){
-    hdrOnline.textContent = "Offline";
-    hdrDot.textContent = "🔴";
-    hdrStatus.classList.add("bad");
-    return;
-  }
-
-  if(!hasService){
-    hdrOnline.textContent = "Online (No Service)";
-    hdrDot.textContent = "⚠️";
-    hdrStatus.classList.add("warn");
-    return;
-  }
-
-  hdrOnline.textContent = "Synced";
-  hdrDot.textContent = "🟢";
-  hdrStatus.classList.add("good");
-}
-
-
-function updateConnectivityIndicators(){
-  const isOnline = navigator.onLine !== false;
-  setOnlineUI(isOnline, appHasService);
-
-  // ✅ Keep Settings "Connection" pill synced with header in real time
-  if(typeof renderUpdatesPanel === "function"){
-    renderUpdatesPanel(null);
-  }
-}
-
-window.addEventListener("online",  updateConnectivityIndicators);
-window.addEventListener("offline", updateConnectivityIndicators);
-
-function startVersionPolling(){
-  if(_versionPollTimer) return;
-  // Run immediately, then on an interval.
-  checkForUpdate();
-  _versionPollTimer = setInterval(()=>{
-    // Don’t spam when hidden — visibility handler will run a check upon return.
-    if(document.visibilityState === "visible") checkForUpdate();
-  }, VERSION_CHECK_INTERVAL_MS);
-}
-
-function stopVersionPolling(){
-  if(_versionPollTimer){
-    clearInterval(_versionPollTimer);
-    _versionPollTimer = null;
-  }
-}
-
-document.addEventListener("visibilitychange", ()=>{
-  if(document.visibilityState === "visible"){
-    // Re-check when user comes back (common after deployment)
-    checkForUpdate();
-  }
-});
-
-  /* ===========================
-   SETTINGS: Updates Panel
-=========================== */
-const KEY_APP_PREV_VERSION = "gym_app_prev_version_v1";
-const KEY_UP_LAST_CHECKED  = "gym_updates_last_checked_v1";
-const KEY_UP_LAST_RESULT   = "gym_updates_last_result_v1";
-const KEY_UP_FAIL_COUNT    = "gym_updates_fail_count_v1";
-const KEY_UP_LAST_SUCCESS  = "gym_updates_last_success_v1";
-
-// Build string (your mock shows ISO “2026-02-11T15:22Z”)
-const APP_BUILD = "2026-02-11T15:22Z";
-
-function fmtDateTime(ms){
-  if(!ms) return "—";
-  try{
-    const d = new Date(Number(ms));
-    return d.toLocaleString(undefined, {
-      year:"numeric", month:"short", day:"2-digit",
-      hour:"2-digit", minute:"2-digit"
-    }).replace(",", "") + " •";
-  }catch{
-    return "—";
-  }
-}
-
-async function getServiceWorkerState(){
-  try{
-    if(!("serviceWorker" in navigator)) return "OFF";
-    const reg = await navigator.serviceWorker.getRegistration();
-    return reg ? "ON" : "OFF";
-  }catch{
-    return "OFF";
-  }
-}
-
-function setText(id, text){
-  const el = document.getElementById(id);
-  if(el) el.textContent = text;
-}
-
-function computeUpdateStatus(current, latest){
-  if(!latest) return "Checking…";
-  if(!current) return "Unknown";
-  return (current === latest) ? "Up to date" : "Update available";
-}
-
-function renderUpdatesPanel(latestVersionMaybe=null){
-  const current = localStorage.getItem(KEY_APP_VERSION) || "—";
-  const prev    = localStorage.getItem(KEY_APP_PREV_VERSION) || "—";
-  const latest  = latestVersionMaybe || localStorage.getItem("gym_latest_seen_version_v1") || current;
-
-  // Connection uses your existing indicators logic:
-     const isOnline = navigator.onLine !== false;
-
-  let icon = "🔴";
-  let text = "Offline";
-
-  if(isOnline){
-    if(typeof appHasService !== "undefined"){
-      if(appHasService){
-        icon = "🟢";
-        text = "Synced";
-      }else{
-        icon = "⚠️";
-        text = "Online (No Service)";
-      }
-    }else{
-      icon = "🟢";
-      text = "Synced";
-    }
-  }
-
-
-
-  const lastChecked = Number(localStorage.getItem(KEY_UP_LAST_CHECKED) || "0");
-
-  setText("upCurVer",   `🧾 Current Version: ${current}`);
-  setText("upPrevVer",  `🕘 Previous Version: ${prev}`);
-  setText("upLatestVer",`⬆️ Latest Available: ${latest}`);
-
-  setText("upConn", `🌐 Connection: ${icon} ${text}`);
-  setText("upStatus",   `✅ Update Status: ${computeUpdateStatus(current, latest)}`);
-  setText("upChecked",  lastChecked ? `🕒 Last Checked: ${new Date(lastChecked).toLocaleString()}` : "🕒 Last Checked: —");
-
-  setText("upBuild",    `🧱 Build: ${APP_BUILD}`);
-
-  // SW state async
-  getServiceWorkerState().then(state=>{
-    setText("upSW", `🧩 Service Worker: ${state}`);
-  });
-}
-
-async function doCheckNow(){
-  localStorage.setItem(KEY_UP_LAST_CHECKED, String(Date.now()));
-  const latest = await getLatestVersion();
-  if(latest){
-    localStorage.setItem("gym_latest_seen_version_v1", latest);
-  }
-  renderUpdatesPanel(latest || null);
-  // keep your existing banner/auto-refresh logic untouched:
-  await checkForUpdate();
-}
-
-function saveUpdateResult(obj){
-  localStorage.setItem(KEY_UP_LAST_RESULT, JSON.stringify(obj));
-}
-
-function loadUpdateResult(){
-  try{
-    return JSON.parse(localStorage.getItem(KEY_UP_LAST_RESULT) || "null");
-  }catch{
-    return null;
-  }
-}
-
-function showUpdateResultPopup(result){
-  // Now rendered inline (dropdown panel) instead of a popup modal.
-  const panel = document.getElementById("upResultPanel");
-  if(!panel) return;
-
-  // Hide diagnostics if open
-  const diag = document.getElementById("upDiagPanel");
-  if(diag) diag.style.display = "none";
-
-  const tryBtn = document.getElementById("uModalTryAgain");
-  const l1 = document.getElementById("uResLine1");
-  const l2 = document.getElementById("uResLine2");
-  const l3 = document.getElementById("uResLine3");
-  const l4 = document.getElementById("uResLine4");
-  const l5 = document.getElementById("uResLine5");
-  const l6 = document.getElementById("uResLine6");
-
-  // ✅ BUG FIX: avoid hard crash if any result lines are missing
-  if(!l1 || !l2 || !l3 || !l4 || !l5 || !l6) return;
-
-
-  const ok = !!result?.ok;
-
-  l1.textContent = ok ? "✅ Update Successful" : "⚠️ Update Failed";
-
-  if(ok){
-    l2.textContent = `Updated to: ${result.updatedTo || "—"}`;
-    l3.textContent = `Reload triggered: ${result.reloadTriggered ? "Yes" : "No"}`;
-    l4.textContent = `Service Worker reset: ${result.swReset ? "Yes" : "No"}`;
-    l5.textContent = `Cache cleared: ${result.cacheCleared ? "Yes" : "No"}`;
-    l6.textContent = `Time: ${result.timeLabel || "—"}`;
-    if(tryBtn) tryBtn.style.display = "none";
-  }else{
-    l2.textContent = `Step failed: ${result.stepFailed || "Unknown"}`;
-    l3.textContent = `Reason: ${result.reason || "Unknown"}`;
-    l4.textContent = `Suggestion: ${result.suggestion || "Try again"}`;
-    l5.textContent = `Time: ${result.timeLabel || "—"}`;
-    l6.textContent = "";
-    if(tryBtn) tryBtn.style.display = "inline-flex";
-  }
-
-  panel.style.display = "block";
-  // Make sure it lands in-view on mobile
-  panel.scrollIntoView({behavior:"smooth", block:"start"});
-}
-
-function hideUpdateResultPopup(){
-  const panel = document.getElementById("upResultPanel");
-  if(panel) panel.style.display = "none";
-}
-
-async function fullWipeAndReload(){
-  const timeLabel = new Date().toLocaleString();
-
-  // Steps we report in popup:
-  let cacheCleared = false;
-  let swReset = false;
-
-  try{
-    // 1) Unregister ALL service workers
-    if("serviceWorker" in navigator){
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r=>r.unregister()));
-      swReset = true;
-    }
-
-    // 2) Clear Cache Storage
-    if("caches" in window){
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k=>caches.delete(k)));
-      cacheCleared = true;
-    }
-
-    // Save success info BEFORE leaving page
-    const updatedTo = localStorage.getItem(KEY_APP_VERSION) || localStorage.getItem("gym_latest_seen_version_v1") || "—";
-    const result = {
-      ok: true,
-      updatedTo,
-      reloadTriggered: true,
-      swReset,
-      cacheCleared,
-      timeLabel
-    };
-
-    saveUpdateResult(result);
-    localStorage.setItem(KEY_UP_LAST_SUCCESS, String(Date.now()));
-
-    // 3) Cache-bust reload (hard refresh)
-    localStorage.setItem(KEY_APP_LAST_RELOAD, String(Date.now()));
-    location.replace(location.pathname + "?v=" + Date.now());
-  }catch(e){
-    const failCount = Number(localStorage.getItem(KEY_UP_FAIL_COUNT) || "0") + 1;
-    localStorage.setItem(KEY_UP_FAIL_COUNT, String(failCount));
-
-    const result = {
-      ok: false,
-      stepFailed: (!swReset && "Service Worker reset") || (!cacheCleared && "Cache clear") || "Unknown",
-      reason: String(e?.message || e || "Unknown error"),
-      suggestion: "Try again",
-      timeLabel
-    };
-
-    saveUpdateResult(result);
-    showUpdateResultPopup(result);
-  }
-}
-
-async function clearCacheAndReload(){
-  const timeLabel = new Date().toLocaleString();
-
-  try{
-    let cacheCleared = false;
-
-    if("caches" in window){
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k=>caches.delete(k)));
-      cacheCleared = true;
-    }
-
-    const result = {
-      ok: true,
-      updatedTo: localStorage.getItem(KEY_APP_VERSION) || "—",
-      reloadTriggered: true,
-      swReset: false,
-      cacheCleared,
-      timeLabel
-    };
-
-    saveUpdateResult(result);
-
-    localStorage.setItem(KEY_APP_LAST_RELOAD, String(Date.now()));
-    location.replace(location.pathname + "?v=" + Date.now());
-  }catch(e){
-    const failCount = Number(localStorage.getItem(KEY_UP_FAIL_COUNT) || "0") + 1;
-    localStorage.setItem(KEY_UP_FAIL_COUNT, String(failCount));
-
-    const result = {
-      ok: false,
-      stepFailed: "Cache clear",
-      reason: String(e?.message || e || "Unknown error"),
-      suggestion: "Try again",
-      timeLabel
-    };
-
-    saveUpdateResult(result);
-    showUpdateResultPopup(result);
-  }
-}
-
-function showDiagnosticsPopup(){
-  // Now rendered inline (dropdown panel) instead of a popup modal.
-  const panel = document.getElementById("upDiagPanel");
-  if(!panel) return;
-
-  // Hide result if open
-  const res = document.getElementById("upResultPanel");
-  if(res) res.style.display = "none";
-
-  const failCount = Number(localStorage.getItem(KEY_UP_FAIL_COUNT) || "0");
-  const lastSuccess = Number(localStorage.getItem(KEY_UP_LAST_SUCCESS) || "0");
-  const lastChecked = Number(localStorage.getItem(KEY_UP_LAST_CHECKED) || "0");
-
-  setText("uDiag1", `Fail count: ${failCount}`);
-  setText("uDiag2", `Last success: ${lastSuccess ? new Date(lastSuccess).toLocaleString() : "—"}`);
-  setText("uDiag3", `Last checked: ${lastChecked ? new Date(lastChecked).toLocaleString() : "—"}`);
-  setText("uDiag4", `Current version: ${localStorage.getItem(KEY_APP_VERSION) || "—"}`);
-  setText("uDiag5", `Latest seen: ${localStorage.getItem("gym_latest_seen_version_v1") || "—"}`);
-
-  panel.style.display = "block";
-  panel.scrollIntoView({behavior:"smooth", block:"start"});
-}
-
-
-/* Bind buttons once */
-function bindUpdatesPanel(){
-  document.getElementById("upCheckNowBtn")?.addEventListener("click", doCheckNow);
-  document.getElementById("upUpdateNowBtn")?.addEventListener("click", fullWipeAndReload);
-  document.getElementById("upClearCacheBtn")?.addEventListener("click", clearCacheAndReload);
-
-  // Advanced dropdowns (inline)
-  document.getElementById("upShowResultBtn")?.addEventListener("click", ()=>{
-    const panel = document.getElementById("upResultPanel");
-    if(panel && panel.style.display === "block"){
-      hideUpdateResultPopup();
-      return;
-    }
-
-    const last = loadUpdateResult();
-    if(last) showUpdateResultPopup(last);
-    else showUpdateResultPopup({
-      ok: false,
-      stepFailed: "—",
-      reason: "No update result saved yet.",
-      suggestion: "Run Check Now or Update Now",
-      timeLabel: new Date().toLocaleString()
-    });
-  });
-
-  document.getElementById("upDiagBtn")?.addEventListener("click", ()=>{
-    const panel = document.getElementById("upDiagPanel");
-    if(panel && panel.style.display === "block"){
-      const p = document.getElementById("upDiagPanel");
-      if(p) p.style.display = "none";
-      return;
-    }
-    showDiagnosticsPopup();
-  });
-
-  document.getElementById("upResultHideBtn")?.addEventListener("click", hideUpdateResultPopup);
-  document.getElementById("upDiagHideBtn")?.addEventListener("click", ()=>{
-    const p = document.getElementById("upDiagPanel");
-    if(p) p.style.display = "none";
-  });
-
-  document.getElementById("uModalTryAgain")?.addEventListener("click", ()=>{
-    hideUpdateResultPopup();
-    fullWipeAndReload();
-  });
-
-  // Keep Connection pill synced with header (online/offline changes)
-  window.addEventListener("online",  ()=>renderUpdatesPanel());
-  window.addEventListener("offline", ()=>renderUpdatesPanel());
-}
-
-
-
-// If user clicks the banner anywhere (except the refresh button), postpone.
-document.addEventListener("click", (e)=>{
-  const banner = e.target.closest("#updateBanner");
-  if(!banner) return;
-
-  const refreshBtn = e.target.closest("#updateRefreshBtn");
-  if(refreshBtn) return; // handled below
-
-  // Postpone for 10 minutes
-  postponeAutoReload(10);
-});
 
 document.addEventListener("click", (e)=>{
   const btn = e.target.closest("#updateRefreshBtn");
@@ -7480,20 +5081,16 @@ function init(){
   // Static UI (not screen-specific)
   hydrateSettingsUI();
   hydrateOnboardingInputs();
-  renderHeaderPills();
+  renderHeaderSub();
   renderStorageInfo();
   renderLastBackup();
-  
-  bindUpdatesPanel();
-  renderUpdatesPanel();
-
 
   // Default view settings
   setBWView("table");
   setLiftView("table");
   applyLiftFiltersFromUI();
 
-  startVersionPolling();        // ✅ Production-grade version polling
+  checkForUpdate();        // ✅ ADD THIS LINE
 
 
   // Route LAST (this calls showScreen which renders what’s needed)
@@ -7502,8 +5099,6 @@ function init(){
 
 window.addEventListener("DOMContentLoaded", init);
 
-
-})();
 </script>
 
   <!-- ✅ Update Banner (shows when a new deploy is detected) -->
