@@ -71,7 +71,7 @@
 
     .brand{ display:flex; flex-direction:column; gap: 2px; }
     .brand .title{ font-weight: 720; letter-spacing: .2px; font-size: 18px; line-height: 1.15; }
-    .brand .subtitle{ font-size: 12px; color: var(--muted); }
+    .brand .subtitle{ font-size: 12px показать; color: var(--muted); }
 
     .chip{
       display:inline-flex;
@@ -166,6 +166,72 @@
       box-shadow: 0 0 0 4px rgba(124,92,255,.14);
     }
 
+    .toggle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      border-radius: 14px;
+      padding: 12px 12px;
+    }
+    .toggle .ttext{ display:flex; flex-direction:column; gap:2px; }
+    .toggle .ttext .a{ color: var(--text); font-weight: 700; font-size: 14px; }
+    .toggle .ttext .b{ color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .switch{
+      width: 52px;
+      height: 30px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.14);
+      position: relative;
+      flex: 0 0 auto;
+      cursor:pointer;
+      user-select:none;
+    }
+    .switch::after{
+      content:"";
+      position:absolute;
+      top: 50%;
+      left: 3px;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.82);
+      transition: left .16s ease, background .16s ease;
+    }
+    .switch.on{
+      background: rgba(124,92,255,.30);
+      border-color: rgba(124,92,255,.34);
+    }
+    .switch.on::after{
+      left: 25px;
+      background: rgba(255,255,255,.92);
+    }
+
+    /* ✅ RESTORED: Template card styles */
+    .tplGrid{ display:grid; gap: 10px; }
+    @media (min-width: 640px){ .tplGrid{ grid-template-columns: 1fr 1fr; } }
+    .tpl{
+      border-radius: 16px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .06s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+    }
+    .tpl:active{ transform: translateY(1px); }
+    .tpl .name{ font-weight: 780; letter-spacing: .2px; margin-bottom: 4px; }
+    .tpl .desc{ color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+    .tpl.selected{
+      border-color: rgba(124,92,255,.34);
+      background: rgba(124,92,255,.12);
+      box-shadow: 0 0 0 4px rgba(124,92,255,.10);
+    }
+
     .seg{
       display:flex;
       gap: 8px;
@@ -204,23 +270,10 @@
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.05);
     }
-    .routineRow .left{
-      display:flex;
-      flex-direction:column;
-      gap: 4px;
-      min-width:0;
-    }
-    .routineRow .name{
-      font-weight: 820;
-      overflow:hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 60vw;
-    }
-    .routineRow .meta{
-      color: var(--muted);
-      font-size: 12.5px;
-    }
+    .routineRow .left{ display:flex; flex-direction:column; gap: 4px; min-width:0; }
+    .routineRow .name{ font-weight: 820; overflow:hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60vw; }
+    .routineRow .meta{ color: var(--muted); font-size: 12.5px; }
+
     .mini{
       appearance:none;
       border:none;
@@ -234,14 +287,8 @@
       border: 1px solid rgba(255,255,255,.12);
       user-select:none;
     }
-    .mini.primary{
-      background: rgba(124,92,255,.18);
-      border-color: rgba(124,92,255,.28);
-    }
-    .mini.danger{
-      background: rgba(255,92,122,.14);
-      border-color: rgba(255,92,122,.28);
-    }
+    .mini.primary{ background: rgba(124,92,255,.18); border-color: rgba(124,92,255,.28); }
+    .mini.danger{ background: rgba(255,92,122,.14); border-color: rgba(255,92,122,.28); }
 
     .dayCard{
       border-radius: 18px;
@@ -257,20 +304,9 @@
       justify-content:space-between;
       gap: 10px;
     }
-    .dayHeader .dleft{
-      display:flex;
-      flex-direction:column;
-      gap: 4px;
-      min-width:0;
-    }
-    .dayHeader .dname{
-      font-weight: 840;
-      letter-spacing: .15px;
-      overflow:hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 62vw;
-    }
+    .dayHeader .dleft{ display:flex; flex-direction:column; gap: 4px; min-width:0; }
+    .dayHeader .dname{ font-weight: 840; letter-spacing: .15px; overflow:hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 62vw; }
+
     .pill{
       display:inline-flex;
       align-items:center;
@@ -301,17 +337,8 @@
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.04);
     }
-    .exRow .lname{
-      font-weight: 760;
-      overflow:hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 62vw;
-    }
-    .exRow .lmeta{
-      font-size: 12px;
-      color: var(--muted);
-    }
+    .exRow .lname{ font-weight: 760; overflow:hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 62vw; }
+    .exRow .lmeta{ font-size: 12px; color: var(--muted); }
 
     /* Modal */
     .modalHost{
@@ -511,7 +538,7 @@
     const titleCase = (s) => (s||"").toString().replace(/_/g," ").replace(/\b\w/g, m => m.toUpperCase());
 
     /********************
-     * Routine templates (from onboarding)
+     * Routine templates
      ********************/
     const RoutineTemplates = [
       { key:"ppl", name:"PPL", desc:"Push / Pull / Legs • 6 days + 1 rest",
@@ -546,30 +573,8 @@
         ];}}
     ];
 
-    function createRoutineFromTemplate(templateKey, routineName){
-      const tpl = RoutineTemplates.find(t => t.key === templateKey);
-      if(!tpl) throw new Error("Invalid template key");
-
-      const routineId = uid("rt");
-      const days = tpl.buildDays().map((d, idx) => ({
-        id: uid("day"),
-        order: idx,
-        label: d.label,
-        isRest: !!d.isRest,
-        exercises: [] // [{ id, refType, refId, nameSnapshot }]
-      }));
-
-      return {
-        id: routineId,
-        name: routineName || tpl.name,
-        templateKey: tpl.key,
-        createdAt: Date.now(),
-        days
-      };
-    }
-
     /********************
-     * Exercise Library (from step 3)
+     * Exercise Library
      ********************/
     const ExerciseLibrary = {
       typeKeys: ["weightlifting","cardio","core"],
@@ -616,11 +621,130 @@
         state.exerciseLibrary[type].push(ex);
         Storage.save(state);
         return ex;
+      },
+      // ✅ NEW: find an exercise by name (used for template auto-fill)
+      findIdByName(type, name){
+        const n = normName(name);
+        const ex = this.list(type).find(x => normName(x.name) === n);
+        return ex ? ex.id : null;
       }
     };
 
     /********************
-     * Routine Manager (Step 4)
+     * Template default exercises (Step 4 fix)
+     * Uses seeded library names above.
+     ********************/
+    function applyTemplateExercises(routine){
+      if(!routine || !routine.templateKey) return;
+
+      // Map: templateKey -> dayLabel -> list of {type, name}
+      const map = {
+        ppl: {
+          "push": [
+            { type:"weightlifting", name:"Bench Press" },
+            { type:"weightlifting", name:"Incline Dumbbell Press" },
+          ],
+          "pull": [
+            { type:"weightlifting", name:"Lat Pulldown" },
+            { type:"weightlifting", name:"Dumbbell Curl" },
+          ],
+          "legs": [
+            { type:"weightlifting", name:"Barbell Squat" }
+          ]
+        },
+        upper_lower: {
+          "upper": [
+            { type:"weightlifting", name:"Bench Press" },
+            { type:"weightlifting", name:"Lat Pulldown" },
+            { type:"weightlifting", name:"Dumbbell Curl" }
+          ],
+          "lower": [
+            { type:"weightlifting", name:"Barbell Squat" }
+          ]
+        },
+        full_body_3: {
+          "full body": [
+            { type:"weightlifting", name:"Barbell Squat" },
+            { type:"weightlifting", name:"Bench Press" },
+            { type:"weightlifting", name:"Lat Pulldown" }
+          ]
+        },
+        body_part_split: {
+          "chest": [
+            { type:"weightlifting", name:"Bench Press" },
+            { type:"weightlifting", name:"Incline Dumbbell Press" }
+          ],
+          "back": [
+            { type:"weightlifting", name:"Lat Pulldown" }
+          ],
+          "legs": [
+            { type:"weightlifting", name:"Barbell Squat" }
+          ],
+          "shoulders": [
+            // optional: none seeded; leave empty for now
+          ],
+          "arms": [
+            { type:"weightlifting", name:"Dumbbell Curl" }
+          ]
+        }
+      };
+
+      const key = routine.templateKey;
+      const def = map[key];
+      if(!def) return;
+
+      // Fill each day if it has no exercises already
+      routine.days.forEach(day => {
+        if(day.isRest) return;
+        if((day.exercises?.length || 0) > 0) return;
+
+        const labelKey = normName(day.label);
+        const items = def[labelKey] || [];
+        items.forEach(it => {
+          const exId = ExerciseLibrary.findIdByName(it.type, it.name);
+          if(!exId) return;
+          day.exercises.push({
+            id: uid("rx"),
+            refType: it.type,
+            refId: exId,
+            nameSnapshot: it.name
+          });
+        });
+      });
+    }
+
+    /********************
+     * Create routine from template
+     ********************/
+    function createRoutineFromTemplate(templateKey, routineName){
+      const tpl = RoutineTemplates.find(t => t.key === templateKey);
+      if(!tpl) throw new Error("Invalid template key");
+
+      const routineId = uid("rt");
+      const days = tpl.buildDays().map((d, idx) => ({
+        id: uid("day"),
+        order: idx,
+        label: d.label,
+        isRest: !!d.isRest,
+        exercises: []
+      }));
+
+      const routine = {
+        id: routineId,
+        name: routineName || tpl.name,
+        templateKey: tpl.key,
+        createdAt: Date.now(),
+        days
+      };
+
+      // ✅ Auto-fill default exercises for templates (only if library exists)
+      applyTemplateExercises(routine);
+
+      return routine;
+    }
+
+    /********************
+     * Routine Manager
      ********************/
     const RoutineManager = {
       getAll(){ return state.routines || (state.routines = []); },
@@ -633,6 +757,7 @@
         Storage.save(state);
       },
       createFromTemplate(templateKey, name){
+        ExerciseLibrary.ensureSeeded(); // ✅ ensure defaults exist before we auto-fill
         const r = createRoutineFromTemplate(templateKey, name);
         this.getAll().push(r);
         state.activeRoutineId = r.id;
@@ -782,26 +907,38 @@
       const root = $("#viewRoot");
       root.innerHTML = "";
 
-      if(!state.profile){
-        root.appendChild(Views.Onboarding());
-        return;
-      }
+      showOnboardingIfNeeded(root);
+      if(!state.profile) return;
 
       if(currentRoute === "home") root.appendChild(Views.Home());
       else if(currentRoute === "routine") root.appendChild(Views.RoutineEditor());
-      else if(currentRoute === "log") root.appendChild(Views.Log());
-      else if(currentRoute === "progress") root.appendChild(Views.Progress());
+      else if(currentRoute === "log") root.appendChild(Views.Placeholder("Log Sets", "Next step: log sets per exercise type + PR engine."));
+      else if(currentRoute === "progress") root.appendChild(Views.Placeholder("Progress", "Next step: chart + table views."));
       else if(currentRoute === "more") root.appendChild(Views.More());
+    }
+
+    function showOnboardingIfNeeded(root){
+      if(state.profile) return;
+      root.appendChild(Views.Onboarding());
     }
 
     /********************
      * Views
      ********************/
     const Views = {
+      Placeholder(title, text){
+        return el("div", { class:"grid" }, [
+          el("div", { class:"card" }, [
+            el("h2", { text:title }),
+            el("div", { class:"note", text })
+          ])
+        ]);
+      },
+
       Onboarding(){
         let hideRestDays = true;
         let selectedTpl = "ppl";
-        const errorBox = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+        const errorBox = el offers = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
 
         const switchNode = el("div", { class:"switch on" });
         switchNode.addEventListener("click", () => {
@@ -851,6 +988,9 @@
             return;
           }
 
+          // ✅ Ensure library exists before we build routine (so template can auto-fill exercises)
+          ExerciseLibrary.ensureSeeded();
+
           state.profile = {
             name: cleanName,
             proteinGoal: Math.round(cleanProtein),
@@ -863,7 +1003,6 @@
           state.routines = [routine];
           state.activeRoutineId = routine.id;
 
-          ExerciseLibrary.ensureSeeded();
           Storage.save(state);
           navigate("home");
         };
@@ -929,10 +1068,11 @@
       },
 
       Home(){
+        const active = RoutineManager.getActive();
         return el("div", { class:"grid cols2" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"Today" }),
-            el("div", { class:"note", text:"Step 5 will auto-select today’s workout based on day-of-week + your active routine." })
+            el("div", { class:"note", text:`Active routine: ${active?.name || "—"} (Step 5 will auto-pick today)` })
           ]),
           el("div", { class:"card" }, [
             el("h2", { text:"Protein" }),
@@ -944,7 +1084,6 @@
       RoutineEditor(){
         ExerciseLibrary.ensureSeeded();
 
-        // Ensure we have at least 1 routine (in case user imported/edited data later)
         if((state.routines?.length || 0) === 0){
           const r = createRoutineFromTemplate("blank", "Blank");
           state.routines = [r];
@@ -954,8 +1093,6 @@
 
         const routines = RoutineManager.getAll();
         const active = RoutineManager.getActive();
-        if(!active) return el("div", { class:"card" }, [ el("h2", { text:"Routine" }), el("div", { class:"note", text:"No routine found." }) ]);
-
         const hideRest = !!state.profile?.hideRestDays;
 
         const routineSelect = el("select", {});
@@ -1035,10 +1172,6 @@
           });
         };
 
-        const openLibraryModal = () => {
-          Modal.open({ title: "Exercise Library", bodyNode: buildLibraryManagerModal() });
-        };
-
         const openDayEditModal = (day) => {
           const labelInput = el("input", { type:"text", value: day.label });
           Modal.open({
@@ -1067,8 +1200,8 @@
           Modal.open({
             title: multi ? `Add multiple exercises` : `Add exercise`,
             bodyNode: buildExercisePickerModal({
+              multiMode: multi,
               onPick: (picked) => {
-                // picked can be a single {type,id} or array
                 try{
                   if(Array.isArray(picked)){
                     picked.forEach(p => RoutineManager.addExerciseToDay(active.id, day.id, p.type, p.id));
@@ -1089,9 +1222,7 @@
           });
         };
 
-        // Days list
         const daysHost = el("div", { class:"grid" });
-
         const sortedDays = [...active.days].sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
         const visibleDays = hideRest ? sortedDays.filter(d => !d.isRest) : sortedDays;
 
@@ -1142,7 +1273,6 @@
           daysHost.appendChild(dayCard);
         });
 
-        // Routine header card
         const headerCard = el("div", { class:"card" }, [
           el("h2", { text:"Routine Editor" }),
           el("div", { class:"row2" }, [
@@ -1150,10 +1280,7 @@
             el("div", { style:"display:flex; align-items:end; justify-content:flex-end; gap:10px; flex-wrap:wrap;" }, [
               el("button", { class:"btn primary", onClick: openCreateRoutine }, ["Create"]),
               el("button", { class:"btn", onClick: openRenameRoutine }, ["Rename"]),
-              el("button", {
-                class:"btn",
-                onClick: () => { RoutineManager.duplicate(active.id); renderView(); }
-              }, ["Duplicate"]),
+              el("button", { class:"btn", onClick: () => { RoutineManager.duplicate(active.id); renderView(); } }, ["Duplicate"]),
               el("button", {
                 class:"btn danger",
                 onClick: () => {
@@ -1179,10 +1306,6 @@
               }, ["Delete"])
             ])
           ]),
-          el("div", { style:"height:10px" }),
-          el("div", { class:"btnrow" }, [
-            el("button", { class:"btn", onClick: openLibraryModal }, ["Open Exercise Library"]),
-          ]),
           el("div", { style:"height:6px" }),
           el("div", { class:"note", text: hideRest ? "Rest days are hidden (Profile setting). Toggle rest/unrest to adjust." : "Rest days are visible." })
         ]);
@@ -1191,186 +1314,16 @@
           headerCard,
           el("div", { class:"card" }, [
             el("h2", { text:"Days" }),
-            el("div", { class:"note", text:"Add exercises from your library. Use +Multi to add several at once." }),
+            el("div", { class:"note", text:"Templates now auto-fill starter exercises. Add more any time." }),
             el("div", { style:"height:10px" }),
             daysHost
           ])
         ]);
 
-        /***************
-         * Modal builders
-         ***************/
-        function buildLibraryManagerModal(){
-          // Lightweight viewer + add for now
+        function buildExercisePickerModal({ multiMode, onPick }){
           let tab = "weightlifting";
           let query = "";
-          const listHost = el("div", { class:"grid" });
-          const searchInput = el("input", { type:"text", placeholder:"Search…" });
-          searchInput.addEventListener("input", () => { query = searchInput.value || ""; draw(); });
-
-          const seg = el("div", { class:"seg" });
-          const segButtons = {};
-          ExerciseLibrary.typeKeys.forEach(t => {
-            const b = el("button", {
-              class:"segbtn" + (t === tab ? " active" : ""),
-              onClick: () => { tab = t; Object.entries(segButtons).forEach(([k,btn])=>btn.classList.toggle("active",k===tab)); draw(); }
-            }, [ExerciseLibrary.typeLabel(t)]);
-            segButtons[t]=b;
-            seg.appendChild(b);
-          });
-
-          const openAdd = () => {
-            Modal.open({
-              title: `Add ${ExerciseLibrary.typeLabel(tab)} exercise`,
-              bodyNode: buildAddExerciseForm(tab, () => { Modal.close(); Modal.open({ title:"Exercise Library", bodyNode: buildLibraryManagerModal() }); })
-            });
-          };
-
-          function getFiltered(){
-            const q = normName(query);
-            const items = [...ExerciseLibrary.list(tab)].sort((a,b)=>(a.name||"").localeCompare(b.name||""));
-            if(!q) return items;
-            return items.filter(x => normName(x.name).includes(q));
-          }
-
-          function draw(){
-            listHost.innerHTML = "";
-            const items = getFiltered();
-            listHost.appendChild(el("div", { class:"note", text: `${items.length} shown` }));
-
-            items.forEach(x => {
-              listHost.appendChild(el("div", { class:"routineRow" }, [
-                el("div", { class:"left" }, [
-                  el("div", { class:"name", text:x.name }),
-                  el("div", { class:"meta", text: x.type === "cardio" ? `Mode: ${titleCase(x.modality||"—")}` :
-                                          x.type === "weightlifting" ? `Equipment: ${titleCase(x.equipment||"—")} • Muscle: ${titleCase(x.primaryMuscle||"—")}` :
-                                          `Equipment: ${titleCase(x.equipment||"—")}` })
-                ])
-              ]));
-            });
-
-            if(items.length === 0){
-              listHost.appendChild(el("div", { class:"note", text:"No matches. Add a new exercise." }));
-            }
-          }
-
-          draw();
-
-          return el("div", {}, [
-            el("div", { class:"note", text:"Manage your library here. Editing/removal will come in the next enhancement (kept stable for now)." }),
-            el("div", { style:"height:10px" }),
-            seg,
-            el("div", { style:"height:10px" }),
-            el("div", { class:"row2" }, [
-              el("label", {}, [ el("span", { text:"Search" }), searchInput ]),
-              el("div", { style:"display:flex; align-items:end;" }, [
-                el("button", { class:"btn primary", onClick: openAdd }, ["Add exercise"])
-              ])
-            ]),
-            el("div", { style:"height:10px" }),
-            listHost
-          ]);
-        }
-
-        function buildAddExerciseForm(type, onDone){
-          const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
-          const nameInput = el("input", { type:"text", placeholder:"Exercise name" });
-
-          const form = el("div", { class:"form" }, [
-            el("label", {}, [ el("span", { text:"Name" }), nameInput ])
-          ]);
-
-          let payloadGet = null;
-
-          if(type === "weightlifting"){
-            const equipment = el("select", {});
-            ["dumbbell","barbell","machine","cable","bodyweight","other"].forEach(v => equipment.appendChild(el("option",{value:v,text:titleCase(v)})));
-            const muscle = el("select", {});
-            ["chest","back","legs","shoulders","biceps","triceps","glutes","hamstrings","quads","calves","full body","other"]
-              .forEach(v => muscle.appendChild(el("option",{value:v,text:titleCase(v)})));
-            let isCompound = true;
-            const sw = el("div", { class:"switch on" });
-            sw.addEventListener("click", ()=>{ isCompound=!isCompound; sw.classList.toggle("on", isCompound); });
-
-            form.appendChild(el("div", { class:"row2" }, [
-              el("label", {}, [ el("span", { text:"Equipment" }), equipment ]),
-              el("label", {}, [ el("span", { text:"Primary muscle" }), muscle ])
-            ]));
-            form.appendChild(el("div", { class:"toggle" }, [
-              el("div", { class:"ttext" }, [
-                el("div", { class:"a", text:"Compound lift" }),
-                el("div", { class:"b", text:"Used later for volume/PR logic." })
-              ]),
-              sw
-            ]));
-
-            payloadGet = () => ({ name:(nameInput.value||"").trim(), equipment:equipment.value, primaryMuscle:muscle.value, isCompound });
-          }
-
-          if(type === "cardio"){
-            const modality = el("select", {});
-            ["run","bike","row","stairmaster","elliptical","walk","other"].forEach(v => modality.appendChild(el("option",{value:v,text:titleCase(v)})));
-            let supportsIncline = false;
-            const sw = el("div", { class:"switch" });
-            sw.addEventListener("click", ()=>{ supportsIncline=!supportsIncline; sw.classList.toggle("on", supportsIncline); });
-
-            form.appendChild(el("label", {}, [ el("span", { text:"Modality" }), modality ]));
-            form.appendChild(el("div", { class:"toggle" }, [
-              el("div", { class:"ttext" }, [
-                el("div", { class:"a", text:"Supports incline" }),
-                el("div", { class:"b", text:"If enabled, cardio logs can include incline." })
-              ]),
-              sw
-            ]));
-
-            payloadGet = () => ({ name:(nameInput.value||"").trim(), modality:modality.value, supportsIncline });
-          }
-
-          if(type === "core"){
-            const equipment = el("select", {});
-            ["bodyweight","weighted","cable","other"].forEach(v => equipment.appendChild(el("option",{value:v,text:titleCase(v)})));
-            form.appendChild(el("label", {}, [ el("span", { text:"Equipment" }), equipment ]));
-            payloadGet = () => ({ name:(nameInput.value||"").trim(), equipment:equipment.value });
-          }
-
-          const save = () => {
-            err.style.display = "none";
-            const data = payloadGet ? payloadGet() : { name:(nameInput.value||"").trim() };
-            if(!data.name){
-              err.textContent = "Name is required.";
-              err.style.display = "block";
-              return;
-            }
-            try{
-              ExerciseLibrary.add(type, data);
-              Storage.save(state);
-              onDone?.();
-            }catch(e){
-              err.textContent = e.message || "Unable to add exercise.";
-              err.style.display = "block";
-            }
-          };
-
-          return el("div", {}, [
-            form,
-            err,
-            el("div", { style:"height:12px" }),
-            el("div", { class:"btnrow" }, [
-              el("button", { class:"btn primary", onClick: save }, ["Add"]),
-              el("button", { class:"btn", onClick: onDone || Modal.close }, ["Done"])
-            ])
-          ]);
-        }
-
-        function buildExercisePickerModal({ onPick }){
-          let tab = "weightlifting";
-          let query = "";
-          let multiMode = true; // we will support both by letting caller decide based on which button opened it
-          // Caller decides by title; we detect by modal title containing "multiple"
-          // (keeps API stable with minimal wiring)
-          multiMode = ($("#modalTitle")?.textContent || "").toLowerCase().includes("multiple");
-
-          const selected = new Map(); // key: `${type}:${id}` -> {type,id,name}
+          const selected = new Map(); // key -> {type,id}
 
           const err = el("div", { id:"pickerError", class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
 
@@ -1389,29 +1342,12 @@
 
           const listHost = el("div", { class:"grid" });
 
-          const addNewInline = el("button", {
-            class:"btn",
-            onClick: () => {
-              Modal.open({
-                title: `Add ${ExerciseLibrary.typeLabel(tab)} exercise`,
-                bodyNode: buildAddExerciseForm(tab, () => {
-                  // After adding, reopen picker
-                  Modal.close();
-                  Modal.open({
-                    title: multiMode ? "Add multiple exercises" : "Add exercise",
-                    bodyNode: buildExercisePickerModal({ onPick })
-                  });
-                })
-              });
-            }
-          }, ["Add new exercise"]);
-
           const doneBtn = el("button", {
             class:"btn primary",
             onClick: () => {
               err.style.display = "none";
               if(multiMode){
-                const arr = Array.from(selected.values()).map(x => ({ type:x.type, id:x.id }));
+                const arr = Array.from(selected.values());
                 if(arr.length === 0){
                   err.textContent = "Select at least one exercise.";
                   err.style.display = "block";
@@ -1425,7 +1361,7 @@
                   err.style.display = "block";
                   return;
                 }
-                onPick({ type:first.type, id:first.id });
+                onPick(first);
               }
             }
           }, [multiMode ? "Add selected" : "Add"]);
@@ -1453,10 +1389,10 @@
                   err.style.display = "none";
                   if(multiMode){
                     if(isSel) selected.delete(key);
-                    else selected.set(key, { type: tab, id: x.id, name: x.name });
+                    else selected.set(key, { type: tab, id: x.id });
                   } else {
                     selected.clear();
-                    selected.set(key, { type: tab, id: x.id, name: x.name });
+                    selected.set(key, { type: tab, id: x.id });
                   }
                   draw();
                 }
@@ -1474,7 +1410,7 @@
             });
 
             if(items.length === 0){
-              listHost.appendChild(el("div", { class:"note", text:"No matches. Add a new exercise." }));
+              listHost.appendChild(el("div", { class:"note", text:"No matches. Add it in the library later (Step 4 enhancement)." }));
             }
           }
 
@@ -1483,12 +1419,7 @@
           return el("div", {}, [
             seg,
             el("div", { style:"height:10px" }),
-            el("div", { class:"row2" }, [
-              el("label", {}, [ el("span", { text:"Search" }), searchInput ]),
-              el("div", { style:"display:flex; align-items:end; justify-content:flex-end; gap:10px; flex-wrap:wrap;" }, [
-                addNewInline
-              ])
-            ]),
+            el("label", {}, [ el("span", { text:"Search" }), searchInput ]),
             err,
             el("div", { style:"height:10px" }),
             listHost,
@@ -1499,24 +1430,6 @@
             ])
           ]);
         }
-      },
-
-      Log(){
-        return el("div", { class:"grid" }, [
-          el("div", { class:"card" }, [
-            el("h2", { text:"Log Sets" }),
-            el("div", { class:"note", text:"Next step: log sets per exercise type + PR engine." })
-          ])
-        ]);
-      },
-
-      Progress(){
-        return el("div", { class:"grid" }, [
-          el("div", { class:"card" }, [
-            el("h2", { text:"Progress" }),
-            el("div", { class:"note", text:"Next step: chart + table views." })
-          ])
-        ]);
       },
 
       More(){
@@ -1567,8 +1480,33 @@
      * Boot
      ********************/
     if(state.profile) ExerciseLibrary.ensureSeeded();
+
     renderNav();
     renderView();
+
+    function renderNav(){
+      const nav = $("#navbar");
+      nav.innerHTML = "";
+      const disabled = !state.profile;
+
+      const Routes = {
+        home: { label: "Home" },
+        routine: { label: "Routine" },
+        log: { label: "Log" },
+        progress: { label: "Progress" },
+        more: { label: "More" }
+      };
+
+      Object.entries(Routes).forEach(([key, r]) => {
+        nav.appendChild(el("button", {
+          class: "navbtn" + (key === currentRoute ? " active" : ""),
+          onClick: () => { if(disabled){ navigate("home"); return; } navigate(key); }
+        }, [
+          el("div", { class:"dot" }),
+          el("div", { text: r.label })
+        ]));
+      });
+    }
   </script>
 </body>
 </html>
