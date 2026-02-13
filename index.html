@@ -417,6 +417,21 @@
       background: rgba(255,255,255,.10);
       margin: 10px 0;
     }
+        /* Progress */
+    .chartWrap{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius: 16px;
+      padding: 12px;
+      overflow:hidden;
+    }
+    canvas{
+      max-width: 100%;
+      height: 280px;
+    }
+    @media (min-width: 640px){
+      canvas{ height: 320px; }
+    }
         /* Routine Editor */
     .pillrow{ display:flex; gap:8px; flex-wrap:wrap; }
     .pill{
@@ -1300,6 +1315,112 @@
       if(paceSecPerUnit === null || !Number.isFinite(paceSecPerUnit)) return "—";
       return `${formatTime(paceSecPerUnit)} / unit`;
     }
+        /********************
+     * 4e) Progress Helpers (Step 7)
+     ********************/
+    let __progressChart = null;
+
+    function destroyProgressChart(){
+      try{
+        if(__progressChart){
+          __progressChart.destroy();
+          __progressChart = null;
+        }
+      }catch(e){
+        __progressChart = null;
+      }
+    }
+
+    function downloadCanvasPNG(canvas, filename){
+      try{
+        const url = canvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename || "progress.png";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }catch(e){
+        Modal.open({
+          title: "Download failed",
+          bodyNode: el("div", {}, [
+            el("div", { class:"note", text:"Could not export image. Try again or use a different browser." }),
+            el("div", { style:"height:12px" }),
+            el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+          ])
+        });
+      }
+    }
+
+    function buildSeries(type, entries){
+      // entries expected ascending by date
+      const labels = entries.map(e => e.dateISO);
+
+      if(type === "weightlifting"){
+        const topWeight = entries.map(e => Number(e.summary?.bestWeight) || 0);
+        const est1RM = entries.map(e => Number(e.summary?.best1RM) || 0);
+        const volume = entries.map(e => Number(e.summary?.totalVolume) || 0);
+        return { labels, datasets: { topWeight, est1RM, volume } };
+      }
+
+      if(type === "cardio"){
+        const pace = entries.map(e => (e.summary?.paceSecPerUnit == null ? null : Number(e.summary.paceSecPerUnit)));
+        const distance = entries.map(e => Number(e.summary?.distance) || 0);
+        const timeSec = entries.map(e => Number(e.summary?.timeSec) || 0);
+        return { labels, datasets: { pace, distance, timeSec } };
+      }
+
+      // core
+      const volume = entries.map(e => Number(e.summary?.totalVolume) || 0);
+      return { labels, datasets: { volume } };
+    }
+
+    function renderProgressChart(canvas, type, metricKey, series){
+      destroyProgressChart();
+
+      // Build chart dataset (no custom colors per your standards — Chart.js defaults)
+      let data = [];
+      let label = "";
+
+      if(type === "weightlifting"){
+        if(metricKey === "topWeight"){ data = series.datasets.topWeight; label = "Top Weight"; }
+        else if(metricKey === "est1RM"){ data = series.datasets.est1RM; label = "Estimated 1RM (Epley)"; }
+        else { data = series.datasets.volume; label = "Volume"; }
+      } else if(type === "cardio"){
+        if(metricKey === "pace"){ data = series.datasets.pace; label = "Pace (sec/unit) (lower is better)"; }
+        else if(metricKey === "distance"){ data = series.datasets.distance; label = "Distance"; }
+        else { data = series.datasets.timeSec; label = "Time (sec)"; }
+      } else {
+        data = series.datasets.volume;
+        label = "Core Volume";
+      }
+
+      const ctx = canvas.getContext("2d");
+      __progressChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: series.labels,
+          datasets: [{
+            label,
+            data,
+            tension: 0.25,
+            spanGaps: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+
+      return __progressChart;
+    }
     /********************
      * 5) Modal
      ********************/
@@ -1363,7 +1484,8 @@
       });
     }
 
-    function navigate(routeKey){
+       function navigate(routeKey){
+      destroyProgressChart();
       currentRoute = routeKey;
       renderNav();
       renderView();
@@ -3025,15 +3147,233 @@
         }
       },
 
-      Progress(){
-        return el("div", { class:"grid" }, [
-          el("div", { class:"card" }, [
-            el("h2", { text:"Progress" }),
-            el("div", { class:"muted", text:"Next step: Table + Graph (Chart.js) + export PNG." })
-          ])
-        ]);
-      },
+           Progress(){
+        ExerciseLibrary.ensureSeeded();
+        LogEngine.ensure();
 
+        // Defaults
+        let type = "weightlifting";
+        let exerciseId = (state.exerciseLibrary?.weightlifting?.[0]?.id) || null;
+
+        // Metric default per type
+        let metric = "topWeight"; // weightlifting: topWeight|est1RM|volume
+        // cardio: pace|distance|timeSec
+        // core: volume
+
+        const root = el("div", { class:"grid" });
+
+        const header = el("div", { class:"card" }, [
+          el("h2", { text:"Progress" }),
+          el("div", { class:"note", text:"View your history by exercise. Switch metrics and export the chart as a PNG." })
+        ]);
+
+        const controls = el("div", { class:"card" }, [
+          el("h2", { text:"Filters" })
+        ]);
+
+        const tableCard = el("div", { class:"card" }, [
+          el("h2", { text:"Table" })
+        ]);
+
+        const chartCard = el("div", { class:"card" }, [
+          el("h2", { text:"Graph" })
+        ]);
+
+        root.appendChild(header);
+        root.appendChild(controls);
+        root.appendChild(chartCard);
+        root.appendChild(tableCard);
+
+        // Controls
+        const typeSelect = el("select", {});
+        ["weightlifting","cardio","core"].forEach(t => {
+          typeSelect.appendChild(el("option", { value:t, text: t === "weightlifting" ? "Weightlifting" : (t === "cardio" ? "Cardio" : "Core") }));
+        });
+
+        const exSelect = el("select", {});
+        const metricSelect = el("select", {});
+
+        const chartWrap = el("div", { class:"chartWrap" });
+        const canvas = el("canvas", {});
+        chartWrap.appendChild(canvas);
+
+        const downloadBtn = el("button", {
+          class:"btn",
+          onClick: () => {
+            const exName = resolveExerciseName(type, exerciseId, "exercise").replace(/\s+/g,"_");
+            downloadCanvasPNG(canvas, `progress_${type}_${exName}.png`);
+          }
+        }, ["Download PNG"]);
+
+        const refreshBtn = el("button", {
+          class:"btn",
+          onClick: () => repaint(true)
+        }, ["Refresh"]);
+
+        controls.appendChild(el("div", { class:"row2" }, [
+          el("label", {}, [ el("span", { text:"Type" }), typeSelect ]),
+          el("label", {}, [ el("span", { text:"Exercise" }), exSelect ])
+        ]));
+
+        controls.appendChild(el("div", { class:"row2" }, [
+          el("label", {}, [ el("span", { text:"Metric" }), metricSelect ]),
+          el("div", { style:"display:flex; align-items:end; gap:10px; flex-wrap:wrap;" }, [
+            downloadBtn,
+            refreshBtn
+          ])
+        ]));
+
+        // Chart area
+        chartCard.appendChild(chartWrap);
+        const chartNote = el("div", { class:"note", style:"margin-top:10px;" });
+        chartCard.appendChild(chartNote);
+
+        // Table area
+        const tableHost = el("div", { class:"list" });
+        tableCard.appendChild(tableHost);
+
+        // Events
+        typeSelect.value = type;
+        typeSelect.addEventListener("change", () => {
+          type = typeSelect.value;
+          exerciseId = (state.exerciseLibrary?.[type]?.[0]?.id) || null;
+          metric = defaultMetricForType(type);
+          repaint(true);
+        });
+
+        exSelect.addEventListener("change", () => {
+          exerciseId = exSelect.value || null;
+          repaint(true);
+        });
+
+        metricSelect.addEventListener("change", () => {
+          metric = metricSelect.value;
+          repaint(true);
+        });
+
+        // Initial paint
+        repaint(true);
+
+        // Ensure chart cleaned up if you navigate away later
+        // (Chart.js can leak if you re-enter view repeatedly)
+        setTimeout(() => {
+          // noop — chart exists only for this view lifetime
+        }, 0);
+
+        return root;
+
+        function defaultMetricForType(t){
+          if(t === "weightlifting") return "topWeight";
+          if(t === "cardio") return "pace";
+          return "volume";
+        }
+
+        function repaint(forceChart){
+          // Exercise dropdown
+          exSelect.innerHTML = "";
+          const lib = (state.exerciseLibrary?.[type] || []).slice().sort((a,b) => (a.name||"").localeCompare(b.name||""));
+          if(lib.length === 0){
+            exSelect.appendChild(el("option", { value:"", text:"No exercises — create one in Library" }));
+            exerciseId = null;
+          }else{
+            lib.forEach(x => exSelect.appendChild(el("option", { value:x.id, text:x.name })));
+            if(!exerciseId || !lib.some(x => x.id === exerciseId)) exerciseId = lib[0].id;
+            exSelect.value = exerciseId;
+          }
+
+          // Metric dropdown
+          metricSelect.innerHTML = "";
+          if(type === "weightlifting"){
+            metricSelect.appendChild(el("option", { value:"topWeight", text:"Top Weight" }));
+            metricSelect.appendChild(el("option", { value:"est1RM", text:"Estimated 1RM (Epley)" }));
+            metricSelect.appendChild(el("option", { value:"volume", text:"Volume" }));
+          }else if(type === "cardio"){
+            metricSelect.appendChild(el("option", { value:"pace", text:"Pace (lower is better)" }));
+            metricSelect.appendChild(el("option", { value:"distance", text:"Distance" }));
+            metricSelect.appendChild(el("option", { value:"timeSec", text:"Time" }));
+          }else{
+            metricSelect.appendChild(el("option", { value:"volume", text:"Core Volume" }));
+          }
+          // keep selection if possible
+          const allVals = [...metricSelect.querySelectorAll("option")].map(o => o.value);
+          if(!allVals.includes(metric)) metric = defaultMetricForType(type);
+          metricSelect.value = metric;
+
+          // Data
+          if(!exerciseId){
+            tableHost.innerHTML = "";
+            tableHost.appendChild(el("div", { class:"note", text:"Select or create an exercise to view progress." }));
+            destroyProgressChart();
+            chartNote.textContent = "No data.";
+            return;
+          }
+
+          // Get entries for exercise, ascending for chart
+          const desc = LogEngine.entriesForExercise(type, exerciseId); // desc
+          const asc = [...desc].reverse(); // asc
+
+          // Table (most recent first)
+          tableHost.innerHTML = "";
+          if(desc.length === 0){
+            tableHost.appendChild(el("div", { class:"note", text:"No logs yet. Go to Log and save a few entries." }));
+          }else{
+            desc.slice(0, 25).forEach(e => {
+              tableHost.appendChild(el("div", { class:"item" }, [
+                el("div", { class:"left" }, [
+                  el("div", { class:"name", text: e.dateISO }),
+                  el("div", { class:"meta", text: tableLine(e) })
+                ]),
+                el("div", { class:"actions" }, [
+                  el("div", { class:"meta", text: prLine(e.pr) })
+                ])
+              ]));
+            });
+          }
+
+          // Chart
+          if(asc.length < 2){
+            destroyProgressChart();
+            chartNote.textContent = "Add at least 2 entries to see a trend line.";
+            if(asc.length === 1){
+              // Still render a single-point chart if you want; but we’ll keep it simple
+            }
+            return;
+          }
+
+          const series = buildSeries(type, asc);
+          renderProgressChart(canvas, type, metric, series);
+
+          const exName = resolveExerciseName(type, exerciseId, "exercise");
+          chartNote.textContent = `${exName} • ${asc.length} entries`;
+
+          function tableLine(e){
+            if(e.type === "weightlifting"){
+              const w = Number.isFinite(e.summary?.bestWeight) ? e.summary.bestWeight : "—";
+              const r = Number.isFinite(e.summary?.best1RM) ? e.summary.best1RM : "—";
+              const v = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
+              return `Top W: ${w} • Est1RM: ${r} • Vol: ${v}`;
+            }
+            if(e.type === "cardio"){
+              const t = Number.isFinite(e.summary?.timeSec) ? formatTime(e.summary.timeSec) : "—";
+              const d = Number.isFinite(e.summary?.distance) ? e.summary.distance : "—";
+              const p = formatPace(e.summary?.paceSecPerUnit);
+              return `Time: ${t} • Dist: ${d} • Pace: ${p}`;
+            }
+            const v = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
+            return `Core Vol: ${v}`;
+          }
+
+          function prLine(pr){
+            if(!pr) return "";
+            const b = [];
+            if(pr.isPRWeight) b.push("PR W");
+            if(pr.isPR1RM) b.push("PR 1RM");
+            if(pr.isPRVolume) b.push("PR Vol");
+            if(pr.isPRPace) b.push("PR Pace");
+            return b.join(" • ");
+          }
+        }
+      },
       More(){
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
