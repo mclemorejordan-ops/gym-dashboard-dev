@@ -595,7 +595,61 @@
       background: rgba(255,92,122,.14);
       border-color: rgba(255,92,122,.28);
     }
-
+    /* Attendance */
+    .calWrap{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .calGrid{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      user-select:none;
+    }
+    .calCell{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      padding: 10px 8px;
+      min-height: 44px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight: 750;
+      cursor:pointer;
+    }
+    .calCell.header{
+      cursor: default;
+      background: rgba(255,255,255,.03);
+      color: rgba(255,255,255,.65);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .2px;
+      min-height: 36px;
+    }
+    .calCell.blank{
+      cursor: default;
+      background: transparent;
+      border: 1px dashed rgba(255,255,255,.10);
+      opacity: .55;
+    }
+    .calCell.on{
+      background: rgba(55,214,122,.22);
+      border-color: rgba(55,214,122,.35);
+    }
+    .calTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .calTitle{
+      font-weight: 820;
+      letter-spacing:.2px;
+    }
     /* Bottom nav */
     .nav{
       position: fixed;
@@ -863,7 +917,47 @@
       else state.attendance.push(dateISO);
       Storage.save(state);
     }
+    /********************
+     * Attendance Helpers (Step 9)
+     ********************/
+    function ymFromISO(dateISO){
+      const [y,m] = String(dateISO).split("-").map(x => parseInt(x,10));
+      return { y, m }; // m = 1..12
+    }
 
+    function monthTitle(y, m){
+      const d = new Date(y, m-1, 1);
+      return d.toLocaleString(undefined, { month:"long", year:"numeric" });
+    }
+
+    function daysInMonth(y, m){
+      return new Date(y, m, 0).getDate(); // m is 1..12
+    }
+
+    function firstDayDow(y, m){
+      return new Date(y, m-1, 1).getDay(); // 0=Sun..6=Sat
+    }
+
+    function isoForYMD(y, m, d){
+      return `${y}-${pad2(m)}-${pad2(d)}`;
+    }
+
+    const AttendanceEngine = {
+      ensure(){
+        state.attendance = state.attendance || [];
+      },
+      monthCount(y, m){
+        this.ensure();
+        const prefix = `${y}-${pad2(m)}-`;
+        return state.attendance.filter(x => String(x).startsWith(prefix)).length;
+      },
+      clearMonth(y, m){
+        this.ensure();
+        const prefix = `${y}-${pad2(m)}-`;
+        state.attendance = state.attendance.filter(x => !String(x).startsWith(prefix));
+        Storage.save(state);
+      }
+    };
 
     const normName = (s) => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -1567,14 +1661,16 @@
     /********************
      * 6) Router + Views
      ********************/
-       const Routes = {
+         const Routes = {
       home: { label: "Home" },
       routine: { label: "Routine" },
       log: { label: "Log" },
       progress: { label: "Progress" },
       weight: { label: "Weight" },
+      attendance: { label: "Attendance" },
       more: { label: "More" }
     };
+
 
 
     let currentRoute = "home";
@@ -1624,12 +1720,14 @@
         return;
       }
 
-           if(currentRoute === "home") root.appendChild(Views.Home());
+            if(currentRoute === "home") root.appendChild(Views.Home());
       else if(currentRoute === "routine") root.appendChild(Views.Routine());
       else if(currentRoute === "log") root.appendChild(Views.Log());
       else if(currentRoute === "progress") root.appendChild(Views.Progress());
       else if(currentRoute === "weight") root.appendChild(Views.Weight());
+      else if(currentRoute === "attendance") root.appendChild(Views.Attendance());
       else if(currentRoute === "more") root.appendChild(Views.More());
+
 
     }
 
@@ -3660,6 +3758,148 @@
 
           renderWeightChart(canvas, asc);
           chartNote.textContent = `Showing last ${asc.length} entries`;
+        }
+      },
+            Attendance(){
+        AttendanceEngine.ensure();
+
+        // default month = current
+        const today = Dates.todayISO();
+        let { y, m } = ymFromISO(today);
+
+        const weekStartsOn = state.profile?.weekStartsOn || "mon"; // affects calendar header order
+        const weekStart = (weekStartsOn === "sun") ? 0 : 1;
+
+        const root = el("div", { class:"grid" });
+
+        const header = el("div", { class:"card" }, [
+          el("h2", { text:"Attendance" }),
+          el("div", { class:"note", text:"Tap a day to mark it trained. Shows monthly count + clear month." })
+        ]);
+
+        const card = el("div", { class:"card" }, [
+          el("h2", { text:"Calendar" })
+        ]);
+
+        const wrap = el("div", { class:"calWrap" });
+        const top = el("div", { class:"calTop" });
+
+        const title = el("div", { class:"calTitle" });
+        const monthKpi = el("div", { class:"note" });
+
+        const prevBtn = el("button", { class:"btn", onClick: () => { stepMonth(-1); } }, ["Prev"]);
+        const nextBtn = el("button", { class:"btn", onClick: () => { stepMonth(1); } }, ["Next"]);
+
+        const clearBtn = el("button", {
+          class:"btn danger",
+          onClick: () => {
+            Modal.open({
+              title: "Clear this month?",
+              bodyNode: el("div", {}, [
+                el("div", { class:"note", text:`This removes all trained days for ${monthTitle(y,m)}.` }),
+                el("div", { style:"height:12px" }),
+                el("div", { class:"btnrow" }, [
+                  el("button", {
+                    class:"btn danger",
+                    onClick: () => {
+                      AttendanceEngine.clearMonth(y, m);
+                      Modal.close();
+                      repaint();
+                      renderView(); // Home dots update too
+                    }
+                  }, ["Clear month"]),
+                  el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                ])
+              ])
+            });
+          }
+        }, ["Clear month"]);
+
+        top.appendChild(el("div", { class:"btnrow" }, [prevBtn, nextBtn]));
+        top.appendChild(el("div", { style:"flex:1" }));
+        top.appendChild(clearBtn);
+
+        const grid = el("div", { class:"calGrid" });
+
+        wrap.appendChild(top);
+        wrap.appendChild(el("div", { style:"height:10px" }));
+        wrap.appendChild(title);
+        wrap.appendChild(el("div", { style:"height:6px" }));
+        wrap.appendChild(monthKpi);
+        wrap.appendChild(el("div", { style:"height:12px" }));
+        wrap.appendChild(grid);
+
+        card.appendChild(wrap);
+        root.appendChild(header);
+        root.appendChild(card);
+
+        repaint();
+        return root;
+
+        function stepMonth(delta){
+          m += delta;
+          if(m <= 0){ m = 12; y -= 1; }
+          if(m >= 13){ m = 1; y += 1; }
+          repaint();
+        }
+
+        function weekdayLabels(){
+          const sun = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+          if(weekStart === 0) return sun;
+          return ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+        }
+
+        function repaint(){
+          AttendanceEngine.ensure();
+          title.textContent = monthTitle(y, m);
+
+          const count = AttendanceEngine.monthCount(y, m);
+          monthKpi.textContent = `This month: ${count} sessions`;
+
+          grid.innerHTML = "";
+
+          // headers
+          weekdayLabels().forEach(lbl => {
+            grid.appendChild(el("div", { class:"calCell header", text: lbl }));
+          });
+
+          const dim = daysInMonth(y, m);
+          const firstDow = firstDayDow(y, m); // 0=Sun..6=Sat
+
+          // convert firstDow to our grid index based on weekStart
+          let leading = firstDow - weekStart;
+          if(leading < 0) leading += 7;
+
+          for(let i=0;i<leading;i++){
+            grid.appendChild(el("div", { class:"calCell blank", text:"" }));
+          }
+
+          for(let d=1; d<=dim; d++){
+            const dateISO = isoForYMD(y, m, d);
+            const on = isTrained(dateISO);
+
+            const cell = el("div", {
+              class: "calCell" + (on ? " on" : ""),
+              text: String(d),
+              onClick: () => {
+                toggleTrained(dateISO);
+                repaint();
+                renderView(); // updates Home dots too
+              }
+            });
+
+            grid.appendChild(cell);
+          }
+
+          // pad to full weeks for cleaner bottom edge (optional)
+          const totalCells = 7 + leading + dim; // +7 for header row
+          const remainder = totalCells % 7;
+          if(remainder !== 0){
+            const pads = 7 - remainder;
+            for(let i=0;i<pads;i++){
+              grid.appendChild(el("div", { class:"calCell blank", text:"" }));
+            }
+          }
         }
       },
       More(){
