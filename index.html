@@ -4,11 +4,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-<meta name="viewport" content="
-  width=device-width,
-  initial-scale=1,
-  maximum-scale=1
-">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>Gym Dashboard</title>
   <style>
     
@@ -2716,18 +2712,6 @@ function showScreen(name){
   let screenName = normalizeScreenName(name);
   let el = getScreenEl(screenName);
 
-  // --- Onboarding gate (hard rule; prevents routing into app before onboarding)
-  // If profile isn't done, force Profile screen
-  if(!hasProfileCompleted() && screenName !== "profile"){
-    screenName = "profile";
-    el = getScreenEl(screenName);
-  }
-  // If profile done but onboarding not done, force Routine onboarding screen
-  else if(hasProfileCompleted() && !isOnboardingDone() && screenName !== "onboard-routine" && screenName !== "profile"){
-    screenName = "onboard-routine";
-    el = getScreenEl(screenName);
-  }
-
   // ✅ fallback if invalid screen name stored / passed
   if(!el){
     screenName = "home";
@@ -2748,28 +2732,7 @@ function showScreen(name){
   // iOS Safari behaves better scrolling the document element
   (document.scrollingElement || document.documentElement).scrollTo(0, 0);
 
-  // Enter hook should never be allowed to break navigation
-  try{
-    onEnterScreen[screenName]?.();
-  }catch(err){
-    console.error(`[onEnterScreen] Failed for "${screenName}"`, err);
-  }
-
-  setActiveNav(screenName);
-}
-
-
-  // Remove active (only if we have a valid target)
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  el.classList.add("active");
-
-  // Persist last screen (keeps existing behavior)
-  localStorage.setItem(KEY_ACTIVE_SCREEN, screenName);
-
-  // iOS Safari behaves better scrolling the document element
-  (document.scrollingElement || document.documentElement).scrollTo(0, 0);
-
-  // Enter hook should never be allowed to break navigation
+  // Screen-specific hooks should never be allowed to break navigation
   try{
     onEnterScreen[screenName]?.();
   }catch(err){
