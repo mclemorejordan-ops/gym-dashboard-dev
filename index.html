@@ -2001,7 +2001,7 @@ header{
       <div class="exerciseList" id="pplList"></div>
 
       <div class="notice" style="margin-top:10px;">
-        Tip: Tap “Log Sets” on an exercise to record sets/reps/weight. PR is based on your lifetime max for that exercise.
+        Tip: Tap “Log” on an exercise to record sets/reps/weight. PR is based on your lifetime max for that exercise.
       </div>
     </section>
   </section>
@@ -2059,6 +2059,10 @@ header{
     <option value="core_time">Core: Top Hold (sec)</option>
   </select>
 </label>
+
+        <div class="small muted" style="margin-top:6px;">
+  Metric options adapt to the exercise type (Weightlifting / Cardio / Core).
+</div>
 
 
         <label>Rows (Table)
@@ -2300,7 +2304,7 @@ header{
 
     <div class="notice" style="margin-top:10px;">
       <div><strong id="logModalExercise">—</strong></div>
-      <div class="small muted" id="logModalHint">Enter what you actually did. Add/remove sets as needed.</div>
+      <div class="small muted" id="logModalHint">Log what you did: weightlifting (sets/reps/weight), cardio (duration + distance), or core (reps or timed holds).</div>
     </div>
 
     <div id="logPrevBox" class="notice" style="margin-top:10px; display:none;">
@@ -4829,19 +4833,26 @@ list.forEach(item=>{
   card.innerHTML = `
     <div class="left">
       <div class="title">${escHTML(ex)}</div>
-      <div class="meta">
-        <span class="badge">${exType === "strength" ? "Weightlifting" : (exType === "cardio" ? "Cardio" : "Core")}</span>
-        <span>${item.sets || "—"} sets</span>
-        <span>•</span>
-        <span>${item.reps || "—"} reps</span>
-        ${item.notes ? `<span class="badge">${item.notes}</span>` : ""}
-      </div>
+<div class="meta">
+  <span class="badge">${exType === "strength" ? "Weightlifting" : (exType === "cardio" ? "Cardio" : "Core")}</span>
+
+  ${
+    exType === "cardio"
+      ? `<span>${item.notes ? escHTML(item.notes) : "Duration + Distance"}</span>`
+      : exType === "core"
+        ? `<span>${(item.sets || "—")} sets</span><span>•</span><span>${(item.reps || "—")} reps / seconds</span>`
+        : `<span>${(item.sets || "—")} sets</span><span>•</span><span>${(item.reps || "—")} reps</span>`
+  }
+
+  ${item.notes ? "" : ""}
+</div>
+
     </div>
     <div class="right">
       ${rightLines}
       <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
         ${prBadge}
-        <button type="button" data-log="${ex}">${exType==="cardio"?"Log Cardio":(exType==="core"?"Log Core":"Log Sets")}</button>
+        <button type="button" data-log="${ex}">${exType==="cardio"?"Log Cardio":(exType==="core"?"Log Core":"Log")}</button>
       </div>
     </div>
   `;
@@ -5748,7 +5759,7 @@ function setLogUIForType(){
   } else if(modalExerciseType === "core"){
     logModalHint.textContent = "Log your core work (reps or timed holds). Add/remove sets as needed.";
   } else {
-    logModalHint.textContent = "Enter what you actually did. Add/remove sets as needed.";
+    logModalHint.textContent = "Log what you did: weightlifting (sets/reps/weight), cardio (duration + distance), or core (reps or timed holds).";
   }
 
   // show/hide sections
