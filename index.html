@@ -48,7 +48,6 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* iOS safe areas */
     .app{
       min-height: 100%;
       padding: env(safe-area-inset-top) 14px calc(var(--navH) + env(safe-area-inset-bottom)) 14px;
@@ -173,7 +172,6 @@
       line-height: 1.35;
     }
 
-    /* Form */
     .form{
       display:grid;
       gap: 10px;
@@ -259,7 +257,6 @@
       background: rgba(255,255,255,.92);
     }
 
-    /* Template picker */
     .tplGrid{
       display:grid;
       gap: 10px;
@@ -299,7 +296,6 @@
       line-height: 1.35;
     }
 
-    /* Bottom nav */
     .nav{
       position: fixed;
       left: 0;
@@ -360,7 +356,6 @@
       border-color: rgba(124,92,255,.30);
     }
 
-    /* Modal */
     .modalHost{
       position: fixed;
       inset: 0;
@@ -466,10 +461,10 @@
       },
       logs: {
         workouts: [],
-        weight: [],     // { dateISO, weight }
-        protein: []     // later
+        weight: [],
+        protein: []
       },
-      attendance: [] // [dateISO]
+      attendance: []
     });
 
     const Storage = {
@@ -500,14 +495,18 @@
      ********************/
     const $ = (sel, root=document) => root.querySelector(sel);
 
+    // ✅ FIX: normalize event names to lowercase so onClick works (click), onInput works (input), etc.
     const el = (tag, attrs={}, children=[]) => {
       const n = document.createElement(tag);
       for (const [k,v] of Object.entries(attrs)){
         if(k === "class") n.className = v;
         else if(k === "text") n.textContent = v;
         else if(k === "html") n.innerHTML = v;
-        else if(k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
-        else n.setAttribute(k, v);
+        else if(k.startsWith("on") && typeof v === "function"){
+          n.addEventListener(k.slice(2).toLowerCase(), v);
+        } else {
+          n.setAttribute(k, v);
+        }
       }
       children.forEach(c => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
       return n;
@@ -515,101 +514,40 @@
 
     const uid = (prefix="id") => `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 
-    const Dates = {
-      todayISO(){
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth()+1).padStart(2,"0");
-        const day = String(d.getDate()).padStart(2,"0");
-        return `${y}-${m}-${day}`;
-      }
-    };
-
     /********************
-     * 3) Routine templates (structure only; exercises come later)
+     * 3) Routine templates
      ********************/
     const RoutineTemplates = [
-      {
-        key: "ppl",
-        name: "PPL",
-        desc: "Push / Pull / Legs • 6 days + 1 rest",
-        buildDays(){
-          return [
-            { label:"Push", isRest:false },
-            { label:"Pull", isRest:false },
-            { label:"Legs", isRest:false },
-            { label:"Push", isRest:false },
-            { label:"Pull", isRest:false },
-            { label:"Legs", isRest:false },
-            { label:"Rest", isRest:true }
-          ];
-        }
-      },
-      {
-        key: "upper_lower",
-        name: "Upper / Lower",
-        desc: "4 training days • balanced • great for strength + size",
-        buildDays(){
-          return [
-            { label:"Upper", isRest:false },
-            { label:"Lower", isRest:false },
-            { label:"Rest", isRest:true },
-            { label:"Upper", isRest:false },
-            { label:"Lower", isRest:false },
-            { label:"Rest", isRest:true },
-            { label:"Rest", isRest:true }
-          ];
-        }
-      },
-      {
-        key: "full_body_3",
-        name: "Full Body (3-day)",
-        desc: "3 training days • simple and effective",
-        buildDays(){
-          return [
-            { label:"Full Body", isRest:false },
-            { label:"Rest", isRest:true },
-            { label:"Full Body", isRest:false },
-            { label:"Rest", isRest:true },
-            { label:"Full Body", isRest:false },
-            { label:"Rest", isRest:true },
-            { label:"Rest", isRest:true }
-          ];
-        }
-      },
-      {
-        key: "body_part_split",
-        name: "Body Part Split",
-        desc: "Chest/Back/Legs/Shoulders/Arms + rest days",
-        buildDays(){
-          return [
-            { label:"Chest", isRest:false },
-            { label:"Back", isRest:false },
-            { label:"Legs", isRest:false },
-            { label:"Shoulders", isRest:false },
-            { label:"Arms", isRest:false },
-            { label:"Rest", isRest:true },
-            { label:"Rest", isRest:true }
-          ];
-        }
-      },
-      {
-        key: "blank",
-        name: "Blank",
-        desc: "Start from scratch (you’ll add days and exercises)",
-        buildDays(){
-          // default to 7 days, non-rest; user can mark rest days later
-          return [
-            { label:"Day 1", isRest:false },
-            { label:"Day 2", isRest:false },
-            { label:"Day 3", isRest:false },
-            { label:"Day 4", isRest:false },
-            { label:"Day 5", isRest:false },
-            { label:"Day 6", isRest:false },
-            { label:"Day 7", isRest:false }
-          ];
-        }
-      }
+      { key:"ppl", name:"PPL", desc:"Push / Pull / Legs • 6 days + 1 rest",
+        buildDays(){ return [
+          { label:"Push", isRest:false },{ label:"Pull", isRest:false },{ label:"Legs", isRest:false },
+          { label:"Push", isRest:false },{ label:"Pull", isRest:false },{ label:"Legs", isRest:false },
+          { label:"Rest", isRest:true }
+        ];}},
+      { key:"upper_lower", name:"Upper / Lower", desc:"4 training days • balanced • strength + size",
+        buildDays(){ return [
+          { label:"Upper", isRest:false },{ label:"Lower", isRest:false },{ label:"Rest", isRest:true },
+          { label:"Upper", isRest:false },{ label:"Lower", isRest:false },{ label:"Rest", isRest:true },
+          { label:"Rest", isRest:true }
+        ];}},
+      { key:"full_body_3", name:"Full Body (3-day)", desc:"3 training days • simple and effective",
+        buildDays(){ return [
+          { label:"Full Body", isRest:false },{ label:"Rest", isRest:true },
+          { label:"Full Body", isRest:false },{ label:"Rest", isRest:true },
+          { label:"Full Body", isRest:false },{ label:"Rest", isRest:true },{ label:"Rest", isRest:true }
+        ];}},
+      { key:"body_part_split", name:"Body Part Split", desc:"Chest/Back/Legs/Shoulders/Arms + rest",
+        buildDays(){ return [
+          { label:"Chest", isRest:false },{ label:"Back", isRest:false },{ label:"Legs", isRest:false },
+          { label:"Shoulders", isRest:false },{ label:"Arms", isRest:false },
+          { label:"Rest", isRest:true },{ label:"Rest", isRest:true }
+        ];}},
+      { key:"blank", name:"Blank", desc:"Start from scratch (you’ll edit days + exercises)",
+        buildDays(){ return [
+          { label:"Day 1", isRest:false },{ label:"Day 2", isRest:false },{ label:"Day 3", isRest:false },
+          { label:"Day 4", isRest:false },{ label:"Day 5", isRest:false },{ label:"Day 6", isRest:false },
+          { label:"Day 7", isRest:false }
+        ];}}
     ];
 
     function createRoutineFromTemplate(templateKey, routineName){
@@ -622,7 +560,7 @@
         order: idx,
         label: d.label,
         isRest: !!d.isRest,
-        exercises: [] // Step 3+ will populate via exercise library
+        exercises: []
       }));
 
       return {
@@ -673,11 +611,8 @@
 
     function setChip(){
       const chip = $("#chipStatus");
-      if(state.profile?.name){
-        chip.textContent = `Hi, ${state.profile.name}`;
-      }else{
-        chip.textContent = "Not set up";
-      }
+      if(state.profile?.name) chip.textContent = `Hi, ${state.profile.name}`;
+      else chip.textContent = "Not set up";
     }
 
     function renderNav(){
@@ -687,20 +622,16 @@
       const disabled = !state.profile;
 
       Object.entries(Routes).forEach(([key, r]) => {
-        const btn = el("button", {
+        nav.appendChild(el("button", {
           class: "navbtn" + (key === currentRoute ? " active" : ""),
           onClick: () => {
-            if(disabled){
-              navigate("home"); // keeps onboarding visible
-              return;
-            }
+            if(disabled){ navigate("home"); return; }
             navigate(key);
           }
         }, [
           el("div", { class:"dot" }),
           el("div", { text: r.label })
-        ]);
-        nav.appendChild(btn);
+        ]));
       });
     }
 
@@ -715,10 +646,7 @@
       const root = $("#viewRoot");
       root.innerHTML = "";
 
-      const needsOnboarding = !state.profile;
-
-      if(needsOnboarding){
-        // Always show onboarding on first run
+      if(!state.profile){
         root.appendChild(Views.Onboarding());
         return;
       }
@@ -730,15 +658,8 @@
       else if(currentRoute === "more") root.appendChild(Views.More());
     }
 
-    /********************
-     * 6) Views
-     ********************/
     const Views = {
       Onboarding(){
-        // Local UI state (not persisted until user taps Finish)
-        let name = "";
-        let proteinGoal = "";
-        let weekStartsOn = "mon";
         let hideRestDays = true;
         let selectedTpl = "ppl";
 
@@ -754,39 +675,32 @@
         const renderTplCards = () => {
           tplCardsHost.innerHTML = "";
           RoutineTemplates.forEach(t => {
-            const card = el("div", {
+            tplCardsHost.appendChild(el("div", {
               class: "tpl" + (t.key === selectedTpl ? " selected" : ""),
-              onClick: () => {
-                selectedTpl = t.key;
-                renderTplCards();
-              }
+              onClick: () => { selectedTpl = t.key; renderTplCards(); }
             }, [
               el("div", { class:"name", text: t.name }),
               el("div", { class:"desc", text: t.desc })
-            ]);
-            tplCardsHost.appendChild(card);
+            ]));
           });
         };
         renderTplCards();
 
-        const nameInput = el("input", { type:"text", placeholder:"Jordan", value:"" });
-        nameInput.addEventListener("input", (e) => name = e.target.value);
-
-        const proteinInput = el("input", { type:"number", inputmode:"numeric", placeholder:"180", value:"", min:"0" });
-        proteinInput.addEventListener("input", (e) => proteinGoal = e.target.value);
+        const nameInput = el("input", { type:"text", placeholder:"Jordan" });
+        const proteinInput = el("input", { type:"number", inputmode:"numeric", placeholder:"180", min:"0" });
 
         const weekSelect = el("select", {});
         weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
         weekSelect.appendChild(el("option", { value:"sun", text:"Sunday" }));
         weekSelect.value = "mon";
-        weekSelect.addEventListener("change", (e) => weekStartsOn = e.target.value);
 
         const finish = () => {
           errorBox.style.display = "none";
           errorBox.textContent = "";
 
-          const cleanName = (name || "").trim();
-          const cleanProtein = Number(proteinGoal);
+          const cleanName = (nameInput.value || "").trim();
+          const cleanProtein = Number(proteinInput.value);
+          const weekStartsOn = weekSelect.value === "sun" ? "sun" : "mon";
 
           if(!cleanName){
             errorBox.textContent = "Please enter your name.";
@@ -802,7 +716,7 @@
           const profile = {
             name: cleanName,
             proteinGoal: Math.round(cleanProtein),
-            weekStartsOn: (weekStartsOn === "sun" ? "sun" : "mon"),
+            weekStartsOn,
             hideRestDays: !!hideRestDays
           };
 
@@ -814,81 +728,8 @@
           state.activeRoutineId = routine.id;
 
           Storage.save(state);
-
-          // Enter app
           navigate("home");
         };
-
-        const whyCard = el("div", { class:"card" }, [
-          el("h2", { text:"What you’re building" }),
-          el("div", { class:"note", html:
-            "This runs fully on-device for Safari “Add to Home Screen.”<br/>" +
-            "No account, no login, no cloud—unless you export/import backups."
-          })
-        ]);
-
-        const profileCard = el("div", { class:"card" }, [
-          el("h2", { text:"Create profile" }),
-          el("div", { class:"form" }, [
-            el("div", { class:"row2" }, [
-              el("label", {}, [
-                el("span", { text:"Name" }),
-                nameInput
-              ]),
-              el("label", {}, [
-                el("span", { text:"Protein goal (grams/day)" }),
-                proteinInput
-              ])
-            ]),
-            el("div", { class:"row2" }, [
-              el("label", {}, [
-                el("span", { text:"Week starts on" }),
-                weekSelect
-              ]),
-              el("div", { class:"toggle" }, [
-                el("div", { class:"ttext" }, [
-                  el("div", { class:"a", text:"Hide rest days" }),
-                  el("div", { class:"b", text:"Rest days won’t appear on Home (later: Routine can still show them)" })
-                ]),
-                switchNode
-              ])
-            ]),
-            errorBox
-          ])
-        ]);
-
-        const tplCard = el("div", { class:"card" }, [
-          el("h2", { text:"Choose a routine template" }),
-          tplCardsHost,
-          el("div", { style:"height:10px" }),
-          el("div", { class:"btnrow" }, [
-            el("button", { class:"btn primary", onClick: finish }, ["Finish setup"]),
-            el("button", {
-              class:"btn danger",
-              onClick: () => {
-                Modal.open({
-                  title: "Reset local data",
-                  bodyNode: el("div", {}, [
-                    el("div", { class:"note", text:"This clears everything saved in this browser for the app." }),
-                    el("div", { style:"height:12px" }),
-                    el("div", { class:"btnrow" }, [
-                      el("button", {
-                        class:"btn danger",
-                        onClick: () => {
-                          Storage.reset();
-                          state = Storage.load();
-                          Modal.close();
-                          navigate("home");
-                        }
-                      }, ["Reset"]),
-                      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-                    ])
-                  ])
-                });
-              }
-            }, ["Reset"])
-          ])
-        ]);
 
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
@@ -898,9 +739,65 @@
               el("div", { class:"small", text:"Create your profile and choose a routine template. You can edit everything later." })
             ])
           ]),
-          profileCard,
-          tplCard,
-          whyCard
+          el("div", { class:"card" }, [
+            el("h2", { text:"Create profile" }),
+            el("div", { class:"form" }, [
+              el("div", { class:"row2" }, [
+                el("label", {}, [ el("span", { text:"Name" }), nameInput ]),
+                el("label", {}, [ el("span", { text:"Protein goal (grams/day)" }), proteinInput ])
+              ]),
+              el("div", { class:"row2" }, [
+                el("label", {}, [ el("span", { text:"Week starts on" }), weekSelect ]),
+                el("div", { class:"toggle" }, [
+                  el("div", { class:"ttext" }, [
+                    el("div", { class:"a", text:"Hide rest days" }),
+                    el("div", { class:"b", text:"Rest days won’t appear on Home (Routine can still show them later)" })
+                  ]),
+                  switchNode
+                ])
+              ]),
+              errorBox
+            ])
+          ]),
+          el("div", { class:"card" }, [
+            el("h2", { text:"Choose a routine template" }),
+            tplCardsHost,
+            el("div", { style:"height:10px" }),
+            el("div", { class:"btnrow" }, [
+              el("button", { class:"btn primary", onClick: finish }, ["Finish setup"]),
+              el("button", {
+                class:"btn danger",
+                onClick: () => {
+                  Modal.open({
+                    title: "Reset local data",
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"note", text:"This clears everything saved in this browser for the app." }),
+                      el("div", { style:"height:12px" }),
+                      el("div", { class:"btnrow" }, [
+                        el("button", {
+                          class:"btn danger",
+                          onClick: () => {
+                            Storage.reset();
+                            state = Storage.load();
+                            Modal.close();
+                            navigate("home");
+                          }
+                        }, ["Reset"]),
+                        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                      ])
+                    ])
+                  });
+                }
+              }, ["Reset"])
+            ])
+          ]),
+          el("div", { class:"card" }, [
+            el("h2", { text:"What you’re building" }),
+            el("div", { class:"note", html:
+              "This runs fully on-device for Safari “Add to Home Screen.”<br/>" +
+              "No account, no login, no cloud—unless you export/import backups."
+            })
+          ])
         ]);
       },
 
@@ -1011,7 +908,7 @@
     };
 
     /********************
-     * 7) Boot
+     * 6) Boot
      ********************/
     renderNav();
     renderView();
