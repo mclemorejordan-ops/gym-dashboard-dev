@@ -1803,19 +1803,49 @@ header{
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 /* ---------------------------
-   Storage helpers
+   Storage helpers (hardened)
 ---------------------------- */
 const LS = {
   get(key, fallback){
     try{
       const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    }catch{ return fallback; }
+      if(raw === null || raw === undefined || raw === "") return fallback;
+      return JSON.parse(raw);
+    }catch(e){
+      console.warn(`[LS.get] Corrupt JSON for key "${key}"`, e);
+      return fallback;
+    }
   },
   set(key, value){
-    localStorage.setItem(key, JSON.stringify(value));
+    try{
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    }catch(e){
+      // Quota exceeded / private mode / storage blocked
+      console.error(`[LS.set] Failed to write key "${key}"`, e);
+      alert("Storage is full or blocked in this browser. Free up space or disable private mode.");
+      return false;
+    }
+  },
+  remove(key){
+    try{ localStorage.removeItem(key); }catch{}
   }
 };
+
+// Small guards
+function isPlainObject(x){
+  return !!x && typeof x === "object" && !Array.isArray(x);
+}
+function safeISODate(s){
+  const v = String(s || "").trim();
+  // Expect YYYY-MM-DD
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+}
+function toNum(x, fallback=0){
+  const n = Number(x);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 
   /* ---------------------------
    DOM helpers
@@ -1837,18 +1867,198 @@ const KEY_ONBOARD_DONE = "gym_onboard_done_v1";
 const KEY_CUSTOM_EX = "gym_custom_ex_v1";
 const KEY_APP_VERSION = "gym_app_version_v1"; // ✅ ADD THIS
 
+  /* ---------------------------
+   Core state loaders (sanitize + self-heal)
+---------------------------- */
+function loadBWLogs(){
+  const raw = LS.get(KEY_BW, []);
+  if(!Array.isArray(raw)) return [];
+  const cleaned = raw.map(x=>({
+    date: safeISODate(x?.date),
+    value: toNum(x?.value, toNum(x?.bw, null))
+  }))
+  .filter(x=>x.date && Number.isFinite(x.value));
+  LS.set(KEY_BW, cleaned);
+  return cleaned;
+}
+
+function loadAttendance(){
+  const raw = LS.get(KEY_ATT, []);
+  if(!Array.isArray(raw)) return new Set();
+  const cleaned = raw.map(safeISODate).filter(Boolean);
+  LS.set(KEY_ATT, cleaned);
+  return new Set(cleaned);
+}
+
+function loadProteinMap(){
+  const raw = LS.get(KEY_PRO, {});
+  if(!isPlainObject(raw)) return {};
+  const out = {};
+  for(const [k,v] of Object.entries(raw)){
+    const d = safeISODate(k);
+    if(!d || !isPlainObject(v)) continue;
+    out[d] = {
+      morning: toNum(v.morning, 0),
+      lunch:   toNum(v.lunch, 0),
+      pre:     toNum(v.pre, 0),
+      dinner:  toNum(v.dinner, 0),
+      bed:     toNum(v.bed, 0)
+    };
+  }
+  LS.set(KEY_PRO, out);
+  return out;
+}
+
+function loadLifts(){
+  const raw = LS.get(KEY_LIFTS, []);
+  if(!Array.isArray(raw)) return [];
+  const cleaned = raw.map(x=>({
+    id: x?.id || uid(),
+    date: safeISODate(x?.date),
+    routineId: (typeof x?.routineId === "string") ? x.routineId : null,
+    routineName: (typeof x?.routineName === "string") ? x.routineName : "",
+    dayKey: (typeof x?.dayKey === "string") ? x.dayKey : "",
+    exercise: String(x?.exercise || x?.name || "").trim(),
+    top: toNum(x?.top, toNum(x?.weight, 0)),
+    e1rm: toNum(x?.e1rm, 0),
+    volume: toNum(x?.volume, 0),
+    details: Array.isArray(x?.details) ? x.details : []
+  }))
+  .filter(x=>x.date && x.exercise);
+  LS.set(KEY_LIFTS, cleaned);
+  return cleaned;
+}
+
+function reloadCoreState(){
+  profile = loadProfile();
+  ({routines, activeId: activeRoutineId} = loadRoutines());
+
+  bwLogs = loadBWLogs();
+  attendance = loadAttendance();
+  proteinMap = loadProteinMap();
+  lifts = loadLifts();
+
+  ensureLiftCompatibility();
+  migrateCanonicalNames();
+}
+
+
 
 let modalDepth = 0;
 
+// iOS-safe scroll freeze
+let __scrollY = 0;
+let __lockApplied = false;
+
 function lockBodyScroll(){
-  if(modalDepth === 0) document.body.classList.add("modalOpen");
+  // Only apply the body lock once (first modal)
+  if(modalDepth === 0 && !__lockApplied){
+    __scrollY = window.scrollY || 0;
+
+    // Add your existing class (keeps your CSS behavior)
+    document.body.classList.add("modalOpen");
+
+    // iOS: overflow hidden alone can still allow “bounce”/jump.
+    // Pin body in place to prevent background movement.
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${__scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+
+    __lockApplied = true;
+  }
+
   modalDepth++;
 }
 
 function unlockBodyScroll(){
   modalDepth = Math.max(0, modalDepth - 1);
-  if(modalDepth === 0) document.body.classList.remove("modalOpen");
+
+  // Only release when the last modal closes
+  if(modalDepth === 0 && __lockApplied){
+    document.body.classList.remove("modalOpen");
+
+    // Restore body scroll position safely
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+
+    window.scrollTo(0, __scrollY);
+    __lockApplied = false;
+  }
 }
+
+  /* ---------------------------
+   Modal controller (hardened)
+   - overlay click close
+   - ESC close topmost
+   - prevents modalDepth desync
+---------------------------- */
+
+let __modalBound = false;
+
+// True if modal is currently visible (matches your display-based approach)
+function isModalVisible(el){
+  return !!el && el.style && el.style.display === "block";
+}
+
+// Open/Close wrappers to keep lock/unlock consistent
+function openModalEl(el){
+  if(!el) return;
+  if(isModalVisible(el)) return; // prevent double-open increments
+  lockBodyScroll();
+  el.style.display = "block";
+}
+
+function closeModalEl(el){
+  if(!el) return;
+  if(!isModalVisible(el)) return; // prevent double-close decrements
+  el.style.display = "none";
+  unlockBodyScroll();
+}
+
+// Close “topmost” modal by priority (last opened tends to be these)
+function closeTopModal(){
+  // NOTE: order matters: child modals first
+  if(typeof closeBatchAddModal === "function" && isModalVisible(batchAddModal)) return closeBatchAddModal();
+  if(typeof closeExercisePicker === "function" && isModalVisible(exPickModal)) return closeExercisePicker();
+  if(typeof closeRoutineEditor === "function" && isModalVisible(rtModal)) return closeRoutineEditor();
+  if(typeof closeHistoryModal === "function" && isModalVisible(histModal)) return closeHistoryModal();
+  if(typeof closeLogModal === "function" && isModalVisible(logModal)) return closeLogModal();
+}
+
+function bindModalSystem(){
+  if(__modalBound) return;
+  __modalBound = true;
+
+  // ESC closes the topmost visible modal
+  document.addEventListener("keydown", (e)=>{
+    if(e.key === "Escape"){
+      closeTopModal();
+    }
+  });
+
+  // Overlay click closes any modal when clicking the overlay itself
+  // (we attach listeners once the elements exist; safe to call after DOM refs are defined)
+  const bindOverlay = (modalEl, closeFn)=>{
+    if(!modalEl || typeof closeFn !== "function") return;
+    modalEl.addEventListener("click", (e)=>{
+      if(e.target === modalEl) closeFn();
+    });
+  };
+
+  // These variables exist in your file as DOM refs:
+  // logModal, histModal, rtModal, exPickModal, batchAddModal
+  bindOverlay(logModal, closeLogModal);
+  bindOverlay(histModal, closeHistoryModal);
+  bindOverlay(rtModal, closeRoutineEditor);
+  bindOverlay(exPickModal, closeExercisePicker);
+  bindOverlay(batchAddModal, closeBatchAddModal);
+}
+
 
   /* ---------------------------
    Global State (safe defaults)
@@ -1977,24 +2187,40 @@ obProfileNextBtn?.addEventListener("click", ()=>{
   const nm = String(obName?.value || "").trim();
   if(!nm){
     alert("Please enter a name to continue.");
+    obName?.focus?.();
     return;
   }
 
+  // sanitize + protect against invalid numbers
+  const proteinGoal = Number(obProteinGoal?.value);
+  const cleanedProtein = Number.isFinite(proteinGoal) && proteinGoal >= 0 ? proteinGoal : 240;
+
   saveProfile({
     name: nm,
-    proteinGoal: Number(obProteinGoal?.value || 240) || 240,
+    proteinGoal: cleanedProtein,
     weekStart: (obWeekStart?.value === "sun") ? "sun" : "mon",
     hideRestDays: (obHideRest?.value === "0") ? false : true
   });
 
-  showScreen("onboard-routine");
+  // If profile exists but onboarding not done, go to routine creation
+  if(!isOnboardingDone()){
+    showScreen("onboard-routine");
+  }else{
+    showScreen("home");
+  }
 });
+
 
 obRoutineBackBtn?.addEventListener("click", ()=>{
   showScreen("profile");
 });
 
 obRoutineCreateBtn?.addEventListener("click", ()=>{
+  if(!hasProfileCompleted()){
+    showScreen("profile");
+    return;
+  }
+
   const name = String(obRoutineName?.value || "").trim() || "My Routine";
   const tpl = String(obRoutineTemplate?.value || "blank");
 
@@ -2018,12 +2244,22 @@ obRoutineCreateBtn?.addEventListener("click", ()=>{
     });
   }
 
+  // ✅ deep-copy so template object never gets mutated elsewhere
+  base = JSON.parse(JSON.stringify(base));
+
   base.name = name;
   base.source = "onboarding";
   base.id = uid();
 
-  routines.push(base);
-  saveRoutines();
+  // ✅ prevent duplicate inserts from double-clicks
+  const exists = routines.some(r => r.id === base.id);
+  if(!exists){
+    routines.push(base);
+    saveRoutines();
+  }else{
+    // extremely unlikely (uid collision), but safe
+    saveRoutines();
+  }
 
   // mark onboarding complete
   if(!isOnboardingDone()) setOnboardingDone();
@@ -2031,7 +2267,7 @@ obRoutineCreateBtn?.addEventListener("click", ()=>{
   // set as active routine
   setActiveRoutine(base.id);
 
-  // ✅ go to routine screen FIRST (ensures routine screen state is initialized)
+  // go to routine screen first
   showScreen("routine");
 
   // ensure dropdown + list are correct right away
@@ -2040,9 +2276,14 @@ obRoutineCreateBtn?.addEventListener("click", ()=>{
   renderPPL();
   buildRoutineExerciseSuggestions();
 
-  // ✅ THEN open editor
-  openRoutineEditor(base.id);
+  // then open editor
+  try{
+    openRoutineEditor(base.id);
+  }catch(e){
+    console.warn("Routine editor failed to open after onboarding.", e);
+  }
 });
+
 
   /* ---------------------------
    Profile (Onboarding base)
@@ -2059,21 +2300,31 @@ function defaultProfile(){
 
 
 function loadProfile(){
-  const p = LS.get(KEY_PROFILE, null);
-  if(!p || typeof p !== "object"){
-    const seeded = defaultProfile();
-    LS.set(KEY_PROFILE, seeded);
-    return seeded;
-  }
-  // normalize
-  return {
-  name: String(p.name || ""),
-  units: "lbs", // ✅ force lbs only (no kg supported)
-  proteinGoal: Number(p.proteinGoal || 240) || 240,
-  weekStart: (p.weekStart === "sun") ? "sun" : "mon",
-  hideRestDays: (p.hideRestDays === false) ? false : true
-};
+  const raw = LS.get(KEY_PROFILE, null);
+  const base = {
+    name: "",
+    goalWeight: "",
+    proteinGoal: 160
+  };
+
+  if(!raw || typeof raw !== "object") return base;
+
+  const name = String(raw.name || "").trim();
+  const goalWeight = (raw.goalWeight === null || raw.goalWeight === undefined) ? "" : String(raw.goalWeight).trim();
+  const proteinGoal = toNum(raw.proteinGoal, base.proteinGoal);
+
+  const cleaned = {
+    ...base,
+    name,
+    goalWeight,
+    proteinGoal: Math.max(0, proteinGoal)
+  };
+
+  // Self-heal storage
+  LS.set(KEY_PROFILE, cleaned);
+  return cleaned;
 }
+
 
 
 function saveProfile(next){
@@ -2194,18 +2445,36 @@ function dateISOFrom(baseDate, offsetDays){
 }
 
 function refreshHome(){
+  // Ensure core objects exist (prevents crashes if storage was wiped/corrupted)
+  if(!profile || typeof profile !== "object") profile = loadProfile?.() || { name:"" };
+  if(!(attendance instanceof Set)){
+    const rawAtt = LS.get(KEY_ATT, []);
+    attendance = new Set(Array.isArray(rawAtt) ? rawAtt : []);
+  }
+  if(!proteinMap || typeof proteinMap !== "object") proteinMap = LS.get(KEY_PRO, {}) || {};
+
   // time/date/name
   if(homeTime) homeTime.textContent = fmtTimeNow();
   if(homeDate) homeDate.textContent = fmtDateNow();
-  if(homeName) homeName.textContent = (profile.name || "—").trim() || "—";
+  if(homeName) homeName.textContent = String(profile.name || "—").trim() || "—";
+
+  // active routine safety
+  let ar = null;
+  try{ ar = getActiveRoutine?.(); }catch{}
+  if(!ar || typeof ar !== "object"){
+    ar = { days: {} };
+    DAY_KEYS.forEach(k => (ar.days[k] = { label:"", rest:false, exercises:[] }));
+  }
 
   // today routine
-  const ar = getActiveRoutine();
-  const todayIdx = getTodaySplitIndex(); // Mon=0..Sun=6
-  const dayKey = DAY_KEYS[todayIdx];
+  let todayIdx = 0;
+  try{ todayIdx = getTodaySplitIndex?.() ?? 0; }catch{ todayIdx = 0; }
+  todayIdx = Math.max(0, Math.min(6, Number(todayIdx) || 0));
+
+  const dayKey = DAY_KEYS[todayIdx] || "Mon";
   const day = ar.days?.[dayKey] || { label:"", rest:false, exercises:[] };
 
-  const label = (day.label || "").trim();
+  const label = String(day.label || "").trim();
   if(homeTodayTitle) homeTodayTitle.textContent = `TODAY — ${dayKey}${label ? " • " + label : ""}`;
 
   if(homeTodayList) homeTodayList.innerHTML = "";
@@ -2220,13 +2489,147 @@ function refreshHome(){
         homeTodayList.innerHTML = `<li class="muted">No exercises added for today.</li>`;
       } else {
         list.slice(0, 6).forEach(ex=>{
+          const nm = String(ex?.name || "").trim();
+          if(!nm) return;
           const li = document.createElement("li");
-          li.textContent = `${ex.name} — ${ex.sets || "—"} sets • ${ex.reps || "—"} reps`;
+          li.textContent = `${nm} — ${ex.sets || "—"} sets • ${ex.reps || "—"} reps`;
           homeTodayList.appendChild(li);
         });
       }
     }
   }
+
+  // ✅ Protein-left circle (today)
+  const td = todayISO();
+  const obj = proteinMap?.[td] || {morning:0,lunch:0,pre:0,dinner:0,bed:0};
+  const total =
+    (Number(obj.morning)||0)+
+    (Number(obj.lunch)||0)+
+    (Number(obj.pre)||0)+
+    (Number(obj.dinner)||0)+
+    (Number(obj.bed)||0);
+
+  const goal = (typeof getProteinGoal === "function") ? getProteinGoal() : (Number(profile.proteinGoal) || 240);
+  const left = Math.max(goal - total, 0);
+  const pct = Math.max(0, Math.min(1, goal ? (total/goal) : 0));
+  const deg = Math.round(pct * 360);
+
+  if(homeProteinLeft) homeProteinLeft.textContent = String(left);
+  if(homeProteinCircle) homeProteinCircle.style.setProperty("--deg", `${deg}deg`);
+
+  // ✅ Home "Check In" button state
+  if(homeCheckInBtn){
+    const checked = attendance.has(td);
+    homeCheckInBtn.textContent = checked ? "✅ Checked In" : "✅ Check In";
+    homeCheckInBtn.classList.toggle("ghost", checked);
+  }
+
+  // week dots + count
+  let weekStart = null;
+  try{
+    weekStart = (typeof weekStartDate === "function") ? weekStartDate(new Date()) : null;
+  }catch{ weekStart = null; }
+
+  // fallback week start if helper missing
+  if(!(weekStart instanceof Date)){
+    const now = new Date();
+    const dow = now.getDay(); // 0=Sun
+    const mondayOffset = (dow + 6) % 7; // days since Monday
+    weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - mondayOffset);
+  }
+
+  const dots = [];
+  for(let i=0;i<7;i++){
+    try{
+      dots.push(dateISOFrom(weekStart, i));
+    }catch{
+      // last-resort ISO
+      const d = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
+      dots.push(localISODate(d));
+    }
+  }
+
+  // ✅ FIX: .len -> .length (this was breaking your home screen)
+  const attendedCount = dots.filter(d => attendance.has(d)).length;
+
+  if(homeWeekDots){
+    homeWeekDots.innerHTML = "";
+    dots.forEach(d=>{
+      const dot = document.createElement("div");
+      dot.className = "wdot " + (attendance.has(d) ? "on" : "off");
+      dot.title = d;
+      homeWeekDots.appendChild(dot);
+    });
+  }
+
+  if(homeWeekCount){
+    homeWeekCount.textContent = `Workouts this week: ${attendedCount} / 7`;
+  }
+
+  // ✅ Focus engine (Recovery warning > Stalled lift > Weekly countdown > Default)
+  if(homeFocus){
+    const todayIso = td;
+
+    let yesterdayIso = null;
+    try{
+      yesterdayIso = (typeof addDaysISO === "function") ? addDaysISO(todayIso, -1) : null;
+    }catch{ yesterdayIso = null; }
+
+    // fallback if helper missing
+    if(!yesterdayIso){
+      const t = new Date();
+      t.setDate(t.getDate() - 1);
+      yesterdayIso = localISODate(t);
+    }
+
+    const todayIsRest = !!day.rest;
+
+    const trainedYesterday = attendance.has(yesterdayIso);
+
+    let yProtein = 0;
+    try{
+      yProtein = (typeof getProteinTotalForDate === "function") ? getProteinTotalForDate(yesterdayIso) : 0;
+    }catch{ yProtein = 0; }
+
+    const yLowProtein = yProtein < (goal * 0.75);
+
+    let weeklyTarget = 7;
+    try{
+      weeklyTarget = (typeof routineWeeklyTargetDays === "function") ? routineWeeklyTargetDays(ar) : 7;
+    }catch{ weeklyTarget = 7; }
+    weeklyTarget = Math.max(0, Math.min(7, Number(weeklyTarget) || 0));
+
+    const workoutsLeft = Math.max(weeklyTarget - attendedCount, 0);
+
+    const todayExercises = Array.isArray(day.exercises) ? day.exercises : [];
+    let stalledName = "";
+    try{
+      stalledName = (typeof pickStalledExerciseFromToday === "function") ? (pickStalledExerciseFromToday(todayExercises) || "") : "";
+    }catch{ stalledName = ""; }
+
+    if(todayIsRest){
+      homeFocus.textContent = "Recovery day: mobility + walk. Keep it easy and show up tomorrow.";
+    }
+    else if(trainedYesterday && yLowProtein){
+      homeFocus.textContent =
+        "Focus: go lighter today — recovery may be limiting performance (trained yesterday + low protein).";
+    }
+    else if(stalledName){
+      homeFocus.textContent =
+        `Focus: ${stalledName} looks stalled — change stimulus (add reps, slower tempo, or switch variation).`;
+    }
+    else if(workoutsLeft > 0){
+      homeFocus.textContent =
+        `Focus: ${workoutsLeft} session${workoutsLeft===1?"":"s"} left to hit your weekly routine goal (${weeklyTarget}).`;
+    }
+    else {
+      if(label) homeFocus.textContent = `Focus: ${label}`;
+      else homeFocus.textContent = "Focus: execute clean sets + progressive overload.";
+    }
+  }
+}
+
+  
     // ✅ Protein-left circle (today)
   const td = todayISO();
   const obj = proteinMap?.[td] || {morning:0,lunch:0,pre:0,dinner:0,bed:0};
@@ -2323,6 +2726,11 @@ function refreshHome(){
 function toggleTodayAttendance(){
   const today = todayISO();
 
+  if(!(attendance instanceof Set)){
+    const rawAtt = LS.get(KEY_ATT, []);
+    attendance = new Set(Array.isArray(rawAtt) ? rawAtt : []);
+  }
+
   if(attendance.has(today)){
     attendance.delete(today);
   } else {
@@ -2334,10 +2742,12 @@ function toggleTodayAttendance(){
   // refresh the home UI immediately
   refreshHome();
 
-  // optional: keep calendar UI accurate if you’re already on that screen later
-  // (won't error if not visible)
-  renderCal();
+  // keep calendar UI accurate if available
+  if(typeof renderCal === "function"){
+    try{ renderCal(); }catch{}
+  }
 }
+
 
 homeCheckInBtn?.addEventListener("click", toggleTodayAttendance);
 /* ---------------------------
@@ -2384,37 +2794,91 @@ const onEnterScreen = {
   }
 };
 
+function normalizeScreenName(name){
+  return String(name ?? "").trim();
+}
+
+function getScreenEl(name){
+  const n = normalizeScreenName(name);
+  if(!n) return null;
+  return document.getElementById(`screen-${n}`);
+}
+
 function showScreen(name){
-  // remove active
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  // Normalize + validate first (prevents hard crashes on bad state)
+  let screenName = normalizeScreenName(name);
+  let el = getScreenEl(screenName);
 
-  // find target
-  let el = document.getElementById(`screen-${name}`);
-
-  // ✅ fallback if invalid screen name stored
-  if(!el){
-    name = "home";
-    el = document.getElementById("screen-home");
+  // --- Onboarding gate (hard rule; prevents routing into app before onboarding)
+  // If profile isn't done, force Profile screen
+  if(!hasProfileCompleted() && screenName !== "profile"){
+    screenName = "profile";
+    el = getScreenEl(screenName);
+  }
+  // If profile done but onboarding not done, force Routine onboarding screen
+  else if(hasProfileCompleted() && !isOnboardingDone() && screenName !== "onboard-routine" && screenName !== "profile"){
+    screenName = "onboard-routine";
+    el = getScreenEl(screenName);
   }
 
+  // ✅ fallback if invalid screen name stored / passed
+  if(!el){
+    screenName = "home";
+    el = document.getElementById("screen-home");
+    if(!el){
+      // If even home is missing, fail silently instead of breaking the app.
+      return;
+    }
+  }
+
+  // Remove active (only if we have a valid target)
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   el.classList.add("active");
 
-  localStorage.setItem(KEY_ACTIVE_SCREEN, name);
+  // Persist last screen (keeps existing behavior)
+  localStorage.setItem(KEY_ACTIVE_SCREEN, screenName);
 
   // iOS Safari behaves better scrolling the document element
   (document.scrollingElement || document.documentElement).scrollTo(0, 0);
 
-  onEnterScreen[name]?.();
-  setActiveNav(name);
+  // Enter hook should never be allowed to break navigation
+  try{
+    onEnterScreen[screenName]?.();
+  }catch(err){
+    console.error(`[onEnterScreen] Failed for "${screenName}"`, err);
+  }
 
+  setActiveNav(screenName);
 }
 
-  function setActiveNav(name){
+
+  // Remove active (only if we have a valid target)
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  el.classList.add("active");
+
+  // Persist last screen (keeps existing behavior)
+  localStorage.setItem(KEY_ACTIVE_SCREEN, screenName);
+
+  // iOS Safari behaves better scrolling the document element
+  (document.scrollingElement || document.documentElement).scrollTo(0, 0);
+
+  // Enter hook should never be allowed to break navigation
+  try{
+    onEnterScreen[screenName]?.();
+  }catch(err){
+    console.error(`[onEnterScreen] Failed for "${screenName}"`, err);
+  }
+
+  setActiveNav(screenName);
+}
+
+function setActiveNav(name){
+  const screenName = normalizeScreenName(name);
   document.querySelectorAll(".navBtn").forEach(b=>{
-    b.classList.toggle("active", b.getAttribute("data-nav") === name);
+    b.classList.toggle("active", b.getAttribute("data-nav") === screenName);
   });
 }
-  
+
 let navBound = false;
 
 function bindNavigation(){
@@ -2506,8 +2970,14 @@ function addCustomExercise(name){
     cur.sort((a,b)=>a.localeCompare(b));
     saveCustomExercises(cur);
   }
+
+  // ✅ automatically add to Exercise Meta library (auto-type inference)
+  const inferred = inferExerciseType(cleaned);
+  learnExerciseType(cleaned, inferred);
+
   return cleaned;
 }
+
 
   /* ---------------------------
    Canonical Exercise Naming
@@ -2626,6 +3096,127 @@ const EXERCISE_LIBRARY = [
   "Box Jumps",
   "Burpees"
 ];
+
+/* ---------------------------
+   Exercise Type Library (Strength / Cardio / Core)
+   - Auto-assign types in Routine Editor (no manual selector)
+   - Custom exercises get added automatically
+---------------------------- */
+
+const KEY_EX_META = "gym_ex_meta_v1"; // stores user-learned overrides
+
+function loadExerciseMeta(){
+  const raw = LS.get(KEY_EX_META, {});
+  return (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : {};
+}
+function saveExerciseMeta(meta){
+  LS.set(KEY_EX_META, meta || {});
+}
+
+let EX_META = loadExerciseMeta();
+
+// Built-in type hints (only need to list non-strength; everything else defaults to strength)
+const BUILTIN_TYPE_HINTS = {
+  // Cardio (add more anytime)
+  "treadmill": "cardio",
+  "run": "cardio",
+  "running": "cardio",
+  "jog": "cardio",
+  "bike": "cardio",
+  "stationary bike": "cardio",
+  "spin bike": "cardio",
+  "rower": "cardio",
+  "rowing": "cardio",
+  "elliptical": "cardio",
+  "stair": "cardio",
+  "stairmaster": "cardio",
+  "walking": "cardio",
+  "walk": "cardio",
+
+  // Core (add more anytime)
+  "plank": "core",
+  "side plank": "core",
+  "crunch": "core",
+  "sit up": "core",
+  "sit-up": "core",
+  "leg raise": "core",
+  "hollow hold": "core",
+  "russian twist": "core",
+  "ab": "core",
+  "abs": "core"
+};
+
+function inferExerciseType(name){
+  const n = normExName(name);
+  if(!n) return "strength";
+
+  // 1) user-learned override (exact)
+  const key = normExName(canonicalExerciseName(name));
+  const user = EX_META?.[key]?.type;
+  if(user === "strength" || user === "cardio" || user === "core") return user;
+
+  // 2) built-in contains-match hints
+  for(const [frag, t] of Object.entries(BUILTIN_TYPE_HINTS)){
+    if(n.includes(frag)) return t;
+  }
+
+  // 3) default
+  return "strength";
+}
+
+function getExerciseType(name){
+  return inferExerciseType(name);
+}
+
+function learnExerciseType(name, type){
+  const key = normExName(canonicalExerciseName(name));
+  if(!key) return;
+  if(type !== "strength" && type !== "cardio" && type !== "core") return;
+  EX_META[key] = { type, updatedAt: Date.now() };
+  saveExerciseMeta(EX_META);
+}
+
+function ensureExerciseHasType(exObj){
+  if(!exObj || typeof exObj !== "object") return exObj;
+  if(exObj.type !== "strength" && exObj.type !== "cardio" && exObj.type !== "core"){
+    exObj.type = getExerciseType(exObj.name || "");
+  }
+  return exObj;
+}
+
+function normalizeRoutineExerciseObject(exObj){
+  if(!exObj || typeof exObj !== "object") return null;
+  exObj.name = canonicalExerciseName(exObj.name || "");
+  ensureExerciseHasType(exObj);
+  return exObj;
+}
+
+function normalizeRoutineExercises(routine){
+  if(!routine || typeof routine !== "object") return routine;
+  if(!routine.days) return routine;
+  DAY_KEYS.forEach(k=>{
+    const day = routine.days[k];
+    if(!day || typeof day !== "object") return;
+    if(!Array.isArray(day.exercises)) day.exercises = [];
+    day.exercises = day.exercises
+      .map(normalizeRoutineExerciseObject)
+      .filter(Boolean);
+  });
+  return routine;
+}
+
+function hasLoggedTodayForExercise(exName){
+  const n = normExName(canonicalExerciseName(exName));
+  const d = todayISO();
+  // NOTE: currently stored in `lifts` (we will evolve to unified logs next)
+  return Array.isArray(lifts) && lifts.some(x=>{
+    const ex = x.ex || x.exercise || x.name;
+    const xn = x.exNorm || normExName(canonicalExerciseName(ex || ""));
+    return x.date === d && xn === n;
+  });
+}
+
+  
 /* ---------------------------
    UID helper
 ---------------------------- */
@@ -3578,8 +4169,17 @@ function renderPPL(){
 
   list.forEach(item=>{
     const ex = item.name;
-    const {life, thisWeekMax, lastWeekMax} = liftStatsForExercise(ex);
 
+    // ✅ Type chip + logged badge (resets daily automatically)
+    const type = (item.type === "strength" || item.type === "cardio" || item.type === "core")
+      ? item.type
+      : getExerciseType(ex);
+    item.type = type;
+
+    const logged = hasLoggedTodayForExercise(ex);
+
+    // Strength-only stats for now (we’ll adapt these later when we implement type-aware progress)
+    const {life, thisWeekMax, lastWeekMax} = liftStatsForExercise(ex);
     const isPRThisWeek = (life !== null && thisWeekMax !== null && thisWeekMax === life);
     const prBadge = isPRThisWeek ? `<span class="badge">🏆 PR (this week)</span>` : ``;
 
@@ -3587,7 +4187,12 @@ function renderPPL(){
     card.className = "exerciseItem";
     card.innerHTML = `
       <div class="left">
-        <div class="title">${ex}</div>
+        <div class="title" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <span>${ex}</span>
+          <span class="badge">${type.toUpperCase()}</span>
+          ${logged ? `<span class="badge">✓ Logged</span>` : ``}
+        </div>
+
         <div class="meta">
           <span>${item.sets || "—"} sets</span>
           <span>•</span>
@@ -3618,13 +4223,6 @@ function renderPPL(){
 
   renderLiftSearchDropdown();
 }
-
-document.getElementById("startTodayBtn").addEventListener("click", ()=>{
-  showScreen("routine");
-  activeDayIndex = getTodaySplitIndex();
-  renderPPL();
-  document.getElementById("pplList").scrollIntoView({behavior:"smooth", block:"start"});
-});
 
 
 /* ---------------------------
@@ -3724,14 +4322,12 @@ function openExercisePicker({ title="Pick Exercise", initial="", onConfirm, mult
 
   exPickSearch.value = "";
   renderExercisePickerList();
-  lockBodyScroll();                 // ✅ ADD
-  exPickModal.style.display = "block";
+openModalEl(exPickModal);
 }
 
 
 function closeExercisePicker(){
-  exPickModal.style.display = "none";
-  unlockBodyScroll(); // ✅ ADD THIS
+closeModalEl(exPickModal);
   exPickSelected = "";
   exPickSelectedSet = new Set();
   exPickMulti = false;
@@ -3873,14 +4469,12 @@ function openBatchAddModal(names){
   }));
 
   renderBatchAddList();
-  lockBodyScroll();                 // ✅ ADD
-  batchAddModal.style.display = "block";
+openModalEl(batchAddModal);
 }
 
 
 function closeBatchAddModal(){
-  batchAddModal.style.display = "none";
-  unlockBodyScroll();               // ✅ ADD
+closeModalEl(batchAddModal);             // ✅ ADD
   batchAddItems = [];
 }
 
@@ -3968,12 +4562,15 @@ batchAddConfirmBtn?.addEventListener("click", ()=>{
   const day = draftRoutine.days[k];
 
   batchAddItems.forEach(it=>{
-    day.exercises.push({
-      name: canonicalExerciseName(it.name),
-      sets: Number(it.sets),
-      reps: String(it.reps).trim(),
-      notes: ""
-    });
+const exName = canonicalExerciseName(it.name);
+day.exercises.push({
+  name: exName,
+  type: getExerciseType(exName),
+  sets: Number(it.sets),
+  reps: String(it.reps).trim(),
+  notes: ""
+});
+
   });
 
   closeBatchAddModal();
@@ -4318,13 +4915,11 @@ function openLogModal(exName, defaultSets=3, routineObj=null, dayKey="", dayInde
   logModalSets.innerHTML = "";
   for(let i=0;i<defaultSets;i++) addSetRow();
 
-  lockBodyScroll();
-  logModal.style.display = "block";
+openModalEl(logModal);
 }
 
   function closeLogModal(){
-  logModal.style.display = "none";
-  unlockBodyScroll();               // ✅ ADD
+  closeModalEl(logModal);        // ✅ ADD
   modalExerciseName = null;
   modalLastLift = null;
   modalRoutine = null;
@@ -4453,8 +5048,7 @@ const histExercise = document.getElementById("histExercise");
 const histTable = document.getElementById("histTable");
 
 function closeHistoryModal(){
-  histModal.style.display = "none";
-  unlockBodyScroll();               // ✅ ADD
+ closeModalEl(histModal);             // ✅ ADD
 }
 histCloseBtn.addEventListener("click", closeHistoryModal);
 histModal.addEventListener("click", (e)=>{ if(e.target === histModal) closeHistoryModal(); });
@@ -4488,8 +5082,8 @@ function openHistoryModal(exName){
     histTable.appendChild(tr);
   });
 
-  lockBodyScroll();                 // ✅ required
-  histModal.style.display = "block";
+  openModalEl(histModal);
+
 }
 
 /* ---------------------------
@@ -4585,13 +5179,11 @@ function openRoutineEditor(routineId){
   renderRtDayTabs();
   renderRtDayPanel();
 
-  lockBodyScroll();                 // ✅ ADD
-  rtModal.style.display = "block";
+openModalEl(rtModal);
 }
 
 function closeRoutineEditor(){
-  rtModal.style.display = "none";
-  unlockBodyScroll();               // ✅ ADD
+ closeModalEl(rtModal);            // ✅ ADD
   editRoutineId = null;
   editDayIndex = 0;
   draftRoutine = null;
@@ -4600,29 +5192,6 @@ function closeRoutineEditor(){
 rtCloseBtn.addEventListener("click", closeRoutineEditor);
 rtCancelBtn.addEventListener("click", closeRoutineEditor);
 rtModal.addEventListener("click", (e)=>{ if(e.target === rtModal) closeRoutineEditor(); });
-
-function renderRtDayTabs(){
-  rtDayTabs.innerHTML = "";
-  DAY_KEYS.forEach((k, idx)=>{
-    const day = draftRoutine.days[k];
-    const label = (day.label||"").trim();
-    const rest = !!day.rest;
-
-    const b = document.createElement("div");
-    b.className = "tab" + (idx===editDayIndex ? " active" : "");
-    b.innerHTML = `
-      <span>${k}</span>
-      ${label ? `<span class="badge">${label}</span>` : ""}
-      ${rest ? `<span class="badge">Rest</span>` : ""}
-    `;
-    b.addEventListener("click", ()=>{
-      editDayIndex = idx;
-      renderRtDayTabs();
-      renderRtDayPanel();
-    });
-    rtDayTabs.appendChild(b);
-  });
-}
 
 function renderRtDayPanel(){
   const k = DAY_KEYS[editDayIndex];
@@ -4633,7 +5202,7 @@ function renderRtDayPanel(){
   rtDayRestNotice.style.display = day.rest ? "block" : "none";
 
   rtExList.innerHTML = "";
-  const list = day.exercises || [];
+  const list = Array.isArray(day.exercises) ? day.exercises : (day.exercises = []);
 
   if(!list.length){
     const empty = document.createElement("div");
@@ -4644,13 +5213,24 @@ function renderRtDayPanel(){
   }
 
   list.forEach((ex, idx)=>{
+    // Ensure name + type are always normalized
+    ex.name = canonicalExerciseName(ex.name || "");
+    ex.type = (ex.type === "strength" || ex.type === "cardio" || ex.type === "core")
+      ? ex.type
+      : getExerciseType(ex.name || "");
+
+    const exType = ex.type;
+
     const wrap = document.createElement("div");
     wrap.className = "rtExCard";
 
     wrap.innerHTML = `
       <div class="rtExTop">
         <div class="rtExName">${ex.name || "Exercise"}</div>
-        <span class="badge">${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps</span>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+          <span class="badge">${exType.toUpperCase()}</span>
+          <span class="badge">${(ex.sets || "—")} sets • ${(ex.reps || "—")} reps</span>
+        </div>
       </div>
 
       <div class="row" style="margin-top:10px; align-items:end;">
@@ -4681,55 +5261,80 @@ function renderRtDayPanel(){
       </div>
     `;
 
-    // keep the rest of your event listeners EXACTLY as-is below
-
+    // Field inputs (name / sets / reps / notes)
     wrap.querySelectorAll("[data-field]").forEach(inp=>{
       inp.addEventListener("input", ()=>{
         const field = inp.getAttribute("data-field");
+
         if(field === "sets"){
-          day.exercises[idx][field] = Number(inp.value)||0;
-        }else{
-          day.exercises[idx][field] = inp.value;
+          day.exercises[idx].sets = Number(inp.value) || 0;
+          return;
         }
+
+        if(field === "name"){
+          const newName = canonicalExerciseName(inp.value);
+          day.exercises[idx].name = newName;
+          day.exercises[idx].type = getExerciseType(newName); // ✅ auto-type
+          // Re-render so the type chip updates instantly
+          renderRtDayPanel();
+          return;
+        }
+
+        // reps, notes
+        day.exercises[idx][field] = inp.value;
       });
     });
 
-    wrap.querySelector("[data-up]")?.addEventListener("click", ()=>{
-      if(idx<=0) return;
-      const tmp = day.exercises[idx-1];
-      day.exercises[idx-1] = day.exercises[idx];
-      day.exercises[idx] = tmp;
-      renderRtDayPanel();
-    });
+    // Up/Down/Swap/Remove buttons (existing behavior preserved)
+    const btnUp = wrap.querySelector(`[data-up="${idx}"]`);
+    const btnDown = wrap.querySelector(`[data-down="${idx}"]`);
+    const btnSwap = wrap.querySelector(`[data-swap="${idx}"]`);
+    const btnRemove = wrap.querySelector(`[data-remove="${idx}"]`);
 
-    wrap.querySelector("[data-down]")?.addEventListener("click", ()=>{
-      if(idx>=day.exercises.length-1) return;
-      const tmp = day.exercises[idx+1];
-      day.exercises[idx+1] = day.exercises[idx];
-      day.exercises[idx] = tmp;
-      renderRtDayPanel();
-    });
-
-    wrap.querySelector("[data-remove]")?.addEventListener("click", ()=>{
-      day.exercises.splice(idx,1);
-      renderRtDayPanel();
-    });
-
-    wrap.querySelector("[data-swap]")?.addEventListener("click", ()=>{
-  const cur = day.exercises[idx]?.name || "";
-  openExercisePicker({
-    title: "Swap exercise",
-    initial: cur,
-    onConfirm: (picked)=>{
-    day.exercises[idx].name = canonicalExerciseName(picked);
-      renderRtDayPanel();
+    if(btnUp){
+      btnUp.addEventListener("click", ()=>{
+        if(idx <= 0) return;
+        const tmp = day.exercises[idx-1];
+        day.exercises[idx-1] = day.exercises[idx];
+        day.exercises[idx] = tmp;
+        renderRtDayPanel();
+      });
     }
-  });
-});
+
+    if(btnDown){
+      btnDown.addEventListener("click", ()=>{
+        if(idx >= day.exercises.length-1) return;
+        const tmp = day.exercises[idx+1];
+        day.exercises[idx+1] = day.exercises[idx];
+        day.exercises[idx] = tmp;
+        renderRtDayPanel();
+      });
+    }
+
+    if(btnSwap){
+      btnSwap.addEventListener("click", ()=>{
+        openExercisePicker({
+          onPick: (picked)=>{
+            const exName = canonicalExerciseName(picked);
+            day.exercises[idx].name = exName;
+            day.exercises[idx].type = getExerciseType(exName);
+            renderRtDayPanel();
+          }
+        });
+      });
+    }
+
+    if(btnRemove){
+      btnRemove.addEventListener("click", ()=>{
+        day.exercises.splice(idx, 1);
+        renderRtDayPanel();
+      });
+    }
 
     rtExList.appendChild(wrap);
   });
 }
+
 
 rtDayLabel.addEventListener("input", ()=>{
   const k = DAY_KEYS[editDayIndex];
@@ -4901,13 +5506,7 @@ importFile.addEventListener("change", async ()=>{
     LS.set(KEY_ROUTINES, rts);
     LS.set(KEY_ACTIVE_ROUTINE, arId);
 
-    bwLogs = LS.get(KEY_BW, []);
-    attendance = new Set(LS.get(KEY_ATT, []));
-    proteinMap = LS.get(KEY_PRO, {});
-    lifts = LS.get(KEY_LIFTS, []);
-    ensureLiftCompatibility();
-
-    ({routines, activeId: activeRoutineId} = loadRoutines());
+    reloadCoreState();
 
     // ✅ init data + state first
 renderCal();
@@ -4969,8 +5568,10 @@ function setOnboardingDone(){
 function hasProfileCompleted(){
   const p = LS.get(KEY_PROFILE, null);
   if(!p || typeof p !== "object") return false;
-  return String(p.name || "").trim().length > 0; // you can relax this if name is optional
+  const name = String(p.name || "").trim();
+  return name.length > 0;
 }
+
 
 function hasAtLeastOneRoutine(){
   const rts = LS.get(KEY_ROUTINES, []);
@@ -4992,8 +5593,14 @@ function routeInitialScreen(){
     return;
   }
 
-  // 3) Normal app restore
-  showScreen(localStorage.getItem(KEY_ACTIVE_SCREEN) || "home");
+  // 3) Normal app restore (validate before using)
+  const last = localStorage.getItem(KEY_ACTIVE_SCREEN);
+  if(last && getScreenEl(last)){
+    showScreen(last);
+    return;
+  }
+
+  showScreen("home");
 }
 
   /* ---------------------------
@@ -5063,20 +5670,14 @@ document.addEventListener("click", (e)=>{
    Init (single pass)
 ---------------------------- */
 function init(){
-  // Load core state
-  profile = loadProfile();
-
-  ({routines, activeId: activeRoutineId} = loadRoutines());
-
-  bwLogs = LS.get(KEY_BW, []);
-  attendance = new Set(LS.get(KEY_ATT, []));
-  proteinMap = LS.get(KEY_PRO, {});
-  lifts = LS.get(KEY_LIFTS, []);
-  ensureLiftCompatibility();
-  migrateCanonicalNames();
+  // Load core state (hardened)
+  reloadCoreState();
 
   // Bind once
   bindNavigation();
+
+  bindModalSystem();
+
 
   // Static UI (not screen-specific)
   hydrateSettingsUI();
@@ -5090,12 +5691,12 @@ function init(){
   setLiftView("table");
   applyLiftFiltersFromUI();
 
-  checkForUpdate();        // ✅ ADD THIS LINE
-
+  checkForUpdate();
 
   // Route LAST (this calls showScreen which renders what’s needed)
   routeInitialScreen();
 }
+
 
 window.addEventListener("DOMContentLoaded", init);
 
