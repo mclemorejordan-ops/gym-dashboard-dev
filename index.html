@@ -12,7 +12,7 @@
 
   <title>Gym Dashboard</title>
 
-  <!-- Chart.js (we'll use later in Progress/Weight) -->
+  <!-- Chart.js (used later in Progress/Weight) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <style>
@@ -100,6 +100,10 @@
       color: var(--text);
       font-size: 13px;
       user-select:none;
+      max-width: 52vw;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     main{ padding-top: 10px; }
@@ -120,7 +124,7 @@
       padding: 14px;
     }
     .card h2{
-      margin: 0 0 8px 0;
+      margin: 0 0 10px 0;
       font-size: 14px;
       letter-spacing: .3px;
       color: var(--muted);
@@ -145,6 +149,10 @@
       background: linear-gradient(180deg, rgba(124,92,255,.95), rgba(124,92,255,.75));
       border-color: rgba(124,92,255,.35);
     }
+    .btn.danger{
+      background: rgba(255,92,122,.14);
+      border-color: rgba(255,92,122,.28);
+    }
     .btn:active{ transform: translateY(1px); }
 
     .muted{ color: var(--muted); }
@@ -152,7 +160,7 @@
       display:flex;
       flex-direction:column;
       gap: 4px;
-      padding: 10px 0 0 0;
+      padding: 8px 0 0 0;
     }
     .kpi .big{
       font-size: 22px;
@@ -162,6 +170,133 @@
     .kpi .small{
       font-size: 13px;
       color: var(--muted);
+      line-height: 1.35;
+    }
+
+    /* Form */
+    .form{
+      display:grid;
+      gap: 10px;
+    }
+    .row2{
+      display:grid;
+      gap: 10px;
+    }
+    @media (min-width: 640px){
+      .row2{ grid-template-columns: 1fr 1fr; }
+    }
+    label{
+      display:flex;
+      flex-direction:column;
+      gap: 7px;
+      font-size: 12.5px;
+      color: var(--muted);
+      font-weight: 650;
+      letter-spacing: .2px;
+    }
+    input, select{
+      appearance:none;
+      border-radius: 14px;
+      padding: 12px 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    input::placeholder{ color: rgba(255,255,255,.35); }
+    input:focus, select:focus{
+      border-color: rgba(124,92,255,.40);
+      box-shadow: 0 0 0 4px rgba(124,92,255,.14);
+    }
+
+    .toggle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      border-radius: 14px;
+      padding: 12px 12px;
+    }
+    .toggle .ttext{
+      display:flex;
+      flex-direction:column;
+      gap: 2px;
+    }
+    .toggle .ttext .a{ color: var(--text); font-weight: 700; font-size: 14px; }
+    .toggle .ttext .b{ color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .switch{
+      width: 52px;
+      height: 30px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.14);
+      position: relative;
+      flex: 0 0 auto;
+      cursor:pointer;
+      user-select:none;
+    }
+    .switch::after{
+      content:"";
+      position:absolute;
+      top: 50%;
+      left: 3px;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.82);
+      transition: left .16s ease, background .16s ease;
+    }
+    .switch.on{
+      background: rgba(124,92,255,.30);
+      border-color: rgba(124,92,255,.34);
+    }
+    .switch.on::after{
+      left: 25px;
+      background: rgba(255,255,255,.92);
+    }
+
+    /* Template picker */
+    .tplGrid{
+      display:grid;
+      gap: 10px;
+    }
+    @media (min-width: 640px){
+      .tplGrid{ grid-template-columns: 1fr 1fr; }
+    }
+    .tpl{
+      border-radius: 16px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .06s ease;
+    }
+    .tpl:active{ transform: translateY(1px); }
+    .tpl .name{
+      font-weight: 780;
+      letter-spacing: .2px;
+      margin-bottom: 4px;
+    }
+    .tpl .desc{
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.35;
+    }
+    .tpl.selected{
+      border-color: rgba(124,92,255,.34);
+      background: rgba(124,92,255,.12);
+      box-shadow: 0 0 0 4px rgba(124,92,255,.10);
+    }
+
+    .note{
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.35;
     }
 
     /* Bottom nav */
@@ -321,8 +456,8 @@
     const DefaultState = () => ({
       schemaVersion: 1,
       createdAt: Date.now(),
-      profile: null, // { name, proteinGoal, weekStartsOn, hideRestDays }
-      routines: [],  // later
+      profile: null, // { name, proteinGoal, weekStartsOn: "mon"|"sun", hideRestDays: boolean }
+      routines: [],  // [{ id, name, templateKey, createdAt, days:[{ id, label, isRest, exercises:[] }] }]
       activeRoutineId: null,
       exerciseLibrary: {
         weightlifting: [],
@@ -330,11 +465,11 @@
         core: []
       },
       logs: {
-        workouts: [],   // later
+        workouts: [],
         weight: [],     // { dateISO, weight }
         protein: []     // later
       },
-      attendance: [] // list of dateISO trained
+      attendance: [] // [dateISO]
     });
 
     const Storage = {
@@ -343,7 +478,6 @@
           const raw = localStorage.getItem(STORAGE_KEY);
           if(!raw) return DefaultState();
           const parsed = JSON.parse(raw);
-          // Simple future-proofing:
           if(!parsed || typeof parsed !== "object") return DefaultState();
           if(!("schemaVersion" in parsed)) return DefaultState();
           return parsed;
@@ -362,20 +496,24 @@
     let state = Storage.load();
 
     /********************
-     * 2) Tiny helpers
+     * 2) Helpers
      ********************/
     const $ = (sel, root=document) => root.querySelector(sel);
+
     const el = (tag, attrs={}, children=[]) => {
       const n = document.createElement(tag);
       for (const [k,v] of Object.entries(attrs)){
         if(k === "class") n.className = v;
         else if(k === "text") n.textContent = v;
+        else if(k === "html") n.innerHTML = v;
         else if(k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
         else n.setAttribute(k, v);
       }
       children.forEach(c => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
       return n;
     };
+
+    const uid = (prefix="id") => `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 
     const Dates = {
       todayISO(){
@@ -388,7 +526,116 @@
     };
 
     /********************
-     * 3) Modal
+     * 3) Routine templates (structure only; exercises come later)
+     ********************/
+    const RoutineTemplates = [
+      {
+        key: "ppl",
+        name: "PPL",
+        desc: "Push / Pull / Legs • 6 days + 1 rest",
+        buildDays(){
+          return [
+            { label:"Push", isRest:false },
+            { label:"Pull", isRest:false },
+            { label:"Legs", isRest:false },
+            { label:"Push", isRest:false },
+            { label:"Pull", isRest:false },
+            { label:"Legs", isRest:false },
+            { label:"Rest", isRest:true }
+          ];
+        }
+      },
+      {
+        key: "upper_lower",
+        name: "Upper / Lower",
+        desc: "4 training days • balanced • great for strength + size",
+        buildDays(){
+          return [
+            { label:"Upper", isRest:false },
+            { label:"Lower", isRest:false },
+            { label:"Rest", isRest:true },
+            { label:"Upper", isRest:false },
+            { label:"Lower", isRest:false },
+            { label:"Rest", isRest:true },
+            { label:"Rest", isRest:true }
+          ];
+        }
+      },
+      {
+        key: "full_body_3",
+        name: "Full Body (3-day)",
+        desc: "3 training days • simple and effective",
+        buildDays(){
+          return [
+            { label:"Full Body", isRest:false },
+            { label:"Rest", isRest:true },
+            { label:"Full Body", isRest:false },
+            { label:"Rest", isRest:true },
+            { label:"Full Body", isRest:false },
+            { label:"Rest", isRest:true },
+            { label:"Rest", isRest:true }
+          ];
+        }
+      },
+      {
+        key: "body_part_split",
+        name: "Body Part Split",
+        desc: "Chest/Back/Legs/Shoulders/Arms + rest days",
+        buildDays(){
+          return [
+            { label:"Chest", isRest:false },
+            { label:"Back", isRest:false },
+            { label:"Legs", isRest:false },
+            { label:"Shoulders", isRest:false },
+            { label:"Arms", isRest:false },
+            { label:"Rest", isRest:true },
+            { label:"Rest", isRest:true }
+          ];
+        }
+      },
+      {
+        key: "blank",
+        name: "Blank",
+        desc: "Start from scratch (you’ll add days and exercises)",
+        buildDays(){
+          // default to 7 days, non-rest; user can mark rest days later
+          return [
+            { label:"Day 1", isRest:false },
+            { label:"Day 2", isRest:false },
+            { label:"Day 3", isRest:false },
+            { label:"Day 4", isRest:false },
+            { label:"Day 5", isRest:false },
+            { label:"Day 6", isRest:false },
+            { label:"Day 7", isRest:false }
+          ];
+        }
+      }
+    ];
+
+    function createRoutineFromTemplate(templateKey, routineName){
+      const tpl = RoutineTemplates.find(t => t.key === templateKey);
+      if(!tpl) throw new Error("Invalid template key");
+
+      const routineId = uid("rt");
+      const days = tpl.buildDays().map((d, idx) => ({
+        id: uid("day"),
+        order: idx,
+        label: d.label,
+        isRest: !!d.isRest,
+        exercises: [] // Step 3+ will populate via exercise library
+      }));
+
+      return {
+        id: routineId,
+        name: routineName || tpl.name,
+        templateKey: tpl.key,
+        createdAt: Date.now(),
+        days
+      };
+    }
+
+    /********************
+     * 4) Modal
      ********************/
     const Modal = {
       open({ title, bodyNode }){
@@ -412,7 +659,7 @@
     $("#modalBackdrop").addEventListener("click", Modal.close);
 
     /********************
-     * 4) Router + Views
+     * 5) Router + Views
      ********************/
     const Routes = {
       home: { label: "Home" },
@@ -436,10 +683,19 @@
     function renderNav(){
       const nav = $("#navbar");
       nav.innerHTML = "";
+
+      const disabled = !state.profile;
+
       Object.entries(Routes).forEach(([key, r]) => {
         const btn = el("button", {
           class: "navbtn" + (key === currentRoute ? " active" : ""),
-          onClick: () => navigate(key)
+          onClick: () => {
+            if(disabled){
+              navigate("home"); // keeps onboarding visible
+              return;
+            }
+            navigate(key);
+          }
         }, [
           el("div", { class:"dot" }),
           el("div", { text: r.label })
@@ -459,15 +715,14 @@
       const root = $("#viewRoot");
       root.innerHTML = "";
 
-      // If not onboarded, we gently guide user (we'll implement onboarding next step)
       const needsOnboarding = !state.profile;
 
       if(needsOnboarding){
-        root.appendChild(Views.OnboardingGate());
+        // Always show onboarding on first run
+        root.appendChild(Views.Onboarding());
         return;
       }
 
-      // Normal routes
       if(currentRoute === "home") root.appendChild(Views.Home());
       else if(currentRoute === "routine") root.appendChild(Views.Routine());
       else if(currentRoute === "log") root.appendChild(Views.Log());
@@ -476,49 +731,176 @@
     }
 
     /********************
-     * 5) Views (placeholders now)
+     * 6) Views
      ********************/
     const Views = {
-      OnboardingGate(){
+      Onboarding(){
+        // Local UI state (not persisted until user taps Finish)
+        let name = "";
+        let proteinGoal = "";
+        let weekStartsOn = "mon";
+        let hideRestDays = true;
+        let selectedTpl = "ppl";
+
+        const errorBox = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+        const switchNode = el("div", { class:"switch on" });
+        switchNode.addEventListener("click", () => {
+          hideRestDays = !hideRestDays;
+          switchNode.classList.toggle("on", hideRestDays);
+        });
+
+        const tplCardsHost = el("div", { class:"tplGrid" });
+        const renderTplCards = () => {
+          tplCardsHost.innerHTML = "";
+          RoutineTemplates.forEach(t => {
+            const card = el("div", {
+              class: "tpl" + (t.key === selectedTpl ? " selected" : ""),
+              onClick: () => {
+                selectedTpl = t.key;
+                renderTplCards();
+              }
+            }, [
+              el("div", { class:"name", text: t.name }),
+              el("div", { class:"desc", text: t.desc })
+            ]);
+            tplCardsHost.appendChild(card);
+          });
+        };
+        renderTplCards();
+
+        const nameInput = el("input", { type:"text", placeholder:"Jordan", value:"" });
+        nameInput.addEventListener("input", (e) => name = e.target.value);
+
+        const proteinInput = el("input", { type:"number", inputmode:"numeric", placeholder:"180", value:"", min:"0" });
+        proteinInput.addEventListener("input", (e) => proteinGoal = e.target.value);
+
+        const weekSelect = el("select", {});
+        weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
+        weekSelect.appendChild(el("option", { value:"sun", text:"Sunday" }));
+        weekSelect.value = "mon";
+        weekSelect.addEventListener("change", (e) => weekStartsOn = e.target.value);
+
+        const finish = () => {
+          errorBox.style.display = "none";
+          errorBox.textContent = "";
+
+          const cleanName = (name || "").trim();
+          const cleanProtein = Number(proteinGoal);
+
+          if(!cleanName){
+            errorBox.textContent = "Please enter your name.";
+            errorBox.style.display = "block";
+            return;
+          }
+          if(!Number.isFinite(cleanProtein) || cleanProtein <= 0){
+            errorBox.textContent = "Please enter a valid daily protein goal (grams).";
+            errorBox.style.display = "block";
+            return;
+          }
+
+          const profile = {
+            name: cleanName,
+            proteinGoal: Math.round(cleanProtein),
+            weekStartsOn: (weekStartsOn === "sun" ? "sun" : "mon"),
+            hideRestDays: !!hideRestDays
+          };
+
+          const routineName = RoutineTemplates.find(t => t.key === selectedTpl)?.name || "Routine";
+          const routine = createRoutineFromTemplate(selectedTpl, routineName);
+
+          state.profile = profile;
+          state.routines = [routine];
+          state.activeRoutineId = routine.id;
+
+          Storage.save(state);
+
+          // Enter app
+          navigate("home");
+        };
+
+        const whyCard = el("div", { class:"card" }, [
+          el("h2", { text:"What you’re building" }),
+          el("div", { class:"note", html:
+            "This runs fully on-device for Safari “Add to Home Screen.”<br/>" +
+            "No account, no login, no cloud—unless you export/import backups."
+          })
+        ]);
+
+        const profileCard = el("div", { class:"card" }, [
+          el("h2", { text:"Create profile" }),
+          el("div", { class:"form" }, [
+            el("div", { class:"row2" }, [
+              el("label", {}, [
+                el("span", { text:"Name" }),
+                nameInput
+              ]),
+              el("label", {}, [
+                el("span", { text:"Protein goal (grams/day)" }),
+                proteinInput
+              ])
+            ]),
+            el("div", { class:"row2" }, [
+              el("label", {}, [
+                el("span", { text:"Week starts on" }),
+                weekSelect
+              ]),
+              el("div", { class:"toggle" }, [
+                el("div", { class:"ttext" }, [
+                  el("div", { class:"a", text:"Hide rest days" }),
+                  el("div", { class:"b", text:"Rest days won’t appear on Home (later: Routine can still show them)" })
+                ]),
+                switchNode
+              ])
+            ]),
+            errorBox
+          ])
+        ]);
+
+        const tplCard = el("div", { class:"card" }, [
+          el("h2", { text:"Choose a routine template" }),
+          tplCardsHost,
+          el("div", { style:"height:10px" }),
+          el("div", { class:"btnrow" }, [
+            el("button", { class:"btn primary", onClick: finish }, ["Finish setup"]),
+            el("button", {
+              class:"btn danger",
+              onClick: () => {
+                Modal.open({
+                  title: "Reset local data",
+                  bodyNode: el("div", {}, [
+                    el("div", { class:"note", text:"This clears everything saved in this browser for the app." }),
+                    el("div", { style:"height:12px" }),
+                    el("div", { class:"btnrow" }, [
+                      el("button", {
+                        class:"btn danger",
+                        onClick: () => {
+                          Storage.reset();
+                          state = Storage.load();
+                          Modal.close();
+                          navigate("home");
+                        }
+                      }, ["Reset"]),
+                      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                    ])
+                  ])
+                });
+              }
+            }, ["Reset"])
+          ])
+        ]);
+
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"Welcome" }),
             el("div", { class:"kpi" }, [
-              el("div", { class:"big", text:"Let’s set up your Gym Dashboard" }),
-              el("div", { class:"small", text:"Next step: create your profile and choose a routine template." })
-            ]),
-            el("div", { style:"height:12px" }),
-            el("div", { class:"btnrow" }, [
-              el("button", {
-                class:"btn primary",
-                onClick: () => {
-                  Modal.open({
-                    title: "Onboarding (Next Step)",
-                    bodyNode: el("div", {}, [
-                      el("div", { class:"muted", text:"We’ll build this screen next: profile + routine template picker." }),
-                      el("div", { style:"height:12px" }),
-                      el("button", { class:"btn primary", onClick: () => Modal.close() }, ["Got it"])
-                    ])
-                  });
-                }
-              }, ["Start setup"])
+              el("div", { class:"big", text:"Let’s set up your dashboard" }),
+              el("div", { class:"small", text:"Create your profile and choose a routine template. You can edit everything later." })
             ])
           ]),
-          el("div", { class:"card" }, [
-            el("h2", { text:"Data" }),
-            el("div", { class:"muted", text:"Everything stays on your device (localStorage). Backup/Import comes later." }),
-            el("div", { style:"height:12px" }),
-            el("div", { class:"btnrow" }, [
-              el("button", {
-                class:"btn",
-                onClick: () => {
-                  Storage.reset();
-                  state = Storage.load();
-                  navigate("home");
-                }
-              }, ["Reset local data"])
-            ])
-          ])
+          profileCard,
+          tplCard,
+          whyCard
         ]);
       },
 
@@ -528,7 +910,7 @@
             el("h2", { text:"Today" }),
             el("div", { class:"kpi" }, [
               el("div", { class:"big", text:"Today’s workout" }),
-              el("div", { class:"small", text:"(We’ll auto-generate this from your routine + weekday.)" })
+              el("div", { class:"small", text:"Next step: auto-select workout from your routine + day-of-week." })
             ]),
             el("div", { style:"height:12px" }),
             el("button", { class:"btn primary" }, ["Quick Check-In (coming)"])
@@ -537,7 +919,7 @@
             el("h2", { text:"Protein" }),
             el("div", { class:"kpi" }, [
               el("div", { class:"big", text:"Ring + grams left" }),
-              el("div", { class:"small", text:"(Live updates while typing, for today.)" })
+              el("div", { class:"small", text:`Goal: ${state.profile?.proteinGoal ?? 0}g/day (live updates coming)` })
             ]),
             el("div", { style:"height:12px" }),
             el("button", { class:"btn" }, ["Add meals (coming)"])
@@ -547,8 +929,8 @@
             el("div", { class:"muted", text:"Weekly dots + tap check-in. Calendar view later." })
           ]),
           el("div", { class:"card" }, [
-            el("h2", { text:"Next" }),
-            el("div", { class:"muted", text:"We’ll build onboarding next so Home becomes fully functional." })
+            el("h2", { text:"Routine" }),
+            el("div", { class:"muted", text:`Active routine: ${state.routines.find(r => r.id === state.activeRoutineId)?.name || "—"}` })
           ])
         ]);
       },
@@ -557,7 +939,7 @@
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"Routine" }),
-            el("div", { class:"muted", text:"Multiple routines: create/edit/duplicate/delete, rest days, template conversion." })
+            el("div", { class:"muted", text:"Next step: routine editor + rest day toggle + add exercises from library." })
           ])
         ]);
       },
@@ -566,7 +948,7 @@
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"Log Sets" }),
-            el("div", { class:"muted", text:"Weightlifting / Cardio / Core logging flows + PR tracking + history modal." })
+            el("div", { class:"muted", text:"Next step: Weightlifting/Cardio/Core logging flows + PR tracking + history modal." })
           ])
         ]);
       },
@@ -575,7 +957,7 @@
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"Progress" }),
-            el("div", { class:"muted", text:"Table + Graph (Chart.js): Top Weight, Est. 1RM, Volume, Cardio, Core, export PNG." })
+            el("div", { class:"muted", text:"Next step: Table + Graph (Chart.js) + export PNG." })
           ])
         ]);
       },
@@ -584,7 +966,7 @@
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"More" }),
-            el("div", { class:"muted", text:"Weight, Attendance, Backup/Import, Settings." })
+            el("div", { class:"muted", text:"Next: Weight, Attendance calendar, Backup/Import JSON, Settings." })
           ]),
           el("div", { class:"card" }, [
             el("h2", { text:"Debug" }),
@@ -599,11 +981,27 @@
                 })
               }, ["View state JSON"]),
               el("button", {
-                class:"btn",
+                class:"btn danger",
                 onClick: () => {
-                  Storage.reset();
-                  state = Storage.load();
-                  navigate("home");
+                  Modal.open({
+                    title: "Reset local data",
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"note", text:"This clears everything saved in this browser for the app." }),
+                      el("div", { style:"height:12px" }),
+                      el("div", { class:"btnrow" }, [
+                        el("button", {
+                          class:"btn danger",
+                          onClick: () => {
+                            Storage.reset();
+                            state = Storage.load();
+                            Modal.close();
+                            navigate("home");
+                          }
+                        }, ["Reset"]),
+                        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                      ])
+                    ])
+                  });
                 }
               }, ["Reset local data"])
             ])
@@ -613,7 +1011,7 @@
     };
 
     /********************
-     * 6) Boot
+     * 7) Boot
      ********************/
     renderNav();
     renderView();
