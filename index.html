@@ -3,391 +3,280 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f17" />
+
+  <!-- iOS Add to Home Screen -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#0b0b0f" />
+  <meta name="apple-mobile-web-app-title" content="Gym Dashboard" />
+
   <title>Gym Dashboard</title>
+
+  <!-- Chart.js (we'll use later in Progress/Weight) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <style>
     :root{
-      --bg:#0b0b0f;
-      --panel:#12121a;
-      --panel2:#171725;
-      --text:#f1f1f6;
-      --muted:#a7a7b6;
-      --line:rgba(255,255,255,.08);
-      --accent:#7c5cff;
-      --good:#2ee59d;
-      --warn:#ffcc66;
-      --bad:#ff5c7a;
+      --bg: #0b0f17;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.09);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.62);
+      --hair: rgba(255,255,255,.10);
 
-      --radius:16px;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --accent: #7c5cff;
+      --good: #37d67a;
+      --warn: #ffd166;
+      --bad: #ff5c7a;
 
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --tabbar-h: 64px;
-      --maxw: 920px;
+      --r: 18px;
+      --shadow: 0 18px 40px rgba(0,0,0,.45);
+
+      --navH: 78px;
     }
 
-    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    *{ box-sizing:border-box; }
     html,body{ height:100%; }
     body{
       margin:0;
-      font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 20% 0%, rgba(124,92,255,.14), transparent 60%),
-                  radial-gradient(900px 700px at 90% 30%, rgba(46,229,157,.10), transparent 55%),
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 700px at 20% -10%, rgba(124,92,255,.24), transparent 60%),
+                  radial-gradient(900px 600px at 90% 10%, rgba(55,214,122,.14), transparent 55%),
                   var(--bg);
-      color:var(--text);
-      overflow:hidden;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
     }
 
+    /* iOS safe areas */
     .app{
-      height:100%;
-      display:flex;
-      flex-direction:column;
+      min-height: 100%;
+      padding: env(safe-area-inset-top) 14px calc(var(--navH) + env(safe-area-inset-bottom)) 14px;
+      max-width: 780px;
+      margin: 0 auto;
     }
 
     header{
-      padding: calc(14px + var(--safe-top)) 16px 12px;
-      border-bottom:1px solid var(--line);
-      background: rgba(11,11,15,.86);
-      backdrop-filter: blur(14px);
-      position:relative;
-      z-index:5;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(16px);
+      background: linear-gradient(to bottom, rgba(11,15,23,.88), rgba(11,15,23,.55));
+      padding: 14px 0 10px 0;
     }
-    .header-inner{
-      max-width: var(--maxw);
-      margin:0 auto;
+
+    .topbar{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:12px;
+      gap: 10px;
+      padding: 4px 2px 6px 2px;
     }
+
     .brand{
       display:flex;
       flex-direction:column;
-      gap:2px;
-      min-width:0;
+      gap: 2px;
     }
     .brand .title{
-      font-weight:700;
-      letter-spacing:.2px;
-      font-size:16px;
-      line-height:1.15;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      font-weight: 720;
+      letter-spacing: .2px;
+      font-size: 18px;
+      line-height: 1.15;
     }
     .brand .subtitle{
-      font-size:12px;
-      color:var(--muted);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .header-actions{
-      display:flex; gap:8px; align-items:center;
+      font-size: 12px;
+      color: var(--muted);
     }
 
-    main{
-      flex:1;
-      overflow:auto;
-      padding: 14px 16px calc(18px + var(--tabbar-h) + var(--safe-bottom));
-      -webkit-overflow-scrolling: touch;
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--hair);
+      color: var(--text);
+      font-size: 13px;
+      user-select:none;
     }
-    .container{
-      max-width: var(--maxw);
-      margin:0 auto;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
+
+    main{ padding-top: 10px; }
+
+    .grid{
+      display:grid;
+      gap: 12px;
+    }
+    @media (min-width: 640px){
+      .grid.cols2{ grid-template-columns: 1fr 1fr; }
     }
 
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      padding:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      border: 1px solid var(--hair);
+      border-radius: var(--r);
       box-shadow: var(--shadow);
+      padding: 14px;
     }
     .card h2{
-      margin:0 0 8px 0;
-      font-size:14px;
-      letter-spacing:.2px;
-    }
-    .row{ display:flex; gap:12px; align-items:stretch; flex-wrap:wrap; }
-    .col{ flex:1; min-width: 240px; }
-    .muted{ color:var(--muted); }
-    .small{ font-size:12px; }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.03);
-      font-size:12px;
-      color:var(--muted);
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      letter-spacing: .3px;
+      color: var(--muted);
+      font-weight: 650;
+      text-transform: uppercase;
     }
 
+    .btnrow{ display:flex; gap: 10px; flex-wrap: wrap; }
     .btn{
       appearance:none;
       border:none;
-      outline:none;
-      padding:10px 12px;
-      border-radius:12px;
-      background: rgba(255,255,255,.06);
-      color:var(--text);
-      font-weight:600;
-      letter-spacing:.2px;
       cursor:pointer;
-      border:1px solid var(--line);
-      transition: transform .08s ease, background .2s ease;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 650;
+      color: var(--text);
+      background: rgba(255,255,255,.08);
+      border: 1px solid var(--hair);
       user-select:none;
     }
-    .btn:active{ transform: scale(.98); }
     .btn.primary{
-      background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(124,92,255,.65));
-      border-color: rgba(124,92,255,.45);
+      background: linear-gradient(180deg, rgba(124,92,255,.95), rgba(124,92,255,.75));
+      border-color: rgba(124,92,255,.35);
     }
-    .btn.good{
-      background: linear-gradient(135deg, rgba(46,229,157,.95), rgba(46,229,157,.55));
-      border-color: rgba(46,229,157,.45);
-      color:#07120d;
+    .btn:active{ transform: translateY(1px); }
+
+    .muted{ color: var(--muted); }
+    .kpi{
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+      padding: 10px 0 0 0;
     }
-    .btn.danger{
-      background: linear-gradient(135deg, rgba(255,92,122,.95), rgba(255,92,122,.55));
-      border-color: rgba(255,92,122,.45);
+    .kpi .big{
+      font-size: 22px;
+      font-weight: 760;
+      letter-spacing: .2px;
     }
-    .btn.link{
-      background: transparent;
-      border-color: transparent;
+    .kpi .small{
+      font-size: 13px;
       color: var(--muted);
-      padding:8px 10px;
-    }
-    .btn.icon{
-      width:40px; height:40px; padding:0;
-      display:inline-grid; place-items:center;
-      border-radius:12px;
     }
 
-    .field{
+    /* Bottom nav */
+    .nav{
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: calc(var(--navH) + env(safe-area-inset-bottom));
+      padding: 10px 10px calc(10px + env(safe-area-inset-bottom)) 10px;
+      display:flex;
+      justify-content:center;
+      z-index: 50;
+      pointer-events:none;
+    }
+    .navbar{
+      width: min(780px, calc(100% - 18px));
+      display:flex;
+      justify-content:space-between;
+      gap: 8px;
+      background: rgba(16,20,30,.72);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 22px;
+      padding: 8px;
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 44px rgba(0,0,0,.55);
+      pointer-events:auto;
+    }
+    .navbtn{
+      flex: 1;
+      appearance:none;
+      border:none;
+      background: transparent;
+      color: var(--muted);
+      padding: 10px 6px;
+      border-radius: 16px;
+      font-size: 11.5px;
+      font-weight: 650;
       display:flex;
       flex-direction:column;
-      gap:6px;
-    }
-    label{ font-size:12px; color:var(--muted); }
-    input, select, textarea{
-      background: rgba(255,255,255,.04);
-      color:var(--text);
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:10px 12px;
-      outline:none;
-      font-size:14px;
-    }
-    input::placeholder, textarea::placeholder{ color: rgba(167,167,182,.7); }
-    textarea{ resize: vertical; min-height: 90px; }
-
-    .tabs{
-      position:fixed;
-      left:0; right:0; bottom:0;
-      padding: 8px 10px calc(8px + var(--safe-bottom));
-      background: rgba(11,11,15,.90);
-      backdrop-filter: blur(14px);
-      border-top:1px solid var(--line);
-      z-index:10;
-    }
-    .tabs-inner{
-      max-width: var(--maxw);
-      margin:0 auto;
-      display:grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap:8px;
-    }
-    .tab{
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.03);
-      border-radius: 14px;
-      padding:8px 8px;
-      display:flex;
-      flex-direction:column;
+      gap: 6px;
       align-items:center;
       justify-content:center;
-      gap:4px;
-      color: var(--muted);
-      font-size:11px;
-      user-select:none;
       cursor:pointer;
-      min-height:48px;
+      user-select:none;
     }
-    .tab svg{ width:18px; height:18px; opacity:.9; }
-    .tab.active{
+    .navbtn .dot{
+      width: 26px;
+      height: 26px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .navbtn.active{
       color: var(--text);
-      border-color: rgba(124,92,255,.38);
       background: rgba(124,92,255,.14);
+      border: 1px solid rgba(124,92,255,.22);
+    }
+    .navbtn.active .dot{
+      background: rgba(124,92,255,.22);
+      border-color: rgba(124,92,255,.30);
     }
 
-    .grid2{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
-    @media (max-width: 720px){
-      .grid2{ grid-template-columns: 1fr; }
-      .tabs-inner{ grid-template-columns: repeat(5, 1fr); }
-    }
-
-    /* weekly attendance dots */
-    .dots{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .dot{
-      width:12px; height:12px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.03);
-    }
-    .dot.on{
-      background: rgba(46,229,157,.85);
-      border-color: rgba(46,229,157,.55);
-      box-shadow: 0 0 0 4px rgba(46,229,157,.12);
-    }
-    .dot.today{
-      outline: 2px solid rgba(124,92,255,.6);
-      outline-offset: 2px;
-    }
-
-    /* Protein ring */
-    .ring{
-      display:flex;
-      align-items:center;
-      gap:14px;
-    }
-    .ring svg{ width:82px; height:82px; }
-    .ring .focus{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-      min-width:0;
-    }
-    .ring .focus .big{
-      font-size:22px;
-      font-weight:800;
-      letter-spacing:.2px;
-      line-height:1.05;
-    }
-    .ring .focus .sub{
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    /* modal */
-    .modal-backdrop{
-      position:fixed; inset:0;
-      background: rgba(0,0,0,.55);
+    /* Modal */
+    .modalHost{
+      position: fixed;
+      inset: 0;
       display:none;
       align-items:flex-end;
       justify-content:center;
-      z-index:50;
-      padding: 12px 12px calc(12px + var(--safe-bottom));
+      z-index: 80;
+      padding: 0 10px;
     }
-    .modal-backdrop.show{ display:flex; }
-    .modal{
-      width:min(720px, 100%);
-      background: linear-gradient(180deg, rgba(23,23,37,.98), rgba(18,18,26,.98));
-      border:1px solid var(--line);
-      border-radius: 20px;
-      box-shadow: 0 20px 70px rgba(0,0,0,.55);
-      overflow:hidden;
-      max-height: 86vh;
-      display:flex;
-      flex-direction:column;
+    .modalHost.show{ display:flex; }
+    .backdrop{
+      position:absolute;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
     }
-    .modal header{
-      position:sticky;
-      top:0;
-      padding:14px 14px;
-      border-bottom:1px solid var(--line);
-      background: rgba(18,18,26,.92);
-      backdrop-filter: blur(10px);
-    }
-    .modal .modal-body{
-      padding:14px;
+    .sheet{
+      position:relative;
+      width: min(780px, 100%);
+      max-height: 82vh;
       overflow:auto;
-      -webkit-overflow-scrolling: touch;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
+      background: rgba(16,20,30,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 22px 22px 0 0;
+      box-shadow: 0 22px 60px rgba(0,0,0,.65);
+      padding: 14px;
+      transform: translateY(10px);
     }
-    .modal .modal-actions{
-      padding:12px 14px;
-      border-top:1px solid var(--line);
-      display:flex;
-      gap:10px;
-      justify-content:flex-end;
-      background: rgba(18,18,26,.92);
-    }
-
-    .list{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-    .item{
+    .sheetHeader{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:10px;
-      padding:12px;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      margin-bottom: 10px;
+    }
+    .sheetHeader .h{
+      font-weight: 760;
+      letter-spacing: .2px;
+    }
+    .xbtn{
+      appearance:none;
+      border:none;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--text);
       border-radius: 14px;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.03);
-    }
-    .item .meta{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-      min-width:0;
-    }
-    .item .meta .name{
-      font-weight:700;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .item .meta .desc{
-      font-size:12px;
-      color:var(--muted);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .divider{
-      height:1px;
-      width:100%;
-      background: var(--line);
-      margin:4px 0;
-    }
-
-    .toast{
-      position:fixed;
-      left:50%;
-      transform: translateX(-50%);
-      bottom: calc(var(--tabbar-h) + 14px + var(--safe-bottom));
-      background: rgba(20,20,30,.92);
-      border:1px solid var(--line);
-      color:var(--text);
-      padding:10px 12px;
-      border-radius: 14px;
-      box-shadow: 0 12px 36px rgba(0,0,0,.45);
-      z-index:100;
-      display:none;
-      max-width: min(560px, 92vw);
-    }
-    .toast.show{ display:block; animation: pop .18s ease; }
-    @keyframes pop { from { transform: translateX(-50%) translateY(10px); opacity:0;} to{ transform: translateX(-50%) translateY(0); opacity:1;} }
-
-    /* reduce motion */
-    @media (prefers-reduced-motion: reduce){
-      *{ transition:none !important; animation:none !important; scroll-behavior:auto !important; }
+      padding: 10px 12px;
+      cursor:pointer;
+      font-weight: 700;
     }
   </style>
 </head>
@@ -395,1771 +284,339 @@
 <body>
   <div class="app">
     <header>
-      <div class="header-inner">
+      <div class="topbar">
         <div class="brand">
-          <div class="title" id="hdrTitle">Gym Dashboard</div>
-          <div class="subtitle" id="hdrSubtitle">Offline • Local-only</div>
+          <div class="title" id="appTitle">Gym Dashboard</div>
+          <div class="subtitle" id="appSubtitle">Offline • Add to Home Screen • Local data</div>
         </div>
-        <div class="header-actions">
-          <button class="btn icon" id="btnQuickCheckin" title="Quick Check-In" aria-label="Quick Check-In">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M9 12l2 2 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z" stroke="currentColor" stroke-width="2" opacity=".8"/>
-            </svg>
-          </button>
-          <button class="btn icon" id="btnSettings" title="Settings" aria-label="Settings">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="2"/>
-              <path d="M19.4 15a7.9 7.9 0 0 0 .1-2l2-1.5-2-3.5-2.3.6a7.7 7.7 0 0 0-1.7-1L15 4h-6l-.5 2.6a7.7 7.7 0 0 0-1.7 1L4.5 7 2.5 10.5 4.5 12a7.9 7.9 0 0 0 .1 2l-2 1.5 2 3.5 2.3-.6a7.7 7.7 0 0 0 1.7 1L9 20h6l.5-2.6a7.7 7.7 0 0 0 1.7-1l2.3.6 2-3.5-2-1.5Z" stroke="currentColor" stroke-width="2" opacity=".75"/>
-            </svg>
-          </button>
-        </div>
+        <div class="chip" id="chipStatus">Not set up</div>
       </div>
     </header>
 
-    <main id="main">
-      <div class="container" id="screenRoot"></div>
-    </main>
-
-    <nav class="tabs" role="navigation" aria-label="Bottom Navigation">
-      <div class="tabs-inner">
-        <div class="tab active" data-route="home">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M3 11.5 12 4l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-9.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-          Home
-        </div>
-        <div class="tab" data-route="routine">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M7 7h10M7 12h10M7 17h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="2" opacity=".75"/></svg>
-          Routine
-        </div>
-        <div class="tab" data-route="log">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="2" opacity=".75"/></svg>
-          Log
-        </div>
-        <div class="tab" data-route="progress">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 15l3-4 4 3 5-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Progress
-        </div>
-        <div class="tab" data-route="more">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" stroke="currentColor" stroke-width="2"/></svg>
-          More
-        </div>
-      </div>
-    </nav>
+    <main id="viewRoot"></main>
   </div>
 
-  <!-- MODAL -->
-  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal" role="document" aria-label="Modal">
-      <header>
-        <div class="header-inner" style="padding:0; border:none; background:transparent;">
-          <div class="brand">
-            <div class="title" id="modalTitle">Modal</div>
-            <div class="subtitle" id="modalSubtitle"> </div>
-          </div>
-          <div class="header-actions">
-            <button class="btn icon" id="modalClose" aria-label="Close modal" title="Close">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </header>
-      <div class="modal-body" id="modalBody"></div>
-      <div class="modal-actions" id="modalActions"></div>
+  <div class="nav">
+    <div class="navbar" id="navbar"></div>
+  </div>
+
+  <!-- Modal Host -->
+  <div class="modalHost" id="modalHost" aria-hidden="true">
+    <div class="backdrop" id="modalBackdrop"></div>
+    <div class="sheet" role="dialog" aria-modal="true">
+      <div class="sheetHeader">
+        <div class="h" id="modalTitle">Modal</div>
+        <button class="xbtn" id="modalClose">Close</button>
+      </div>
+      <div id="modalBody"></div>
     </div>
   </div>
 
-  <!-- TOAST -->
-  <div class="toast" id="toast"></div>
-
   <script>
-    /************************************************************
-     * Gym Dashboard (Starter)
-     * Single-file, offline-first, Safari Add-to-Home-Screen ready
-     ************************************************************/
+    /********************
+     * 1) State + Storage
+     ********************/
+    const STORAGE_KEY = "gymdash:v1";
 
-    // ---------- Utilities ----------
-    const $$ = (sel, root=document) => root.querySelector(sel);
-    const $$$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
-    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-    const uid = () => (crypto?.randomUUID?.() ?? ("id_" + Math.random().toString(16).slice(2) + Date.now().toString(16)));
-    const todayISO = () => {
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,'0');
-      const day = String(d.getDate()).padStart(2,'0');
-      return `${y}-${m}-${day}`;
-    };
-    const parseISO = (iso) => {
-      const [y,m,d] = iso.split('-').map(Number);
-      return new Date(y, m-1, d, 12, 0, 0, 0); // midday avoids DST edge
-    };
-    const formatNiceDate = (iso) => {
-      const d = parseISO(iso);
-      return d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
-    };
-    const addDaysISO = (iso, n) => {
-      const d = parseISO(iso);
-      d.setDate(d.getDate() + n);
-      const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,'0');
-      const day = String(d.getDate()).padStart(2,'0');
-      return `${y}-${m}-${day}`;
-    };
-
-    // ---------- Storage ----------
-    const STORAGE_KEY = "gym-dashboard:v1";
-
-    const DEFAULT_STATE = () => ({
-      version: 1,
-      profile: null, // { name, proteinGoal, weekStartsOn: 0|1, hideRestDays: bool }
-      routines: [],  // [{id,name,createdAt,updatedAt,days:[{isRest:boolean,exerciseIds:[]}] }]
+    const DefaultState = () => ({
+      schemaVersion: 1,
+      createdAt: Date.now(),
+      profile: null, // { name, proteinGoal, weekStartsOn, hideRestDays }
+      routines: [],  // later
       activeRoutineId: null,
-      exercises: seedExerciseLibrary(), // [{id,name,type,defaults:{...},createdAt}]
-      logs: [],      // (starter placeholder)
-      attendance: [],// [ "YYYY-MM-DD" ]
-      proteinDays: {}, // { "YYYY-MM-DD": { goal:number, meals:[{id,name,grams}] } }
-      weights: []    // (starter placeholder)
+      exerciseLibrary: {
+        weightlifting: [],
+        cardio: [],
+        core: []
+      },
+      logs: {
+        workouts: [],   // later
+        weight: [],     // { dateISO, weight }
+        protein: []     // later
+      },
+      attendance: [] // list of dateISO trained
     });
 
-    function loadState(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(!raw) return DEFAULT_STATE();
-        const parsed = JSON.parse(raw);
-
-        // Minimal forward safety: if missing keys, merge
-        const base = DEFAULT_STATE();
-        return deepMerge(base, parsed);
-      } catch(e){
-        console.warn("Failed to load state:", e);
-        return DEFAULT_STATE();
-      }
-    }
-
-    function saveState(){
-      try{
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(app.state));
-      } catch(e){
-        console.warn("Failed to save state:", e);
-        toast("Storage is full or blocked. Try exporting a backup.");
-      }
-    }
-
-    function deepMerge(target, source){
-      if(typeof target !== "object" || target === null) return source;
-      if(typeof source !== "object" || source === null) return target;
-
-      if(Array.isArray(target)){
-        return Array.isArray(source) ? source : target;
-      }
-
-      const out = { ...target };
-      for(const k of Object.keys(source)){
-        if(k in target){
-          out[k] = deepMerge(target[k], source[k]);
-        } else {
-          out[k] = source[k];
+    const Storage = {
+      load(){
+        try{
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if(!raw) return DefaultState();
+          const parsed = JSON.parse(raw);
+          // Simple future-proofing:
+          if(!parsed || typeof parsed !== "object") return DefaultState();
+          if(!("schemaVersion" in parsed)) return DefaultState();
+          return parsed;
+        }catch(e){
+          return DefaultState();
         }
+      },
+      save(state){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      },
+      reset(){
+        localStorage.removeItem(STORAGE_KEY);
       }
-      return out;
-    }
-
-    // ---------- Seed exercise library ----------
-    function seedExerciseLibrary(){
-      // Starter set (expand later). Users can add custom.
-      const wl = (name) => ({ id: uid(), name, type:"weightlifting", defaults:{}, createdAt: Date.now() });
-      const cd = (name) => ({ id: uid(), name, type:"cardio", defaults:{}, createdAt: Date.now() });
-      const cr = (name) => ({ id: uid(), name, type:"core", defaults:{}, createdAt: Date.now() });
-
-      return [
-        // Weightlifting (starter)
-        wl("Bench Press (Barbell)"),
-        wl("Squat (Barbell)"),
-        wl("Deadlift (Barbell)"),
-        wl("Overhead Press (Barbell)"),
-        wl("Lat Pulldown"),
-        wl("Seated Cable Row"),
-        wl("Chest Fly (Dumbbell)"),
-        wl("Incline Press (Dumbbell)"),
-        wl("Romanian Deadlift (Dumbbell)"),
-        wl("Lateral Raise (Dumbbell)"),
-        wl("Bicep Curl (Dumbbell)"),
-        wl("Tricep Pushdown"),
-        wl("Leg Press"),
-        wl("Leg Extension"),
-        wl("Hamstring Curl"),
-        wl("Calf Raise"),
-
-        // Cardio (starter)
-        cd("Treadmill Run"),
-        cd("Treadmill Walk"),
-        cd("Stair Climber"),
-        cd("Bike (Stationary)"),
-        cd("Rowing Machine"),
-
-        // Core (starter)
-        cr("Plank"),
-        cr("Crunches"),
-        cr("Hanging Leg Raise"),
-        cr("Russian Twists"),
-        cr("Cable Woodchop"),
-      ];
-    }
-
-    // ---------- Templates ----------
-    const ROUTINE_TEMPLATES = [
-      { key:"ppl", name:"PPL", desc:"Push / Pull / Legs (6-day or flexible)", build: buildTemplatePPL },
-      { key:"ul", name:"Upper / Lower", desc:"4-day split", build: buildTemplateUpperLower },
-      { key:"fb3", name:"Full Body (3-day)", desc:"3-day full body", build: buildTemplateFullBody3 },
-      { key:"bps", name:"Body Part Split", desc:"Classic body part days", build: buildTemplateBodyPartSplit },
-      { key:"blank", name:"Blank", desc:"Start from scratch", build: buildTemplateBlank },
-    ];
-
-    function buildTemplateBlank(){
-      return makeRoutineDays([
-        { name:"Day 1", rest:false },
-        { name:"Day 2", rest:false },
-        { name:"Day 3", rest:false },
-        { name:"Day 4", rest:false },
-        { name:"Day 5", rest:false },
-        { name:"Day 6", rest:false },
-        { name:"Day 7", rest:true  },
-      ]);
-    }
-
-    function buildTemplatePPL(){
-      // 7 days; starter: P P L rest P P L
-      return [
-        { isRest:false, label:"Push", exerciseIds:[] },
-        { isRest:false, label:"Pull", exerciseIds:[] },
-        { isRest:false, label:"Legs", exerciseIds:[] },
-        { isRest:true,  label:"Rest", exerciseIds:[] },
-        { isRest:false, label:"Push", exerciseIds:[] },
-        { isRest:false, label:"Pull", exerciseIds:[] },
-        { isRest:false, label:"Legs", exerciseIds:[] },
-      ];
-    }
-
-    function buildTemplateUpperLower(){
-      return [
-        { isRest:false, label:"Upper", exerciseIds:[] },
-        { isRest:false, label:"Lower", exerciseIds:[] },
-        { isRest:true,  label:"Rest",  exerciseIds:[] },
-        { isRest:false, label:"Upper", exerciseIds:[] },
-        { isRest:false, label:"Lower", exerciseIds:[] },
-        { isRest:true,  label:"Rest",  exerciseIds:[] },
-        { isRest:true,  label:"Rest",  exerciseIds:[] },
-      ];
-    }
-
-    function buildTemplateFullBody3(){
-      return [
-        { isRest:false, label:"Full Body A", exerciseIds:[] },
-        { isRest:true,  label:"Rest",       exerciseIds:[] },
-        { isRest:false, label:"Full Body B", exerciseIds:[] },
-        { isRest:true,  label:"Rest",       exerciseIds:[] },
-        { isRest:false, label:"Full Body C", exerciseIds:[] },
-        { isRest:true,  label:"Rest",       exerciseIds:[] },
-        { isRest:true,  label:"Rest",       exerciseIds:[] },
-      ];
-    }
-
-    function buildTemplateBodyPartSplit(){
-      return [
-        { isRest:false, label:"Chest", exerciseIds:[] },
-        { isRest:false, label:"Back", exerciseIds:[] },
-        { isRest:false, label:"Legs", exerciseIds:[] },
-        { isRest:false, label:"Shoulders", exerciseIds:[] },
-        { isRest:false, label:"Arms", exerciseIds:[] },
-        { isRest:true,  label:"Rest", exerciseIds:[] },
-        { isRest:true,  label:"Rest", exerciseIds:[] },
-      ];
-    }
-
-    function makeRoutineDays(specs){
-      // helper if you later want named days; for now returns consistent 7-day slots
-      return specs.map(s => ({ isRest: !!s.rest, label: s.name ?? (s.rest ? "Rest" : "Workout"), exerciseIds:[] }));
-    }
-
-    // ---------- App ----------
-    const app = {
-      state: loadState(),
-      route: "home",
     };
 
-    // ---------- Toast ----------
-    let toastTimer = null;
-    function toast(msg){
-      const el = $$("#toast");
-      el.textContent = msg;
-      el.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => el.classList.remove("show"), 2300);
-    }
+    let state = Storage.load();
 
-    // ---------- Modal ----------
-    function openModal({ title, subtitle="", body, actions=[] }){
-      $$("#modalTitle").textContent = title;
-      $$("#modalSubtitle").textContent = subtitle || "";
-      const bodyEl = $$("#modalBody");
-      const actionsEl = $$("#modalActions");
-      bodyEl.innerHTML = "";
-      actionsEl.innerHTML = "";
-
-      if(typeof body === "string"){
-        bodyEl.innerHTML = body;
-      } else if(body instanceof HTMLElement){
-        bodyEl.appendChild(body);
-      } else if(Array.isArray(body)){
-        body.forEach(node => bodyEl.appendChild(node));
+    /********************
+     * 2) Tiny helpers
+     ********************/
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const el = (tag, attrs={}, children=[]) => {
+      const n = document.createElement(tag);
+      for (const [k,v] of Object.entries(attrs)){
+        if(k === "class") n.className = v;
+        else if(k === "text") n.textContent = v;
+        else if(k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
+        else n.setAttribute(k, v);
       }
+      children.forEach(c => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+      return n;
+    };
 
-      actions.forEach(a => actionsEl.appendChild(a));
+    const Dates = {
+      todayISO(){
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,"0");
+        const day = String(d.getDate()).padStart(2,"0");
+        return `${y}-${m}-${day}`;
+      }
+    };
 
-      const bd = $$("#modalBackdrop");
-      bd.classList.add("show");
-      bd.setAttribute("aria-hidden", "false");
+    /********************
+     * 3) Modal
+     ********************/
+    const Modal = {
+      open({ title, bodyNode }){
+        $("#modalTitle").textContent = title || "Modal";
+        const host = $("#modalHost");
+        const body = $("#modalBody");
+        body.innerHTML = "";
+        if(bodyNode) body.appendChild(bodyNode);
+        host.classList.add("show");
+        host.setAttribute("aria-hidden","false");
+      },
+      close(){
+        const host = $("#modalHost");
+        host.classList.remove("show");
+        host.setAttribute("aria-hidden","true");
+        $("#modalBody").innerHTML = "";
+      }
+    };
+
+    $("#modalClose").addEventListener("click", Modal.close);
+    $("#modalBackdrop").addEventListener("click", Modal.close);
+
+    /********************
+     * 4) Router + Views
+     ********************/
+    const Routes = {
+      home: { label: "Home" },
+      routine: { label: "Routine" },
+      log: { label: "Log" },
+      progress: { label: "Progress" },
+      more: { label: "More" }
+    };
+
+    let currentRoute = "home";
+
+    function setChip(){
+      const chip = $("#chipStatus");
+      if(state.profile?.name){
+        chip.textContent = `Hi, ${state.profile.name}`;
+      }else{
+        chip.textContent = "Not set up";
+      }
     }
 
-    function closeModal(){
-      const bd = $$("#modalBackdrop");
-      bd.classList.remove("show");
-      bd.setAttribute("aria-hidden", "true");
-    }
-
-    $$("#modalClose").addEventListener("click", closeModal);
-    $$("#modalBackdrop").addEventListener("click", (e) => {
-      if(e.target === e.currentTarget) closeModal();
-    });
-
-    // ---------- Navigation ----------
-    function setRoute(route){
-      app.route = route;
-      $$$(".tab").forEach(t => t.classList.toggle("active", t.dataset.route === route));
-      render();
-      scrollToTop();
-    }
-
-    function scrollToTop(){
-      // Keep it snappy; no smooth scroll in A2HS for some users
-      $$("#main").scrollTop = 0;
-    }
-
-    $$$(".tab").forEach(tab => {
-      tab.addEventListener("click", () => {
-        const route = tab.dataset.route;
-        setRoute(route);
+    function renderNav(){
+      const nav = $("#navbar");
+      nav.innerHTML = "";
+      Object.entries(Routes).forEach(([key, r]) => {
+        const btn = el("button", {
+          class: "navbtn" + (key === currentRoute ? " active" : ""),
+          onClick: () => navigate(key)
+        }, [
+          el("div", { class:"dot" }),
+          el("div", { text: r.label })
+        ]);
+        nav.appendChild(btn);
       });
-    });
-
-    // Header buttons
-    $$("#btnSettings").addEventListener("click", () => setRoute("more"));
-    $$("#btnQuickCheckin").addEventListener("click", () => {
-      doAttendanceToggle(todayISO(), true);
-      render();
-    });
-
-    // ---------- Profile / Onboarding ----------
-    function needsOnboarding(){
-      return !app.state.profile || app.state.routines.length === 0;
     }
 
-    function runOnboarding(){
-      openModal({
-        title: "Welcome",
-        subtitle: "Let’s set up your profile + routine.",
-        body: buildOnboardingUI(),
-        actions: [
-          button("Close", "btn", () => closeModal()),
-        ]
-      });
+    function navigate(routeKey){
+      currentRoute = routeKey;
+      renderNav();
+      renderView();
     }
 
-    function buildOnboardingUI(){
-      const wrap = document.createElement("div");
-      wrap.style.display = "flex";
-      wrap.style.flexDirection = "column";
-      wrap.style.gap = "12px";
-
-      // Profile
-      const profileCard = document.createElement("div");
-      profileCard.className = "card";
-      profileCard.innerHTML = `
-        <h2>Profile</h2>
-        <div class="grid2">
-          <div class="field">
-            <label>Name</label>
-            <input id="obName" type="text" placeholder="Jordan" />
-          </div>
-          <div class="field">
-            <label>Protein goal (grams/day)</label>
-            <input id="obProtein" type="number" min="0" step="1" placeholder="160" />
-          </div>
-          <div class="field">
-            <label>Week starts on</label>
-            <select id="obWeekStart">
-              <option value="0">Sunday</option>
-              <option value="1">Monday</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Hide rest days</label>
-            <select id="obHideRest">
-              <option value="1">Yes</option>
-              <option value="0">No</option>
-            </select>
-          </div>
-        </div>
-      `;
-
-      // Routine templates
-      const routineCard = document.createElement("div");
-      routineCard.className = "card";
-      routineCard.innerHTML = `
-        <h2>Create your first routine</h2>
-        <div class="muted small">Pick a template. You can edit it later.</div>
-        <div class="list" id="obTemplates"></div>
-        <div class="divider"></div>
-        <div class="field">
-          <label>Routine name</label>
-          <input id="obRoutineName" type="text" placeholder="My Routine" />
-        </div>
-      `;
-
-      wrap.appendChild(profileCard);
-      wrap.appendChild(routineCard);
-
-      // Fill template list
-      setTimeout(() => {
-        const list = $$("#obTemplates");
-        list.innerHTML = "";
-        ROUTINE_TEMPLATES.forEach(t => {
-          const el = document.createElement("div");
-          el.className = "item";
-          el.innerHTML = `
-            <div class="meta">
-              <div class="name">${escapeHtml(t.name)}</div>
-              <div class="desc">${escapeHtml(t.desc)}</div>
-            </div>
-            <button class="btn primary">Use</button>
-          `;
-          el.querySelector("button").addEventListener("click", () => {
-            const nameInput = $$("#obRoutineName");
-            if(!nameInput.value.trim()) nameInput.value = t.name;
-
-            // Save profile (if filled)
-            const prof = {
-              name: ($$("#obName").value || "").trim() || "You",
-              proteinGoal: Number($$("#obProtein").value || 0),
-              weekStartsOn: Number($$("#obWeekStart").value || 0),
-              hideRestDays: Boolean(Number($$("#obHideRest").value || 1)),
-            };
-            app.state.profile = prof;
-
-            // Create routine
-            const routineName = (nameInput.value || "").trim() || t.name;
-            const routine = createRoutineFromTemplate(t.key, routineName);
-            app.state.routines.push(routine);
-            app.state.activeRoutineId = routine.id;
-
-            // Ensure protein day goal exists for today
-            ensureProteinDay(todayISO());
-
-            saveState();
-            toast("Setup complete ✅");
-            closeModal();
-            render();
-          });
-          list.appendChild(el);
-        });
-      }, 0);
-
-      return wrap;
-    }
-
-    // ---------- Routine CRUD ----------
-    function createRoutineFromTemplate(templateKey, name){
-      const t = ROUTINE_TEMPLATES.find(x => x.key === templateKey) || ROUTINE_TEMPLATES.find(x => x.key === "blank");
-      const days = t.build();
-      // Ensure exactly 7 slots
-      while(days.length < 7) days.push({ isRest:true, label:"Rest", exerciseIds:[] });
-      if(days.length > 7) days.length = 7;
-
-      const now = Date.now();
-      return {
-        id: uid(),
-        name,
-        templateKey: t.key,
-        createdAt: now,
-        updatedAt: now,
-        days: days.map(d => ({ isRest: !!d.isRest, label: d.label || (d.isRest ? "Rest" : "Workout"), exerciseIds: Array.isArray(d.exerciseIds) ? d.exerciseIds : [] }))
-      };
-    }
-
-    function activeRoutine(){
-      const id = app.state.activeRoutineId;
-      if(!id) return null;
-      return app.state.routines.find(r => r.id === id) || null;
-    }
-
-    function setActiveRoutine(id){
-      app.state.activeRoutineId = id;
-      saveState();
-      toast("Active routine updated");
-      render();
-    }
-
-    function duplicateRoutine(id){
-      const r = app.state.routines.find(x => x.id === id);
-      if(!r) return;
-      const copy = structuredCloneSafe(r);
-      copy.id = uid();
-      copy.name = r.name + " (Copy)";
-      copy.createdAt = Date.now();
-      copy.updatedAt = Date.now();
-      app.state.routines.push(copy);
-      saveState();
-      toast("Routine duplicated");
-      render();
-    }
-
-    function deleteRoutine(id){
-      const idx = app.state.routines.findIndex(x => x.id === id);
-      if(idx < 0) return;
-      const wasActive = (app.state.activeRoutineId === id);
-      app.state.routines.splice(idx, 1);
-      if(wasActive){
-        app.state.activeRoutineId = app.state.routines[0]?.id ?? null;
-      }
-      saveState();
-      toast("Routine deleted");
-      render();
-    }
-
-    function structuredCloneSafe(obj){
-      try { return structuredClone(obj); } catch { return JSON.parse(JSON.stringify(obj)); }
-    }
-
-    // ---------- Attendance ----------
-    function isAttended(iso){
-      return app.state.attendance.includes(iso);
-    }
-
-    function doAttendanceToggle(iso, forceOn=false){
-      const on = isAttended(iso);
-      if(forceOn && !on){
-        app.state.attendance.push(iso);
-        saveState();
-        toast("Checked in ✅");
-        return;
-      }
-      if(on){
-        app.state.attendance = app.state.attendance.filter(x => x !== iso);
-        saveState();
-        toast("Check-in removed");
-      } else {
-        app.state.attendance.push(iso);
-        saveState();
-        toast("Checked in ✅");
-      }
-    }
-
-    // Week helpers
-    function getWeekStartISO(iso, weekStartsOn){
-      // weekStartsOn: 0 Sunday, 1 Monday
-      const d = parseISO(iso);
-      const dow = d.getDay(); // 0..6
-      const shift = (dow - weekStartsOn + 7) % 7;
-      return addDaysISO(iso, -shift);
-    }
-
-    function getWeekDays(iso, weekStartsOn){
-      const start = getWeekStartISO(iso, weekStartsOn);
-      return Array.from({length:7}, (_,i) => addDaysISO(start, i));
-    }
-
-    // ---------- Protein ----------
-    function ensureProteinDay(iso){
-      const profGoal = app.state.profile?.proteinGoal ?? 0;
-      if(!app.state.proteinDays[iso]){
-        app.state.proteinDays[iso] = {
-          goal: profGoal,
-          meals: []
-        };
-        saveState();
-      } else {
-        // If goal is missing/0 but profile has goal, gently keep it synced (starter behavior)
-        if((app.state.proteinDays[iso].goal ?? 0) === 0 && profGoal > 0){
-          app.state.proteinDays[iso].goal = profGoal;
-          saveState();
-        }
-      }
-      return app.state.proteinDays[iso];
-    }
-
-    function proteinTotal(iso){
-      const day = ensureProteinDay(iso);
-      return (day.meals || []).reduce((sum,m)=> sum + Number(m.grams||0), 0);
-    }
-
-    // ---------- Today workout resolver ----------
-    function getTodayRoutineSlot(){
-      const r = activeRoutine();
-      if(!r) return null;
-
-      const prof = app.state.profile || { weekStartsOn: 0 };
-      const iso = todayISO();
-
-      // Determine index 0..6 relative to week start
-      const week = getWeekDays(iso, prof.weekStartsOn);
-      const idx = week.indexOf(iso);
-      const slot = r.days[idx] || null;
-      return { routine: r, idx, iso, slot, label: slot?.label || (slot?.isRest ? "Rest" : "Workout") };
-    }
-
-    // ---------- Render ----------
-    function render(){
-      // header
-      const profName = app.state.profile?.name ?? "Gym Dashboard";
-      $$("#hdrTitle").textContent = app.state.profile ? `Hey, ${profName}` : "Gym Dashboard";
-      $$("#hdrSubtitle").textContent = app.state.profile
-        ? `${formatNiceDate(todayISO())} • Offline • Local-only`
-        : "Offline • Local-only";
-
-      const root = $$("#screenRoot");
+    function renderView(){
+      setChip();
+      const root = $("#viewRoot");
       root.innerHTML = "";
 
-      // Route switch
-      if(app.route === "home") root.appendChild(screenHome());
-      else if(app.route === "routine") root.appendChild(screenRoutine());
-      else if(app.route === "log") root.appendChild(screenLog());
-      else if(app.route === "progress") root.appendChild(screenProgress());
-      else if(app.route === "more") root.appendChild(screenMore());
-      else root.appendChild(screenHome());
+      // If not onboarded, we gently guide user (we'll implement onboarding next step)
+      const needsOnboarding = !state.profile;
 
-      // Onboarding
-      if(needsOnboarding()){
-        // Don’t spam modal if user is already in it
-        if(!$$("#modalBackdrop").classList.contains("show")){
-          runOnboarding();
-        }
-      }
-    }
-
-    // ---------- Screens ----------
-    function screenHome(){
-      const frag = document.createDocumentFragment();
-
-      // Today workout + attendance + protein
-      const row = document.createElement("div");
-      row.className = "row";
-
-      const colLeft = document.createElement("div");
-      colLeft.className = "col";
-      colLeft.appendChild(cardTodayWorkout());
-      colLeft.appendChild(cardAttendanceWeek());
-
-      const colRight = document.createElement("div");
-      colRight.className = "col";
-      colRight.appendChild(cardProteinToday());
-
-      row.appendChild(colLeft);
-      row.appendChild(colRight);
-
-      frag.appendChild(row);
-
-      // Quick actions / placeholders
-      const quick = document.createElement("div");
-      quick.className = "card";
-      quick.innerHTML = `
-        <h2>Quick actions</h2>
-        <div class="muted small">Starter build: this is where quick logging shortcuts will live.</div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-          <button class="btn primary" id="qaLog">Log a set</button>
-          <button class="btn" id="qaRoutine">Edit routine</button>
-          <button class="btn" id="qaProtein">Add meal</button>
-        </div>
-      `;
-      frag.appendChild(quick);
-
-      // wire actions
-      setTimeout(() => {
-        const qaLog = $$("#qaLog");
-        const qaRoutine = $$("#qaRoutine");
-        const qaProtein = $$("#qaProtein");
-
-        qaLog?.addEventListener("click", () => setRoute("log"));
-        qaRoutine?.addEventListener("click", () => setRoute("routine"));
-        qaProtein?.addEventListener("click", () => {
-          setRoute("more");
-          openProteinQuickAdd();
-        });
-      }, 0);
-
-      const container = document.createElement("div");
-      container.className = "container";
-      container.appendChild(frag);
-      return container;
-    }
-
-    function cardTodayWorkout(){
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const res = getTodayRoutineSlot();
-      const prof = app.state.profile;
-
-      if(!res || !prof){
-        card.innerHTML = `
-          <h2>Today’s workout</h2>
-          <div class="muted small">Set up a routine to see today’s plan.</div>
-          <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn primary" id="btnSetup">Start onboarding</button>
-            <button class="btn" id="btnGoRoutine">Go to Routine</button>
-          </div>
-        `;
-        setTimeout(() => {
-          $$("#btnSetup")?.addEventListener("click", runOnboarding);
-          $$("#btnGoRoutine")?.addEventListener("click", () => setRoute("routine"));
-        }, 0);
-        return card;
+      if(needsOnboarding){
+        root.appendChild(Views.OnboardingGate());
+        return;
       }
 
-      const isRest = !!res.slot?.isRest;
-      const hideRest = !!prof.hideRestDays;
-      const label = res.label;
-
-      card.innerHTML = `
-        <h2>Today’s workout</h2>
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-          <div style="min-width:0;">
-            <div style="font-size:18px; font-weight:800; letter-spacing:.2px; line-height:1.15;">
-              ${escapeHtml(label)}
-            </div>
-            <div class="muted small" style="margin-top:4px;">
-              Routine: <strong>${escapeHtml(res.routine.name)}</strong> • Day ${res.idx + 1}/7
-            </div>
-          </div>
-          <span class="pill">${isRest ? "Rest day" : "Training day"}</span>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="muted small">
-          ${isRest
-            ? (hideRest ? "Rest days are hidden in your routine view (toggle in Settings)." : "Rest day—no exercises scheduled yet.")
-            : (res.slot.exerciseIds?.length ? `${res.slot.exerciseIds.length} exercise(s) scheduled.` : "No exercises added yet for today.")}
-        </div>
-
-        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn primary" id="btnEditToday">Edit today</button>
-          <button class="btn" id="btnLogToday">Log</button>
-        </div>
-      `;
-
-      setTimeout(() => {
-        $$("#btnEditToday")?.addEventListener("click", () => {
-          setRoute("routine");
-          openRoutineDayEditor(res.routine.id, res.idx);
-        });
-        $$("#btnLogToday")?.addEventListener("click", () => setRoute("log"));
-      }, 0);
-
-      return card;
+      // Normal routes
+      if(currentRoute === "home") root.appendChild(Views.Home());
+      else if(currentRoute === "routine") root.appendChild(Views.Routine());
+      else if(currentRoute === "log") root.appendChild(Views.Log());
+      else if(currentRoute === "progress") root.appendChild(Views.Progress());
+      else if(currentRoute === "more") root.appendChild(Views.More());
     }
 
-    function cardAttendanceWeek(){
-      const card = document.createElement("div");
-      card.className = "card";
+    /********************
+     * 5) Views (placeholders now)
+     ********************/
+    const Views = {
+      OnboardingGate(){
+        return el("div", { class:"grid" }, [
+          el("div", { class:"card" }, [
+            el("h2", { text:"Welcome" }),
+            el("div", { class:"kpi" }, [
+              el("div", { class:"big", text:"Let’s set up your Gym Dashboard" }),
+              el("div", { class:"small", text:"Next step: create your profile and choose a routine template." })
+            ]),
+            el("div", { style:"height:12px" }),
+            el("div", { class:"btnrow" }, [
+              el("button", {
+                class:"btn primary",
+                onClick: () => {
+                  Modal.open({
+                    title: "Onboarding (Next Step)",
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"muted", text:"We’ll build this screen next: profile + routine template picker." }),
+                      el("div", { style:"height:12px" }),
+                      el("button", { class:"btn primary", onClick: () => Modal.close() }, ["Got it"])
+                    ])
+                  });
+                }
+              }, ["Start setup"])
+            ])
+          ]),
+          el("div", { class:"card" }, [
+            el("h2", { text:"Data" }),
+            el("div", { class:"muted", text:"Everything stays on your device (localStorage). Backup/Import comes later." }),
+            el("div", { style:"height:12px" }),
+            el("div", { class:"btnrow" }, [
+              el("button", {
+                class:"btn",
+                onClick: () => {
+                  Storage.reset();
+                  state = Storage.load();
+                  navigate("home");
+                }
+              }, ["Reset local data"])
+            ])
+          ])
+        ]);
+      },
 
-      const prof = app.state.profile || { weekStartsOn: 0 };
-      const iso = todayISO();
-      const weekDays = getWeekDays(iso, prof.weekStartsOn);
+      Home(){
+        return el("div", { class:"grid cols2" }, [
+          el("div", { class:"card" }, [
+            el("h2", { text:"Today" }),
+            el("div", { class:"kpi" }, [
+              el("div", { class:"big", text:"Today’s workout" }),
+              el("div", { class:"small", text:"(We’ll auto-generate this from your routine + weekday.)" })
+            ]),
+            el("div", { style:"height:12px" }),
+            el("button", { class:"btn primary" }, ["Quick Check-In (coming)"])
+          ]),
+          el("div", { class:"card" }, [
+            el("h2", { text:"Protein" }),
+            el("div", { class:"kpi" }, [
+              el("div", { class:"big", text:"Ring + grams left" }),
+              el("div", { class:"small", text:"(Live updates while typing, for today.)" })
+            ]),
+            el("div", { style:"height:12px" }),
+            el("button", { class:"btn" }, ["Add meals (coming)"])
+          ]),
+          el("div", { class:"card" }, [
+            el("h2", { text:"Attendance" }),
+            el("div", { class:"muted", text:"Weekly dots + tap check-in. Calendar view later." })
+          ]),
+          el("div", { class:"card" }, [
+            el("h2", { text:"Next" }),
+            el("div", { class:"muted", text:"We’ll build onboarding next so Home becomes fully functional." })
+          ])
+        ]);
+      },
 
-      const labels = prof.weekStartsOn === 1
-        ? ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
-        : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      Routine(){
+        return el("div", { class:"grid" }, [
+          el("div", { class:"card" }, [
+            el("h2", { text:"Routine" }),
+            el("div", { class:"muted", text:"Multiple routines: create/edit/duplicate/delete, rest days, template conversion." })
+          ])
+        ]);
+      },
 
-      const dots = weekDays.map((d,i) => {
-        const cls = ["dot"];
-        if(isAttended(d)) cls.push("on");
-        if(d === iso) cls.push("today");
-        const title = `${labels[i]} • ${formatNiceDate(d)}${isAttended(d) ? " • Checked in" : ""}`;
-        return `<span class="${cls.join(" ")}" title="${escapeHtml(title)}"></span>`;
-      }).join("");
+      Log(){
+        return el("div", { class:"grid" }, [
+          el("div", { class:"card" }, [
+            el("h2", { text:"Log Sets" }),
+            el("div", { class:"muted", text:"Weightlifting / Cardio / Core logging flows + PR tracking + history modal." })
+          ])
+        ]);
+      },
 
-      const count = weekDays.filter(isAttended).length;
+      Progress(){
+        return el("div", { class:"grid" }, [
+          el("div", { class:"card" }, [
+            el("h2", { text:"Progress" }),
+            el("div", { class:"muted", text:"Table + Graph (Chart.js): Top Weight, Est. 1RM, Volume, Cardio, Core, export PNG." })
+          ])
+        ]);
+      },
 
-      card.innerHTML = `
-        <h2>Attendance</h2>
-        <div class="muted small">This week: <strong>${count}/7</strong></div>
-        <div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-          <div class="dots" aria-label="Weekly attendance">${dots}</div>
-          <button class="btn good" id="btnCheckin">${isAttended(iso) ? "Checked In ✅" : "Check In"}</button>
-        </div>
-      `;
-
-      setTimeout(() => {
-        $$("#btnCheckin")?.addEventListener("click", () => {
-          doAttendanceToggle(todayISO());
-          render();
-        });
-      }, 0);
-
-      return card;
-    }
-
-    function cardProteinToday(){
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const iso = todayISO();
-      const prof = app.state.profile;
-      const day = ensureProteinDay(iso);
-
-      const goal = Number(day.goal || prof?.proteinGoal || 0);
-      const total = proteinTotal(iso);
-      const left = Math.max(0, goal - total);
-
-      const pct = goal > 0 ? clamp(total / goal, 0, 1) : 0;
-      const ring = proteinRingSVG(pct);
-
-      card.innerHTML = `
-        <h2>Protein</h2>
-        <div class="ring">
-          ${ring}
-          <div class="focus">
-            <div class="big"><span id="proteinLeft">${left}</span>g left</div>
-            <div class="sub"><span id="proteinTotal">${total}</span>g / <span id="proteinGoal">${goal}</span>g today</div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="field">
-          <label>Add quick meal (updates ring live)</label>
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <input id="mealName" type="text" placeholder="Chicken, shake, etc." style="flex:1; min-width:160px;" />
-            <input id="mealGrams" type="number" min="0" step="1" placeholder="grams" style="width:120px;" />
-            <button class="btn primary" id="addMealBtn">Add</button>
-          </div>
-        </div>
-
-        <div class="muted small" style="margin-top:10px;">
-          Tip: Manage meals + goal in <strong>More → Protein</strong>.
-        </div>
-      `;
-
-      // Live ring update while typing grams
-      setTimeout(() => {
-        const gramsEl = $$("#mealGrams");
-        const nameEl = $$("#mealName");
-        const addBtn = $$("#addMealBtn");
-
-        const updateLive = () => {
-          const grams = Number(gramsEl.value || 0);
-          const liveTotal = total + Math.max(0, grams);
-          const liveLeft = Math.max(0, goal - liveTotal);
-          $$("#proteinLeft").textContent = String(liveLeft);
-          $$("#proteinTotal").textContent = String(liveTotal);
-
-          // Update ring stroke
-          const pctLive = goal > 0 ? clamp(liveTotal / goal, 0, 1) : 0;
-          updateProteinRingStroke(pctLive);
-        };
-
-        gramsEl?.addEventListener("input", updateLive);
-
-        addBtn?.addEventListener("click", () => {
-          const grams = Number(gramsEl.value || 0);
-          const nm = (nameEl.value || "").trim() || "Meal";
-          if(grams <= 0){
-            toast("Enter grams first");
-            gramsEl?.focus();
-            return;
-          }
-          const dayObj = ensureProteinDay(iso);
-          dayObj.meals.push({ id: uid(), name: nm, grams });
-          saveState();
-          toast("Meal added");
-          render(); // resets inputs + recalcs totals
-        });
-      }, 0);
-
-      return card;
-    }
-
-    function proteinRingSVG(pct){
-      const r = 34;
-      const c = 2 * Math.PI * r;
-      const dash = (c * pct);
-      const gap = (c - dash);
-      // Keep it simple: track ring + progress ring using currentColor via CSS
-      return `
-        <svg viewBox="0 0 100 100" aria-label="Protein progress ring">
-          <defs>
-            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="rgba(124,92,255,.95)"/>
-              <stop offset="100%" stop-color="rgba(46,229,157,.90)"/>
-            </linearGradient>
-          </defs>
-          <circle cx="50" cy="50" r="${r}" stroke="rgba(255,255,255,.10)" stroke-width="10" fill="none"></circle>
-          <circle id="proteinRing"
-                  cx="50" cy="50" r="${r}"
-                  stroke="url(#ringGrad)" stroke-width="10"
-                  stroke-linecap="round"
-                  fill="none"
-                  stroke-dasharray="${dash} ${gap}"
-                  transform="rotate(-90 50 50)"></circle>
-          <text x="50" y="54" text-anchor="middle" font-size="14" font-weight="800" fill="rgba(241,241,246,.92)">
-            ${Math.round(pct*100)}%
-          </text>
-        </svg>
-      `;
-    }
-
-    function updateProteinRingStroke(pct){
-      const ring = $$("#proteinRing");
-      if(!ring) return;
-      const r = 34;
-      const c = 2 * Math.PI * r;
-      const dash = (c * pct);
-      const gap = (c - dash);
-      ring.setAttribute("stroke-dasharray", `${dash} ${gap}`);
-
-      // Also update the percentage label
-      const svg = ring.closest("svg");
-      const txt = svg?.querySelector("text");
-      if(txt) txt.textContent = `${Math.round(pct*100)}%`;
-    }
-
-    function screenRoutine(){
-      const container = document.createElement("div");
-      container.className = "container";
-
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <h2>Routines</h2>
-        <div class="muted small">Create, edit, duplicate, delete. Templates become saved routines.</div>
-        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn primary" id="btnNewRoutine">New routine</button>
-        </div>
-        <div class="divider"></div>
-        <div class="list" id="routineList"></div>
-      `;
-      container.appendChild(card);
-
-      const active = activeRoutine();
-      if(active){
-        container.appendChild(cardRoutinePreview(active));
+      More(){
+        return el("div", { class:"grid" }, [
+          el("div", { class:"card" }, [
+            el("h2", { text:"More" }),
+            el("div", { class:"muted", text:"Weight, Attendance, Backup/Import, Settings." })
+          ]),
+          el("div", { class:"card" }, [
+            el("h2", { text:"Debug" }),
+            el("div", { class:"btnrow" }, [
+              el("button", {
+                class:"btn",
+                onClick: () => Modal.open({
+                  title: "Current State (JSON)",
+                  bodyNode: el("pre", { style:"white-space:pre-wrap; font-size:12px; color: rgba(255,255,255,.85);" }, [
+                    JSON.stringify(state, null, 2)
+                  ])
+                })
+              }, ["View state JSON"]),
+              el("button", {
+                class:"btn",
+                onClick: () => {
+                  Storage.reset();
+                  state = Storage.load();
+                  navigate("home");
+                }
+              }, ["Reset local data"])
+            ])
+          ])
+        ]);
       }
-
-      setTimeout(() => {
-        $$("#btnNewRoutine")?.addEventListener("click", openCreateRoutineModal);
-
-        const list = $$("#routineList");
-        list.innerHTML = "";
-
-        if(app.state.routines.length === 0){
-          const empty = document.createElement("div");
-          empty.className = "muted small";
-          empty.textContent = "No routines yet. Create one to get started.";
-          list.appendChild(empty);
-          return;
-        }
-
-        app.state.routines.forEach(r => {
-          const el = document.createElement("div");
-          el.className = "item";
-          const isActive = (r.id === app.state.activeRoutineId);
-          el.innerHTML = `
-            <div class="meta">
-              <div class="name">${escapeHtml(r.name)} ${isActive ? "• Active" : ""}</div>
-              <div class="desc">${escapeHtml(templateName(r.templateKey))} • Updated ${new Date(r.updatedAt).toLocaleDateString()}</div>
-            </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-              <button class="btn ${isActive ? "" : "primary"}" data-action="active">${isActive ? "Active" : "Set Active"}</button>
-              <button class="btn" data-action="edit">Edit</button>
-              <button class="btn" data-action="dup">Duplicate</button>
-              <button class="btn danger" data-action="del">Delete</button>
-            </div>
-          `;
-          el.querySelector('[data-action="active"]').addEventListener("click", () => setActiveRoutine(r.id));
-          el.querySelector('[data-action="edit"]').addEventListener("click", () => openRoutineEditor(r.id));
-          el.querySelector('[data-action="dup"]').addEventListener("click", () => duplicateRoutine(r.id));
-          el.querySelector('[data-action="del"]').addEventListener("click", () => confirmDeleteRoutine(r.id));
-          list.appendChild(el);
-        });
-      }, 0);
-
-      return container;
-    }
-
-    function cardRoutinePreview(routine){
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const prof = app.state.profile || { hideRestDays:false };
-      const hideRest = !!prof.hideRestDays;
-
-      const labels = prof.weekStartsOn === 1
-        ? ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
-        : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-      const rows = routine.days.map((d,i) => {
-        if(hideRest && d.isRest) return "";
-        const badge = d.isRest ? `<span class="pill">Rest</span>` : `<span class="pill">Workout</span>`;
-        const exCount = (d.exerciseIds?.length || 0);
-        return `
-          <div class="item">
-            <div class="meta">
-              <div class="name">${labels[i]} • ${escapeHtml(d.label || (d.isRest ? "Rest" : "Workout"))}</div>
-              <div class="desc">${d.isRest ? "No training scheduled" : `${exCount} exercise(s) • Tap to edit`}</div>
-            </div>
-            <div style="display:flex; gap:8px; align-items:center;">
-              ${badge}
-              <button class="btn" data-day="${i}">Edit</button>
-            </div>
-          </div>
-        `;
-      }).join("");
-
-      card.innerHTML = `
-        <h2>Active routine</h2>
-        <div class="muted small"><strong>${escapeHtml(routine.name)}</strong> • Tap a day to edit</div>
-        <div class="divider"></div>
-        <div class="list">${rows || `<div class="muted small">All days are rest days (or hidden).</div>`}</div>
-      `;
-
-      setTimeout(() => {
-        $$$('button[data-day]', card).forEach(btn => {
-          btn.addEventListener("click", () => {
-            const idx = Number(btn.dataset.day);
-            openRoutineDayEditor(routine.id, idx);
-          });
-        });
-      }, 0);
-
-      return card;
-    }
-
-    function openCreateRoutineModal(){
-      const body = document.createElement("div");
-      body.style.display = "flex";
-      body.style.flexDirection = "column";
-      body.style.gap = "12px";
-
-      const nameField = document.createElement("div");
-      nameField.className = "field";
-      nameField.innerHTML = `
-        <label>Routine name</label>
-        <input id="newRoutineName" type="text" placeholder="My Routine" />
-      `;
-
-      const listWrap = document.createElement("div");
-      listWrap.className = "card";
-      listWrap.innerHTML = `
-        <h2 style="margin:0 0 6px 0;">Templates</h2>
-        <div class="muted small">Pick one to create a saved routine.</div>
-        <div class="list" id="newRoutineTemplates" style="margin-top:10px;"></div>
-      `;
-
-      body.appendChild(nameField);
-      body.appendChild(listWrap);
-
-      openModal({
-        title:"New routine",
-        subtitle:"Choose a template to start.",
-        body,
-        actions: [
-          button("Cancel", "btn", closeModal)
-        ]
-      });
-
-      // Populate template buttons
-      const list = $$("#newRoutineTemplates");
-      list.innerHTML = "";
-      ROUTINE_TEMPLATES.forEach(t => {
-        const el = document.createElement("div");
-        el.className = "item";
-        el.innerHTML = `
-          <div class="meta">
-            <div class="name">${escapeHtml(t.name)}</div>
-            <div class="desc">${escapeHtml(t.desc)}</div>
-          </div>
-          <button class="btn primary">Create</button>
-        `;
-        el.querySelector("button").addEventListener("click", () => {
-          const nm = ($$("#newRoutineName").value || "").trim() || t.name;
-          const routine = createRoutineFromTemplate(t.key, nm);
-          app.state.routines.push(routine);
-          app.state.activeRoutineId = routine.id;
-          saveState();
-          toast("Routine created");
-          closeModal();
-          render();
-        });
-        list.appendChild(el);
-      });
-    }
-
-    function confirmDeleteRoutine(id){
-      const r = app.state.routines.find(x => x.id === id);
-      openModal({
-        title: "Delete routine?",
-        subtitle: r ? r.name : "",
-        body: `<div class="muted small">This cannot be undone. (Logs won’t be deleted in this starter build.)</div>`,
-        actions: [
-          button("Cancel", "btn", closeModal),
-          button("Delete", "btn danger", () => { deleteRoutine(id); closeModal(); })
-        ]
-      });
-    }
-
-    function openRoutineEditor(routineId){
-      // Minimal editor in starter: rename + toggle rest days quickly
-      const r = app.state.routines.find(x => x.id === routineId);
-      if(!r) return;
-
-      const body = document.createElement("div");
-      body.style.display = "flex";
-      body.style.flexDirection = "column";
-      body.style.gap = "12px";
-
-      const rename = document.createElement("div");
-      rename.className = "field";
-      rename.innerHTML = `
-        <label>Routine name</label>
-        <input id="editRoutineName" type="text" value="${escapeAttr(r.name)}" />
-      `;
-
-      const restQuick = document.createElement("div");
-      restQuick.className = "card";
-      restQuick.innerHTML = `
-        <h2 style="margin:0 0 6px 0;">Quick rest-day toggles</h2>
-        <div class="muted small">Tap to toggle rest status. Full day editing is in the day editor.</div>
-        <div class="divider"></div>
-        <div class="list" id="restToggleList"></div>
-      `;
-
-      body.appendChild(rename);
-      body.appendChild(restQuick);
-
-      openModal({
-        title:"Edit routine",
-        subtitle:"Rename and adjust day types.",
-        body,
-        actions: [
-          button("Cancel", "btn", closeModal),
-          button("Save", "btn primary", () => {
-            const nm = ($$("#editRoutineName").value || "").trim() || r.name;
-            r.name = nm;
-            r.updatedAt = Date.now();
-            saveState();
-            toast("Routine saved");
-            closeModal();
-            render();
-          })
-        ]
-      });
-
-      setTimeout(() => {
-        const list = $$("#restToggleList");
-        const prof = app.state.profile || { weekStartsOn: 0 };
-        const labels = prof.weekStartsOn === 1
-          ? ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
-          : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-        const renderList = () => {
-          list.innerHTML = "";
-          r.days.forEach((d,i) => {
-            const el = document.createElement("div");
-            el.className = "item";
-            el.innerHTML = `
-              <div class="meta">
-                <div class="name">${labels[i]} • ${escapeHtml(d.label || (d.isRest ? "Rest" : "Workout"))}</div>
-                <div class="desc">${d.isRest ? "Rest" : "Workout"} • ${d.exerciseIds?.length||0} exercise(s)</div>
-              </div>
-              <button class="btn">${d.isRest ? "Set Workout" : "Set Rest"}</button>
-            `;
-            el.querySelector("button").addEventListener("click", () => {
-              d.isRest = !d.isRest;
-              if(d.isRest) d.label = "Rest";
-              r.updatedAt = Date.now();
-              saveState();
-              renderList();
-            });
-            el.addEventListener("dblclick", () => openRoutineDayEditor(r.id, i));
-            list.appendChild(el);
-          });
-        };
-
-        renderList();
-      }, 0);
-    }
-
-    function openRoutineDayEditor(routineId, dayIdx){
-      const r = app.state.routines.find(x => x.id === routineId);
-      if(!r) return;
-      const d = r.days[dayIdx];
-      if(!d) return;
-
-      const prof = app.state.profile || { weekStartsOn: 0 };
-      const labels = prof.weekStartsOn === 1
-        ? ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
-        : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-      const body = document.createElement("div");
-      body.style.display = "flex";
-      body.style.flexDirection = "column";
-      body.style.gap = "12px";
-
-      const top = document.createElement("div");
-      top.className = "card";
-      top.innerHTML = `
-        <h2 style="margin:0 0 8px 0;">${labels[dayIdx]} • Day ${dayIdx+1}</h2>
-        <div class="grid2">
-          <div class="field">
-            <label>Day label</label>
-            <input id="dayLabel" type="text" value="${escapeAttr(d.label || "")}" placeholder="${d.isRest ? "Rest" : "Workout"}" />
-          </div>
-          <div class="field">
-            <label>Day type</label>
-            <select id="dayType">
-              <option value="workout">Workout</option>
-              <option value="rest">Rest</option>
-            </select>
-          </div>
-        </div>
-        <div class="divider"></div>
-        <div class="muted small">Starter: exercise scheduling UI will be added next. For now, this day editor manages rest/day labels.</div>
-      `;
-
-      body.appendChild(top);
-
-      openModal({
-        title: "Edit day",
-        subtitle: `${r.name}`,
-        body,
-        actions: [
-          button("Cancel", "btn", closeModal),
-          button("Save", "btn primary", () => {
-            const newLabel = ($$("#dayLabel").value || "").trim();
-            const type = $$("#dayType").value;
-            d.isRest = (type === "rest");
-            d.label = newLabel || (d.isRest ? "Rest" : (d.label || "Workout"));
-            r.updatedAt = Date.now();
-            saveState();
-            toast("Day saved");
-            closeModal();
-            render();
-          })
-        ]
-      });
-
-      setTimeout(() => {
-        $$("#dayType").value = d.isRest ? "rest" : "workout";
-      }, 0);
-    }
-
-    function templateName(key){
-      const t = ROUTINE_TEMPLATES.find(x => x.key === key);
-      return t ? t.name : "Routine";
-    }
-
-    function screenLog(){
-      const container = document.createElement("div");
-      container.className = "container";
-
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <h2>Log sets</h2>
-        <div class="muted small">
-          Starter build: logging UI comes next.
-          This screen is reserved for Weightlifting/Cardio/Core set logging + PR/history.
-        </div>
-        <div class="divider"></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn primary" id="stubLog">Plan: Log weightlifting set</button>
-          <button class="btn" id="stubHistory">Plan: Exercise history modal</button>
-        </div>
-      `;
-      container.appendChild(card);
-
-      setTimeout(() => {
-        $$("#stubLog")?.addEventListener("click", () => toast("Logging UI will be added in Phase 3"));
-        $$("#stubHistory")?.addEventListener("click", () => toast("History modal will be added in Phase 3"));
-      }, 0);
-
-      return container;
-    }
-
-    function screenProgress(){
-      const container = document.createElement("div");
-      container.className = "container";
-
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <h2>Progress</h2>
-        <div class="muted small">
-          Starter build: Chart.js views (table + graph) will be added next.
-          This screen will include: Top Weight, Est 1RM (Epley), Volume, Cardio/Core metrics, and Export PNG.
-        </div>
-        <div class="divider"></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn primary" id="stubChart">Plan: Graph view</button>
-          <button class="btn" id="stubTable">Plan: Table view</button>
-        </div>
-      `;
-      container.appendChild(card);
-
-      setTimeout(() => {
-        $$("#stubChart")?.addEventListener("click", () => toast("Charts will be added in Phase 4"));
-        $$("#stubTable")?.addEventListener("click", () => toast("Tables will be added in Phase 4"));
-      }, 0);
-
-      return container;
-    }
-
-    function screenMore(){
-      const container = document.createElement("div");
-      container.className = "container";
-
-      container.appendChild(cardMoreMenu());
-      container.appendChild(cardSettings());
-
-      return container;
-    }
-
-    function cardMoreMenu(){
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <h2>More</h2>
-        <div class="list" style="margin-top:10px;">
-          <div class="item" id="moreProtein">
-            <div class="meta">
-              <div class="name">Protein</div>
-              <div class="desc">Meals + daily goal</div>
-            </div>
-            <button class="btn">Open</button>
-          </div>
-          <div class="item" id="moreAttendance">
-            <div class="meta">
-              <div class="name">Attendance</div>
-              <div class="desc">Calendar view + monthly count</div>
-            </div>
-            <button class="btn">Open</button>
-          </div>
-          <div class="item" id="moreBackup">
-            <div class="meta">
-              <div class="name">Backup / Import</div>
-              <div class="desc">Export JSON or import overwrite</div>
-            </div>
-            <button class="btn">Open</button>
-          </div>
-        </div>
-      `;
-
-      setTimeout(() => {
-        $$("#moreProtein")?.addEventListener("click", openProteinManager);
-        $$("#moreAttendance")?.addEventListener("click", openAttendanceManager);
-        $$("#moreBackup")?.addEventListener("click", openBackupManager);
-      }, 0);
-
-      return card;
-    }
-
-    function cardSettings(){
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const prof = app.state.profile || { name:"", proteinGoal:0, weekStartsOn:0, hideRestDays:true };
-
-      card.innerHTML = `
-        <h2>Settings</h2>
-        <div class="grid2">
-          <div class="field">
-            <label>Name</label>
-            <input id="setName" type="text" value="${escapeAttr(prof.name || "")}" placeholder="Your name" />
-          </div>
-          <div class="field">
-            <label>Protein goal (grams/day)</label>
-            <input id="setProtein" type="number" min="0" step="1" value="${escapeAttr(String(prof.proteinGoal ?? 0))}" />
-          </div>
-          <div class="field">
-            <label>Week starts on</label>
-            <select id="setWeekStart">
-              <option value="0">Sunday</option>
-              <option value="1">Monday</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Hide rest days</label>
-            <select id="setHideRest">
-              <option value="1">Yes</option>
-              <option value="0">No</option>
-            </select>
-          </div>
-        </div>
-
-        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
-          <button class="btn" id="btnReset">Factory reset</button>
-          <button class="btn primary" id="btnSaveSettings">Save settings</button>
-        </div>
-
-        <div class="divider"></div>
-        <div class="muted small">
-          Your data lives only in this browser (localStorage). Use Backup/Import for migration.
-        </div>
-      `;
-
-      setTimeout(() => {
-        $$("#setWeekStart").value = String(prof.weekStartsOn ?? 0);
-        $$("#setHideRest").value = prof.hideRestDays ? "1" : "0";
-
-        $$("#btnSaveSettings")?.addEventListener("click", () => {
-          const name = ($$("#setName").value || "").trim() || "You";
-          const proteinGoal = Number($$("#setProtein").value || 0);
-          const weekStartsOn = Number($$("#setWeekStart").value || 0);
-          const hideRestDays = Boolean(Number($$("#setHideRest").value || 1));
-
-          app.state.profile = { name, proteinGoal, weekStartsOn, hideRestDays };
-
-          // keep today's protein day goal aligned (starter behavior)
-          ensureProteinDay(todayISO());
-          app.state.proteinDays[todayISO()].goal = proteinGoal;
-
-          saveState();
-          toast("Settings saved");
-          render();
-        });
-
-        $$("#btnReset")?.addEventListener("click", () => {
-          openModal({
-            title:"Factory reset?",
-            subtitle:"This will erase all local data.",
-            body:`<div class="muted small">You can export a backup first in More → Backup / Import.</div>`,
-            actions:[
-              button("Cancel", "btn", closeModal),
-              button("Reset", "btn danger", () => {
-                localStorage.removeItem(STORAGE_KEY);
-                app.state = loadState();
-                closeModal();
-                toast("Reset complete");
-                setRoute("home");
-              })
-            ]
-          });
-        });
-      }, 0);
-
-      return card;
-    }
-
-    // ---------- More: Protein manager ----------
-    function openProteinQuickAdd(){
-      // Called from Home quick action
-      openProteinManager(true);
-    }
-
-    function openProteinManager(focusQuickAdd=false){
-      const iso = todayISO();
-      const day = ensureProteinDay(iso);
-
-      const body = document.createElement("div");
-      body.style.display = "flex";
-      body.style.flexDirection = "column";
-      body.style.gap = "12px";
-
-      const summary = document.createElement("div");
-      summary.className = "card";
-
-      const goal = Number(day.goal || app.state.profile?.proteinGoal || 0);
-      const total = proteinTotal(iso);
-      const left = Math.max(0, goal - total);
-
-      summary.innerHTML = `
-        <h2 style="margin:0 0 6px 0;">Today • ${escapeHtml(formatNiceDate(iso))}</h2>
-        <div class="muted small">Total: <strong>${total}g</strong> • Left: <strong>${left}g</strong> • Goal: <strong>${goal}g</strong></div>
-        <div class="divider"></div>
-        <div class="grid2">
-          <div class="field">
-            <label>Daily goal (grams)</label>
-            <input id="pmGoal" type="number" min="0" step="1" value="${escapeAttr(String(goal))}" />
-          </div>
-          <div class="field">
-            <label>Add meal</label>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <input id="pmMealName" type="text" placeholder="Meal name" style="flex:1; min-width:160px;" />
-              <input id="pmMealGrams" type="number" min="0" step="1" placeholder="grams" style="width:120px;" />
-            </div>
-          </div>
-        </div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; margin-top:10px;">
-          <button class="btn primary" id="pmAdd">Add meal</button>
-        </div>
-      `;
-
-      const mealsCard = document.createElement("div");
-      mealsCard.className = "card";
-      mealsCard.innerHTML = `
-        <h2 style="margin:0 0 6px 0;">Meals</h2>
-        <div class="muted small">Tap delete to remove a meal.</div>
-        <div class="divider"></div>
-        <div class="list" id="pmMeals"></div>
-      `;
-
-      body.appendChild(summary);
-      body.appendChild(mealsCard);
-
-      openModal({
-        title:"Protein",
-        subtitle:"Daily breakdown",
-        body,
-        actions:[
-          button("Close", "btn", closeModal),
-          button("Save", "btn primary", () => {
-            const newGoal = Number($$("#pmGoal").value || 0);
-            const obj = ensureProteinDay(iso);
-            obj.goal = newGoal;
-            saveState();
-            toast("Protein goal saved");
-            closeModal();
-            render();
-          })
-        ]
-      });
-
-      setTimeout(() => {
-        const renderMeals = () => {
-          const list = $$("#pmMeals");
-          list.innerHTML = "";
-          const obj = ensureProteinDay(iso);
-
-          if((obj.meals || []).length === 0){
-            const empty = document.createElement("div");
-            empty.className = "muted small";
-            empty.textContent = "No meals yet.";
-            list.appendChild(empty);
-            return;
-          }
-
-          obj.meals.forEach(m => {
-            const el = document.createElement("div");
-            el.className = "item";
-            el.innerHTML = `
-              <div class="meta">
-                <div class="name">${escapeHtml(m.name || "Meal")}</div>
-                <div class="desc">${Number(m.grams||0)}g protein</div>
-              </div>
-              <button class="btn danger">Delete</button>
-            `;
-            el.querySelector("button").addEventListener("click", () => {
-              obj.meals = obj.meals.filter(x => x.id !== m.id);
-              saveState();
-              renderMeals();
-            });
-            list.appendChild(el);
-          });
-        };
-
-        renderMeals();
-
-        $$("#pmAdd")?.addEventListener("click", () => {
-          const nm = ($$("#pmMealName").value || "").trim() || "Meal";
-          const grams = Number($$("#pmMealGrams").value || 0);
-          if(grams <= 0){
-            toast("Enter grams first");
-            $$("#pmMealGrams")?.focus();
-            return;
-          }
-          const obj = ensureProteinDay(iso);
-          obj.meals.push({ id: uid(), name: nm, grams });
-          saveState();
-          $$("#pmMealName").value = "";
-          $$("#pmMealGrams").value = "";
-          toast("Meal added");
-          renderMeals();
-        });
-
-        if(focusQuickAdd){
-          $$("#pmMealName")?.focus();
-        }
-      }, 0);
-    }
-
-    // ---------- More: Attendance manager (starter modal placeholder) ----------
-    function openAttendanceManager(){
-      const iso = todayISO();
-      const prof = app.state.profile || { weekStartsOn:0 };
-      const week = getWeekDays(iso, prof.weekStartsOn);
-      const count = week.filter(isAttended).length;
-
-      openModal({
-        title:"Attendance",
-        subtitle:"Starter modal (calendar view coming next)",
-        body: `
-          <div class="card">
-            <h2 style="margin:0 0 6px 0;">This week</h2>
-            <div class="muted small">Checked in: <strong>${count}/7</strong></div>
-            <div class="divider"></div>
-            <div class="muted small">
-              Phase 4 will add: tap calendar days trained, monthly count, clear month.
-            </div>
-          </div>
-          <div class="card">
-            <h2 style="margin:0 0 6px 0;">Quick actions</h2>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-              <button class="btn good" id="amCheckin">${isAttended(iso) ? "Checked in ✅" : "Check in today"}</button>
-              <button class="btn" id="amClose">Close</button>
-            </div>
-          </div>
-        `,
-        actions:[]
-      });
-
-      setTimeout(() => {
-        $$("#amCheckin")?.addEventListener("click", () => {
-          doAttendanceToggle(todayISO());
-          closeModal();
-          render();
-        });
-        $$("#amClose")?.addEventListener("click", closeModal);
-      }, 0);
-    }
-
-    // ---------- More: Backup manager ----------
-    function openBackupManager(){
-      const body = document.createElement("div");
-      body.style.display = "flex";
-      body.style.flexDirection = "column";
-      body.style.gap = "12px";
-
-      const exportCard = document.createElement("div");
-      exportCard.className = "card";
-      exportCard.innerHTML = `
-        <h2 style="margin:0 0 6px 0;">Export</h2>
-        <div class="muted small">Downloads a JSON backup of your entire app data.</div>
-        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn primary" id="bkExport">Export JSON</button>
-        </div>
-      `;
-
-      const importCard = document.createElement("div");
-      importCard.className = "card";
-      importCard.innerHTML = `
-        <h2 style="margin:0 0 6px 0;">Import</h2>
-        <div class="muted small">Import JSON and overwrite current browser data.</div>
-        <div class="divider"></div>
-        <div class="field">
-          <label>Paste backup JSON</label>
-          <textarea id="bkJson" placeholder='{"version":1,"profile":...}'></textarea>
-        </div>
-        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
-          <button class="btn danger" id="bkImport">Import (Overwrite)</button>
-        </div>
-      `;
-
-      body.appendChild(exportCard);
-      body.appendChild(importCard);
-
-      openModal({
-        title:"Backup / Import",
-        subtitle:"Keep your data safe",
-        body,
-        actions:[
-          button("Close", "btn", closeModal)
-        ]
-      });
-
-      setTimeout(() => {
-        $$("#bkExport")?.addEventListener("click", () => {
-          const data = JSON.stringify(app.state, null, 2);
-          const blob = new Blob([data], { type:"application/json" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `gym-dashboard-backup-${todayISO()}.json`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-          toast("Backup exported");
-        });
-
-        $$("#bkImport")?.addEventListener("click", () => {
-          const txt = ($$("#bkJson").value || "").trim();
-          if(!txt){
-            toast("Paste JSON first");
-            return;
-          }
-          let parsed = null;
-          try{
-            parsed = JSON.parse(txt);
-          } catch(e){
-            toast("Invalid JSON");
-            return;
-          }
-
-          openModal({
-            title:"Confirm import overwrite",
-            subtitle:"This will replace current local data",
-            body:`<div class="muted small">If you’re unsure, export first. Proceed?</div>`,
-            actions:[
-              button("Cancel", "btn", closeModal),
-              button("Overwrite", "btn danger", () => {
-                app.state = deepMerge(DEFAULT_STATE(), parsed);
-                saveState();
-                toast("Import complete");
-                closeModal(); // close confirm
-                closeModal(); // close backup modal
-                render();
-              })
-            ]
-          });
-        });
-      }, 0);
-    }
-
-    // ---------- Helpers ----------
-    function button(text, cls, onClick){
-      const b = document.createElement("button");
-      b.className = cls;
-      b.textContent = text;
-      b.addEventListener("click", onClick);
-      return b;
-    }
-
-    function escapeHtml(s){
-      return String(s ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
-    function escapeAttr(s){ return escapeHtml(s).replaceAll("\n"," "); }
-
-    // ---------- Startup ----------
-    (function init(){
-      // Ensure today's protein day exists after profile set
-      if(app.state.profile) ensureProteinDay(todayISO());
-
-      // If there are routines but no active routine set, pick first
-      if(app.state.routines.length > 0 && !app.state.activeRoutineId){
-        app.state.activeRoutineId = app.state.routines[0].id;
-        saveState();
-      }
-
-      // Default route
-      setRoute("home");
-    })();
+    };
+
+    /********************
+     * 6) Boot
+     ********************/
+    renderNav();
+    renderView();
   </script>
 </body>
 </html>
