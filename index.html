@@ -346,6 +346,77 @@
       color: var(--muted);
       line-height: 1.2;
     }
+        /* Log Sets */
+    .logGrid{ display:grid; gap:12px; }
+    .logRow2{ display:grid; gap:10px; }
+    @media (min-width: 640px){
+      .logRow2{ grid-template-columns: 1fr 1fr; }
+    }
+    .log3{ display:grid; gap:10px; }
+    @media (min-width: 640px){
+      .log3{ grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    .chiprow{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .chip2{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      color: var(--text);
+      font-size: 12.5px;
+      font-weight: 700;
+      user-select:none;
+    }
+
+    .sets{
+      display:grid;
+      gap:10px;
+    }
+    .setCard{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      border-radius: 16px;
+      padding: 12px;
+      display:grid;
+      gap: 10px;
+    }
+    .setTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .setTop .t{
+      font-weight: 820;
+      letter-spacing:.15px;
+    }
+    .mini2{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      border-radius: 12px;
+      padding: 10px 10px;
+      font-weight: 750;
+      font-size: 12px;
+      color: var(--text);
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      user-select:none;
+    }
+    .mini2.danger{
+      background: rgba(255,92,122,.14);
+      border-color: rgba(255,92,122,.28);
+    }
+
+    .hr{
+      height:1px;
+      background: rgba(255,255,255,.10);
+      margin: 10px 0;
+    }
         /* Routine Editor */
     .pillrow{ display:flex; gap:8px; flex-wrap:wrap; }
     .pill{
@@ -1061,6 +1132,190 @@
     function totalProtein(dateISO){
       const p = getProteinForDate(dateISO);
       return (p.meals || []).reduce((sum,m) => sum + (Number(m.grams)||0), 0);
+    }
+        /********************
+     * 4d) Log Sets + PR Engine (Step 6)
+     ********************/
+    const Logs = {
+      ensure(){
+        state.logs = state.logs || { workouts: [], weight: [], protein: [] };
+        state.logs.workouts = state.logs.workouts || [];
+      },
+
+      addWorkout(entry){
+        this.ensure();
+        const e = {
+          id: uid("wlog"),
+          createdAt: Date.now(),
+          ...entry
+        };
+        state.logs.workouts.push(e);
+        Storage.save(state);
+        return e;
+      },
+
+      listWorkouts(){
+        this.ensure();
+        return state.logs.workouts;
+      },
+
+      byExercise(type, exerciseId){
+        this.ensure();
+        return state.logs.workouts
+          .filter(w => w.exerciseType === type && w.exerciseId === exerciseId)
+          .sort((a,b) => (a.dateISO || "").localeCompare(b.dateISO || "") || (a.createdAt - b.createdAt));
+      },
+
+      recent(limit=12){
+        this.ensure();
+        const arr = [...state.logs.workouts];
+        arr.sort((a,b) => (b.createdAt - a.createdAt));
+        return arr.slice(0, limit);
+      },
+
+      deleteWorkout(id){
+        this.ensure();
+        const idx = state.logs.workouts.findIndex(w => w.id === id);
+        if(idx >= 0){
+          state.logs.workouts.splice(idx, 1);
+          Storage.save(state);
+        }
+      }
+    };
+
+    const PR = {
+      // Compute stats for a workout entry (single exercise session)
+      stats(entry){
+        const t = entry.exerciseType;
+
+        if(t === "weightlifting"){
+          let topWeight = 0;
+          let best1RM = 0;
+          let volume = 0;
+
+          (entry.sets || []).forEach(s => {
+            const w = Number(s.weight) || 0;
+            const r = Number(s.reps) || 0;
+            if(w > topWeight) topWeight = w;
+            const epley = w > 0 && r > 0 ? (w * (1 + (r / 30))) : 0;
+            if(epley > best1RM) best1RM = epley;
+            volume += (w * r);
+          });
+
+          return {
+            topWeight,
+            est1RM: round2(best1RM),
+            volume: round2(volume)
+          };
+        }
+
+        if(t === "cardio"){
+          const timeMin = Number(entry.cardio?.timeMin) || 0;
+          const distance = Number(entry.cardio?.distance) || 0;
+          const incline = entry.cardio?.incline == null ? null : Number(entry.cardio?.incline);
+          const pace = (timeMin > 0 && distance > 0) ? (timeMin / distance) : 0; // min per unit
+          return {
+            timeMin: round2(timeMin),
+            distance: round2(distance),
+            incline: (incline == null || Number.isNaN(incline)) ? null : round2(incline),
+            pace: round3(pace) // lower is better
+          };
+        }
+
+        // core
+        const sets = Number(entry.core?.sets) || 0;
+        const reps = Number(entry.core?.reps) || 0;
+        const timeSec = Number(entry.core?.timeSec) || 0;
+        const weight = Number(entry.core?.weight) || 0;
+        return {
+          sets,
+          reps,
+          timeSec,
+          weight
+        };
+      },
+
+      // Compare this entry to a prior-best snapshot; return which metrics are PR
+      prFlags(type, stats, priorBest){
+        const flags = {};
+
+        if(type === "weightlifting"){
+          flags.topWeight = stats.topWeight > (priorBest?.topWeight || 0);
+          flags.est1RM = stats.est1RM > (priorBest?.est1RM || 0);
+          flags.volume = stats.volume > (priorBest?.volume || 0);
+          return flags;
+        }
+
+        if(type === "cardio"){
+          // PR rules: distance max, time max? typically pace lower is better and distance higher is better
+          flags.distance = stats.distance > (priorBest?.distance || 0);
+          flags.timeMin = stats.timeMin > (priorBest?.timeMin || 0);
+          // pace PR: smaller pace is better, but only if pace > 0
+          const priorPace = priorBest?.pace || 0;
+          flags.pace = (stats.pace > 0) && (priorPace === 0 || stats.pace < priorPace);
+          return flags;
+        }
+
+        // core
+        flags.sets = stats.sets > (priorBest?.sets || 0);
+        flags.reps = stats.reps > (priorBest?.reps || 0);
+        flags.timeSec = stats.timeSec > (priorBest?.timeSec || 0);
+        flags.weight = stats.weight > (priorBest?.weight || 0);
+        return flags;
+      },
+
+      // Recompute best stats for an exercise across ALL logs (used by history modal + save)
+      bestForExercise(type, exerciseId){
+        const history = Logs.byExercise(type, exerciseId);
+        let best = null;
+
+        history.forEach(entry => {
+          const s = PR.stats(entry);
+          if(!best) best = { ...s };
+          else best = mergeBest(type, best, s);
+        });
+
+        return best;
+      }
+    };
+
+    function mergeBest(type, best, next){
+      const out = { ...best };
+      if(type === "weightlifting"){
+        out.topWeight = Math.max(best.topWeight || 0, next.topWeight || 0);
+        out.est1RM = Math.max(best.est1RM || 0, next.est1RM || 0);
+        out.volume = Math.max(best.volume || 0, next.volume || 0);
+        return out;
+      }
+      if(type === "cardio"){
+        out.distance = Math.max(best.distance || 0, next.distance || 0);
+        out.timeMin = Math.max(best.timeMin || 0, next.timeMin || 0);
+        // pace lower is better (but ignore 0s)
+        const bp = best.pace || 0;
+        const np = next.pace || 0;
+        if(bp === 0) out.pace = np;
+        else if(np === 0) out.pace = bp;
+        else out.pace = Math.min(bp, np);
+        // incline not tracked as PR metric in best
+        return out;
+      }
+      // core
+      out.sets = Math.max(best.sets || 0, next.sets || 0);
+      out.reps = Math.max(best.reps || 0, next.reps || 0);
+      out.timeSec = Math.max(best.timeSec || 0, next.timeSec || 0);
+      out.weight = Math.max(best.weight || 0, next.weight || 0);
+      return out;
+    }
+
+    function round2(n){ return Math.round((Number(n)||0)*100)/100; }
+    function round3(n){ return Math.round((Number(n)||0)*1000)/1000; }
+
+    function fmtPaceMinPerUnit(p){
+      if(!p || p <= 0) return "—";
+      const totalSec = Math.round(p * 60);
+      const mm = Math.floor(totalSec / 60);
+      const ss = String(totalSec % 60).padStart(2,"0");
+      return `${mm}:${ss} / unit`;
     }
     /********************
      * 5) Modal
@@ -2285,13 +2540,506 @@
         paint();
         return root;
       },
-      Log(){
-        return el("div", { class:"grid" }, [
-          el("div", { class:"card" }, [
-            el("h2", { text:"Log Sets" }),
-            el("div", { class:"muted", text:"Next step: Weightlifting/Cardio/Core logging flows + PR tracking + history modal." })
-          ])
+          Log(){
+        ExerciseLibrary.ensureSeeded();
+        LogEngine.ensure();
+
+        const todayISO = Dates.todayISO();
+        let dateISO = todayISO;
+
+        // Source: planned exercises for today (if any), otherwise library
+        const { routine, day } = getTodayWorkout();
+        const planned = (!day || day.isRest) ? [] : (day.exercises || []);
+
+        let type = "weightlifting";
+        let exerciseId = null;
+
+        // if planned exists, default to first planned exercise
+        if(planned.length > 0){
+          const first = planned[0];
+          type = first.type;
+          exerciseId = first.exerciseId;
+        } else {
+          // otherwise default to first in library for weightlifting
+          exerciseId = (state.exerciseLibrary.weightlifting?.[0]?.id) || null;
+        }
+
+        // local set drafts
+        let sets = [];
+
+        const root = el("div", { class:"grid" });
+
+        const header = el("div", { class:"card" }, [
+          el("h2", { text:"Log Sets" }),
+          el("div", { class:"note", text:"Log Weightlifting, Cardio, or Core. Includes history and lifetime PR detection." }),
         ]);
+
+        const workspace = el("div", { class:"card" }, [
+          el("h2", { text:"Entry" })
+        ]);
+
+        root.appendChild(header);
+        root.appendChild(workspace);
+
+        const dateInput = el("input", { type:"date", value: dateISO });
+        dateInput.addEventListener("change", () => {
+          dateISO = dateInput.value || todayISO;
+          repaint();
+        });
+
+        const typeSelect = el("select", {});
+        ["weightlifting","cardio","core"].forEach(t => {
+          typeSelect.appendChild(el("option", { value:t, text: t === "weightlifting" ? "Weightlifting" : (t === "cardio" ? "Cardio" : "Core") }));
+        });
+        typeSelect.value = type;
+        typeSelect.addEventListener("change", () => {
+          type = typeSelect.value;
+          exerciseId = pickFirstExerciseForType(type);
+          sets = defaultSetsForType(type);
+          repaint();
+        });
+
+        const exSelect = el("select", {});
+        exSelect.addEventListener("change", () => {
+          exerciseId = exSelect.value || null;
+          sets = defaultSetsForType(type);
+          repaint();
+        });
+
+        const plannedChip = el("div", { class:"note" });
+
+        const actionsRow = el("div", { class:"btnrow" }, [
+          el("button", { class:"btn", onClick: () => openHistoryModal() }, ["History"]),
+          el("button", { class:"btn primary", onClick: () => saveEntry() }, ["Save entry"])
+        ]);
+
+        const setsHost = el("div", { class:"sets" });
+        const kpiHost = el("div", { class:"note" });
+
+        workspace.appendChild(el("div", { class:"logRow2" }, [
+          el("label", {}, [ el("span", { text:"Date" }), dateInput ]),
+          el("label", {}, [ el("span", { text:"Type" }), typeSelect ])
+        ]));
+
+        workspace.appendChild(el("div", { class:"logRow2" }, [
+          el("label", {}, [ el("span", { text:"Exercise" }), exSelect ]),
+          el("div", { style:"display:flex; align-items:end; gap:10px; flex-wrap:wrap;" }, [
+            el("button", { class:"btn", onClick: () => openCreateExerciseModal() }, ["Create exercise"]),
+            el("button", { class:"btn", onClick: () => navigate("routine") }, ["Edit routine"])
+          ])
+        ]));
+
+        workspace.appendChild(el("div", { style:"height:8px" }));
+        workspace.appendChild(plannedChip);
+        workspace.appendChild(el("div", { class:"hr" }));
+        workspace.appendChild(setsHost);
+        workspace.appendChild(el("div", { style:"height:8px" }));
+        workspace.appendChild(kpiHost);
+        workspace.appendChild(el("div", { style:"height:10px" }));
+        workspace.appendChild(actionsRow);
+
+        // init
+        sets = defaultSetsForType(type);
+        repaint();
+        return root;
+
+        function pickFirstExerciseForType(t){
+          // prefer planned matching type (today)
+          const plannedMatch = planned.find(p => p.type === t);
+          if(plannedMatch) return plannedMatch.exerciseId;
+
+          return (state.exerciseLibrary?.[t]?.[0]?.id) || null;
+        }
+
+        function defaultSetsForType(t){
+          if(t === "weightlifting"){
+            return [
+              { id: uid("set"), weight:"", reps:"" },
+              { id: uid("set"), weight:"", reps:"" },
+              { id: uid("set"), weight:"", reps:"" }
+            ];
+          }
+          if(t === "cardio"){
+            // single set default
+            return [
+              { id: uid("set"), timeMin:"", timeSec:"", distance:"", incline:"" }
+            ];
+          }
+          // core
+          return [
+            { id: uid("set"), sets:"", reps:"", timeMin:"", timeSec:"", weight:"" }
+          ];
+        }
+
+        function repaint(){
+          // planned indicator
+          if(planned.length > 0 && day && !day.isRest){
+            plannedChip.textContent = `Planned today (${day.label}): ${planned.length} exercises`;
+          }else if(day?.isRest){
+            plannedChip.textContent = "Today is marked as a Rest Day in your routine.";
+          }else{
+            plannedChip.textContent = "No planned exercises for today. Select from your library.";
+          }
+
+          // exercise dropdown
+          exSelect.innerHTML = "";
+          const list = (state.exerciseLibrary?.[type] || []).slice().sort((a,b) => (a.name||"").localeCompare(b.name||""));
+          if(list.length === 0){
+            exSelect.appendChild(el("option", { value:"", text:"No exercises — create one" }));
+            exerciseId = null;
+          }else{
+            list.forEach(x => exSelect.appendChild(el("option", { value:x.id, text:x.name })));
+            if(!exerciseId || !list.some(x => x.id === exerciseId)) exerciseId = list[0].id;
+            exSelect.value = exerciseId;
+          }
+
+          // sets UI
+          setsHost.innerHTML = "";
+          if(type === "weightlifting") renderWeightliftingSets();
+          else if(type === "cardio") renderCardioSets();
+          else renderCoreSets();
+
+          // KPI lifetime info
+          if(exerciseId){
+            const bests = LogEngine.lifetimeBests(type, exerciseId);
+            kpiHost.textContent = buildLifetimeText(type, bests);
+          }else{
+            kpiHost.textContent = "Create/select an exercise to see lifetime stats.";
+          }
+        }
+
+        function buildLifetimeText(t, bests){
+          if(t === "weightlifting"){
+            const bw = bests.bestWeight === null ? "—" : `${bests.bestWeight}`;
+            const b1 = bests.best1RM === null ? "—" : `${bests.best1RM}`;
+            const bv = bests.bestVolume === null ? "—" : `${bests.bestVolume}`;
+            return `Lifetime: Top Weight ${bw} • Est 1RM ${b1} • Best Volume ${bv}`;
+          }
+          if(t === "cardio"){
+            const bp = bests.bestPace === null ? "—" : formatPace(bests.bestPace);
+            return `Lifetime: Best Pace ${bp} (lower is better)`;
+          }
+          const bv = bests.bestVolume === null ? "—" : `${bests.bestVolume}`;
+          return `Lifetime: Best Core Volume ${bv}`;
+        }
+
+        function renderWeightliftingSets(){
+          const addBtn = el("button", {
+            class:"btn",
+            onClick: () => { sets.push({ id: uid("set"), weight:"", reps:"" }); repaint(); }
+          }, ["Add set"]);
+
+          sets.forEach((s, idx) => {
+            const w = el("input", { type:"number", inputmode:"decimal", placeholder:"Weight", value: s.weight ?? "", min:"0" });
+            const r = el("input", { type:"number", inputmode:"numeric", placeholder:"Reps", value: s.reps ?? "", min:"0" });
+
+            w.addEventListener("input", () => { s.weight = w.value; });
+            r.addEventListener("input", () => { s.reps = r.value; });
+
+            setsHost.appendChild(el("div", { class:"setCard" }, [
+              el("div", { class:"setTop" }, [
+                el("div", { class:"t", text:`Set ${idx+1}` }),
+                el("button", {
+                  class:"mini2 danger",
+                  onClick: () => { sets = sets.filter(x => x.id !== s.id); repaint(); }
+                }, ["Remove"])
+              ]),
+              el("div", { class:"logRow2" }, [
+                el("label", {}, [ el("span", { text:"Weight" }), w ]),
+                el("label", {}, [ el("span", { text:"Reps" }), r ])
+              ])
+            ]));
+          });
+
+          setsHost.appendChild(el("div", { class:"btnrow" }, [addBtn]));
+        }
+
+        function renderCardioSets(){
+          // single set
+          const s = sets[0] || (sets[0] = { id: uid("set"), timeMin:"", timeSec:"", distance:"", incline:"" });
+
+          const tMin = el("input", { type:"number", inputmode:"numeric", placeholder:"Min", value: s.timeMin ?? "", min:"0" });
+          const tSec = el("input", { type:"number", inputmode:"numeric", placeholder:"Sec", value: s.timeSec ?? "", min:"0", max:"59" });
+          const dist = el("input", { type:"number", inputmode:"decimal", placeholder:"Distance", value: s.distance ?? "", min:"0" });
+
+          const supportsIncline = !!(state.exerciseLibrary?.cardio || []).find(x => x.id === exerciseId)?.supportsIncline;
+          const incline = el("input", { type:"number", inputmode:"decimal", placeholder:"Incline", value: s.incline ?? "", min:"0" });
+          incline.disabled = !supportsIncline;
+
+          tMin.addEventListener("input", () => { s.timeMin = tMin.value; });
+          tSec.addEventListener("input", () => { s.timeSec = tSec.value; });
+          dist.addEventListener("input", () => { s.distance = dist.value; });
+          incline.addEventListener("input", () => { s.incline = incline.value; });
+
+          const timeSec = (Number(s.timeMin)||0)*60 + (Number(s.timeSec)||0);
+          const pace = (Number(s.distance)||0) > 0 ? (timeSec / Number(s.distance)) : null;
+
+          setsHost.appendChild(el("div", { class:"setCard" }, [
+            el("div", { class:"setTop" }, [
+              el("div", { class:"t", text:"Cardio" }),
+              el("div", { class:"chip2", text: `Pace: ${formatPace(pace)}` })
+            ]),
+            el("div", { class:"log3" }, [
+              el("label", {}, [ el("span", { text:"Time (min)" }), tMin ]),
+              el("label", {}, [ el("span", { text:"Time (sec)" }), tSec ]),
+              el("label", {}, [ el("span", { text:"Distance" }), dist ])
+            ]),
+            el("div", { class:"logRow2" }, [
+              el("label", {}, [ el("span", { text:"Incline (optional)" }), incline ]),
+              el("div", { class:"note", text: supportsIncline ? "Incline enabled for this exercise." : "Incline disabled for this exercise." })
+            ])
+          ]));
+        }
+
+        function renderCoreSets(){
+          // allow multiple core blocks
+          const addBtn = el("button", {
+            class:"btn",
+            onClick: () => { sets.push({ id: uid("set"), sets:"", reps:"", timeMin:"", timeSec:"", weight:"" }); repaint(); }
+          }, ["Add block"]);
+
+          sets.forEach((s, idx) => {
+            const setsIn = el("input", { type:"number", inputmode:"numeric", placeholder:"Sets", value: s.sets ?? "", min:"0" });
+            const repsIn = el("input", { type:"number", inputmode:"numeric", placeholder:"Reps", value: s.reps ?? "", min:"0" });
+
+            const minIn = el("input", { type:"number", inputmode:"numeric", placeholder:"Min", value: s.timeMin ?? "", min:"0" });
+            const secIn = el("input", { type:"number", inputmode:"numeric", placeholder:"Sec", value: s.timeSec ?? "", min:"0", max:"59" });
+
+            const wIn = el("input", { type:"number", inputmode:"decimal", placeholder:"Weight (optional)", value: s.weight ?? "", min:"0" });
+
+            setsIn.addEventListener("input", () => { s.sets = setsIn.value; });
+            repsIn.addEventListener("input", () => { s.reps = repsIn.value; });
+            minIn.addEventListener("input", () => { s.timeMin = minIn.value; });
+            secIn.addEventListener("input", () => { s.timeSec = secIn.value; });
+            wIn.addEventListener("input", () => { s.weight = wIn.value; });
+
+            setsHost.appendChild(el("div", { class:"setCard" }, [
+              el("div", { class:"setTop" }, [
+                el("div", { class:"t", text:`Core block ${idx+1}` }),
+                el("button", { class:"mini2 danger", onClick: () => { sets = sets.filter(x => x.id !== s.id); repaint(); } }, ["Remove"])
+              ]),
+              el("div", { class:"logRow2" }, [
+                el("label", {}, [ el("span", { text:"Sets" }), setsIn ]),
+                el("label", {}, [ el("span", { text:"Reps (optional)" }), repsIn ])
+              ]),
+              el("div", { class:"log3" }, [
+                el("label", {}, [ el("span", { text:"Time (min, optional)" }), minIn ]),
+                el("label", {}, [ el("span", { text:"Time (sec, optional)" }), secIn ]),
+                el("label", {}, [ el("span", { text:"Weight (optional)" }), wIn ])
+              ])
+            ]));
+          });
+
+          setsHost.appendChild(el("div", { class:"btnrow" }, [addBtn]));
+        }
+
+        function openCreateExerciseModal(){
+          Modal.open({
+            title: `Create ${type === "weightlifting" ? "Weightlifting" : (type === "cardio" ? "Cardio" : "Core")} exercise`,
+            bodyNode: buildExerciseFormShared({
+              mode: "add",
+              type,
+              initial: null,
+              onSave: (data, showError) => {
+                try{
+                  const ex = ExerciseLibrary.add(type, data);
+                  Modal.close();
+                  exerciseId = ex.id;
+                  typeSelect.value = type;
+                  sets = defaultSetsForType(type);
+                  repaint();
+                }catch(e){
+                  showError(e.message || "Unable to create exercise.");
+                }
+              }
+            })
+          });
+        }
+
+        function saveEntry(){
+          if(!exerciseId){
+            Modal.open({
+              title:"Missing exercise",
+              bodyNode: el("div", {}, [
+                el("div", { class:"note", text:"Select or create an exercise before saving." }),
+                el("div", { style:"height:12px" }),
+                el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+              ])
+            });
+            return;
+          }
+
+          const nameSnap = resolveExerciseName(type, exerciseId, "");
+
+          // normalize sets by type
+          let normalizedSets = [];
+          let summary = {};
+          if(type === "weightlifting"){
+            normalizedSets = sets.map(s => ({
+              id: s.id,
+              weight: Number(s.weight) || 0,
+              reps: Math.max(0, Math.floor(Number(s.reps) || 0))
+            })).filter(s => s.weight > 0 || s.reps > 0);
+
+            if(normalizedSets.length === 0){
+              return showSaveError("Add at least one set with weight/reps.");
+            }
+
+            summary = LogEngine.computeWeightliftingSummary(normalizedSets);
+          } else if(type === "cardio"){
+            const s = sets[0] || {};
+            const t = (Number(s.timeMin)||0)*60 + (Number(s.timeSec)||0);
+            const d = Number(s.distance) || 0;
+            const inc = (s.incline === "" || s.incline === null || typeof s.incline === "undefined") ? null : Number(s.incline);
+
+            if(t <= 0 || d <= 0){
+              return showSaveError("Cardio requires time and distance.");
+            }
+
+            normalizedSets = [{
+              id: s.id || uid("set"),
+              timeSec: t,
+              distance: d,
+              incline: Number.isFinite(inc) ? inc : null
+            }];
+
+            summary = LogEngine.computeCardioSummary(normalizedSets);
+          } else {
+            normalizedSets = sets.map(s => ({
+              id: s.id,
+              sets: Math.max(0, Math.floor(Number(s.sets) || 0)),
+              reps: Math.max(0, Math.floor(Number(s.reps) || 0)),
+              timeSec: (Number(s.timeMin)||0)*60 + (Number(s.timeSec)||0),
+              weight: Number(s.weight) || 0
+            })).filter(s => s.sets > 0);
+
+            if(normalizedSets.length === 0){
+              return showSaveError("Core requires at least Sets > 0.");
+            }
+
+            summary = LogEngine.computeCoreSummary(normalizedSets);
+          }
+
+          const pr = LogEngine.computePRFlags(type, exerciseId, summary);
+
+          const entry = {
+            id: uid("log"),
+            dateISO,
+            type,
+            exerciseId,
+            nameSnap,
+            createdAt: Date.now(),
+            sets: normalizedSets,
+            summary,
+            pr
+          };
+
+          LogEngine.addEntry(entry);
+
+          // show PR toast if any
+          const prMsgs = [];
+          if(pr.isPRWeight) prMsgs.push("Top Weight PR");
+          if(pr.isPR1RM) prMsgs.push("Est 1RM PR");
+          if(pr.isPRVolume) prMsgs.push("Volume PR");
+          if(pr.isPRPace) prMsgs.push("Pace PR");
+
+          Modal.open({
+            title: prMsgs.length ? "Saved + PR!" : "Saved",
+            bodyNode: el("div", {}, [
+              el("div", { class:"note", text: prMsgs.length ? prMsgs.join(" • ") : "Entry saved." }),
+              el("div", { style:"height:12px" }),
+              el("div", { class:"btnrow" }, [
+                el("button", { class:"btn primary", onClick: () => { Modal.close(); repaint(); } }, ["OK"]),
+                el("button", { class:"btn", onClick: () => { Modal.close(); openHistoryModal(); } }, ["View history"])
+              ])
+            ])
+          });
+
+          // reset draft sets for next entry
+          sets = defaultSetsForType(type);
+          repaint();
+        }
+
+        function showSaveError(msg){
+          Modal.open({
+            title:"Can’t save",
+            bodyNode: el("div", {}, [
+              el("div", { class:"note", text: msg }),
+              el("div", { style:"height:12px" }),
+              el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+            ])
+          });
+        }
+
+        function openHistoryModal(){
+          if(!exerciseId){
+            return Modal.open({
+              title:"History",
+              bodyNode: el("div", {}, [
+                el("div", { class:"note", text:"Select an exercise first." }),
+                el("div", { style:"height:12px" }),
+                el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+              ])
+            });
+          }
+
+          const name = resolveExerciseName(type, exerciseId, "");
+          const entries = LogEngine.entriesForExercise(type, exerciseId).slice(0, 30);
+
+          const list = el("div", { class:"list" });
+
+          if(entries.length === 0){
+            list.appendChild(el("div", { class:"note", text:"No history yet." }));
+          }else{
+            entries.forEach(e => {
+              list.appendChild(el("div", { class:"item" }, [
+                el("div", { class:"left" }, [
+                  el("div", { class:"name", text: e.dateISO }),
+                  el("div", { class:"meta", text: historySummaryLine(e) })
+                ]),
+                el("div", { class:"actions" }, [
+                  el("div", { class:"meta", text: prBadges(e.pr) })
+                ])
+              ]));
+            });
+          }
+
+          Modal.open({
+            title: `History: ${name}`,
+            bodyNode: el("div", {}, [
+              el("div", { class:"note", text:"Most recent first." }),
+              el("div", { style:"height:10px" }),
+              list
+            ])
+          });
+        }
+
+        function historySummaryLine(e){
+          if(e.type === "weightlifting"){
+            const bw = Number.isFinite(e.summary?.bestWeight) ? e.summary.bestWeight : "—";
+            const b1 = Number.isFinite(e.summary?.best1RM) ? e.summary.best1RM : "—";
+            const vol = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
+            return `Top W: ${bw} • Est1RM: ${b1} • Vol: ${vol}`;
+          }
+          if(e.type === "cardio"){
+            const t = Number.isFinite(e.summary?.timeSec) ? formatTime(e.summary.timeSec) : "—";
+            const d = Number.isFinite(e.summary?.distance) ? e.summary.distance : "—";
+            const p = formatPace(e.summary?.paceSecPerUnit);
+            return `Time: ${t} • Dist: ${d} • Pace: ${p}`;
+          }
+          const vol = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
+          return `Core Vol: ${vol}`;
+        }
+
+        function prBadges(pr){
+          if(!pr) return "";
+          const b = [];
+          if(pr.isPRWeight) b.push("PR W");
+          if(pr.isPR1RM) b.push("PR 1RM");
+          if(pr.isPRVolume) b.push("PR Vol");
+          if(pr.isPRPace) b.push("PR Pace");
+          return b.join(" • ");
+        }
       },
 
       Progress(){
@@ -2356,7 +3104,8 @@
      ********************/
     // If already onboarded and library is empty, seed it (won't overwrite non-empty)
     if(state.profile) ExerciseLibrary.ensureSeeded();
-
+    // Step 6 safety: ensure logs arrays exist even if older saved state is missing fields
+    LogEngine.ensure();
     renderNav();
     renderView();
   </script>
