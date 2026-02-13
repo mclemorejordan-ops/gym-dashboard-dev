@@ -4977,29 +4977,29 @@ const rtExSuggestions = document.getElementById("rtExSuggestions");
 
   function openAddExercisePicker(){
   // ✅ remember where the Routine Editor modal is scrolled
-const modalCard = document.querySelector("#rtModal .rtBody");
-  const prevScroll = modalCard ? modalCard.scrollTop : 0;
+  const scroller = document.querySelector("#rtModal .rtBody");
+  const prevScroll = scroller ? scroller.scrollTop : 0;
 
   // ✅ kill focus so iOS doesn’t scroll the page
-  rtAddExName.blur();
+  if (rtAddExName && typeof rtAddExName.blur === "function") rtAddExName.blur();
 
   // ✅ open picker
   openExercisePicker({
     title: "Pick exercise to add",
-    initial: rtAddExName.value,
+    initial: rtAddExName ? rtAddExName.value : "",
     onConfirm: (picked)=>{
-      rtAddExName.value = picked;
+      if (rtAddExName) rtAddExName.value = picked;
 
       // ✅ restore modal scroll after pick
       setTimeout(()=>{
-        if(modalCard) modalCard.scrollTop = prevScroll;
+        if(scroller) scroller.scrollTop = prevScroll;
       }, 0);
     }
   });
 
   // ✅ restore immediately too (covers iOS “jump” before picker paints)
   setTimeout(()=>{
-    if(modalCard) modalCard.scrollTop = prevScroll;
+    if(scroller) scroller.scrollTop = prevScroll;
   }, 0);
 }
 
