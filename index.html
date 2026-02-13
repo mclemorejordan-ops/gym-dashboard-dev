@@ -4955,10 +4955,6 @@ function renderLiftSearchDropdown(){
   syncLiftMetricToSelectedExercise();
 });
 
-
-/* ---------------------------
-   Exercise Picker (Add + Swap)
----------------------------- */
 const exPickModal = document.getElementById("exPickModal");
 const exPickTitle = document.getElementById("exPickTitle");
 const exPickCloseBtn = document.getElementById("exPickCloseBtn");
@@ -4968,19 +4964,15 @@ const exPickSearch = document.getElementById("exPickSearch");
 const exPickList = document.getElementById("exPickList");
 
 let exPickSelected = "";                 // single mode selected
-let exPickSelectedSet = new Set();       // multi mode selected set
-let exPickMulti = false;                 // are we in multi mode?
 let exPickOnConfirm = null;
 
-function openExercisePicker({ title="Pick Exercise", initial="", onConfirm, multi=false, initialMulti=[] }){
+function openExercisePicker({ title="Pick Exercise", initial="", onConfirm }){
   exPickTitle.textContent = title;
 
-  exPickMulti = !!multi;
   exPickOnConfirm = onConfirm;
 
-  // reset selections
+  // reset selection
   exPickSelected = initial || "";
-  exPickSelectedSet = new Set(Array.isArray(initialMulti) ? initialMulti : []);
 
   exPickSearch.value = "";
   renderExercisePickerList();
@@ -4988,16 +4980,12 @@ function openExercisePicker({ title="Pick Exercise", initial="", onConfirm, mult
   exPickModal.style.display = "block";
 }
 
-
 function closeExercisePicker(){
   exPickModal.style.display = "none";
   unlockBodyScroll(); // ✅ ADD THIS
   exPickSelected = "";
-  exPickSelectedSet = new Set();
-  exPickMulti = false;
   exPickOnConfirm = null;
 }
-
 
 function renderExercisePickerList(){
   const rawQ = String(exPickSearch.value || "").trim();
@@ -5014,17 +5002,11 @@ function renderExercisePickerList(){
     if(!exists){
       const create = document.createElement("div");
       create.className = "exPickItem";
-            // ✅ BUG FIX: never inject raw user input into innerHTML (prevents broken markup / XSS)
+
+      // ✅ BUG FIX: never inject raw user input into innerHTML (prevents broken markup / XSS)
       create.innerHTML = ""; // clear
       const row = document.createElement("div");
       row.className = "exPickRow";
-
-      if(exPickMulti){
-        const chk = document.createElement("span");
-        chk.className = "exPickCheck";
-        chk.textContent = "+";
-        row.appendChild(chk);
-      }
 
       const label = document.createElement("span");
       label.textContent = `➕ Create "${rawQ}"`;
@@ -5032,26 +5014,20 @@ function renderExercisePickerList(){
 
       create.appendChild(row);
 
-     create.addEventListener("click", ()=>{
-  const created = addCustomExercise(rawQ);
-  if(!created) return;
+      create.addEventListener("click", ()=>{
+        const created = addCustomExercise(rawQ);
+        if(!created) return;
 
-  if(exPickMulti){
-    // MULTI: add to selected list, stay open
-    exPickSelectedSet.add(created);
-    renderExercisePickerList();
-    return;
-  }
+        // SINGLE: create + immediately select + confirm + close
+        exPickSelected = created;
 
-  // SINGLE: create + immediately select + confirm + close
-  exPickSelected = created;
+        if(typeof exPickOnConfirm === "function"){
+          exPickOnConfirm(exPickSelected);
+        }
 
-  if(typeof exPickOnConfirm === "function"){
-    exPickOnConfirm(exPickSelected);
-  }
+        closeExercisePicker();
+      });
 
-  closeExercisePicker();
-});
       exPickList.appendChild(create);
     }
   }
@@ -5064,203 +5040,46 @@ function renderExercisePickerList(){
   }
 
   filtered.forEach(name=>{
-    const isActive = exPickMulti ? exPickSelectedSet.has(name) : (name === exPickSelected);
+    const isActive = (name === exPickSelected);
 
     const div = document.createElement("div");
     div.className = "exPickItem" + (isActive ? " active" : "");
 
     div.innerHTML = `
       <div class="exPickRow">
-        ${exPickMulti ? `<span class="exPickCheck">${isActive ? "✓" : ""}</span>` : ``}
-                <span>${escHTML(name)}</span>
+        <span>${escHTML(name)}</span>
       </div>
     `;
 
     div.addEventListener("click", ()=>{
-      if(exPickMulti){
-        if(exPickSelectedSet.has(name)) exPickSelectedSet.delete(name);
-        else exPickSelectedSet.add(name);
-        renderExercisePickerList();
-      } else {
-        exPickSelected = name;
-        [...exPickList.querySelectorAll(".exPickItem")].forEach(x=>x.classList.remove("active"));
-        div.classList.add("active");
-      }
+      exPickSelected = name;
+      [...exPickList.querySelectorAll(".exPickItem")].forEach(x=>x.classList.remove("active"));
+      div.classList.add("active");
     });
 
     exPickList.appendChild(div);
   });
 }
 
-
 exPickSearch.addEventListener("input", renderExercisePickerList);
 
 exPickConfirmBtn.addEventListener("click", ()=>{
-  if(exPickMulti){
-    const picked = [...exPickSelectedSet];
-
-    if(picked.length === 0){
-      alert("Select at least one exercise.");
-      return;
-    }
-
-    if(typeof exPickOnConfirm === "function"){
-      exPickOnConfirm(picked);
-    }
-
-    closeExercisePicker();
+  // single mode
+  if(!exPickSelected){
+    alert("Pick an exercise first.");
     return;
   }
 
-// single mode
-if(!exPickSelected){
-  alert("Pick an exercise first.");
-  return;
-}
-
-if(typeof exPickOnConfirm === "function"){
-  exPickOnConfirm(exPickSelected);
-}
-closeExercisePicker();
-
-});
-
-  /* ---------------------------
-   Batch Add Modal (Multi-add sets/reps)
----------------------------- */
-const batchAddModal = document.getElementById("batchAddModal");
-const batchAddCloseBtn = document.getElementById("batchAddCloseBtn");
-const batchAddCancelBtn = document.getElementById("batchAddCancelBtn");
-const batchAddConfirmBtn = document.getElementById("batchAddConfirmBtn");
-const batchAddList = document.getElementById("batchAddList");
-
-let batchAddItems = []; // [{name, sets, reps}]
-
-function openBatchAddModal(names){
-  // ✅ normalize: accept array OR single string
-  const arr = Array.isArray(names)
-    ? names
-    : (typeof names === "string" && names.trim() ? [names.trim()] : []);
-
-  batchAddItems = arr.map(n=>({
-    name: canonicalExerciseName(n),
-    sets: "",
-    reps: ""
-  }));
-
-  renderBatchAddList();
-  lockBodyScroll();                 // ✅ ADD
-  batchAddModal.style.display = "block";
-}
-
-
-function closeBatchAddModal(){
-  batchAddModal.style.display = "none";
-  unlockBodyScroll();               // ✅ ADD
-  batchAddItems = [];
-}
-
-function renderBatchAddList(){
-  batchAddList.innerHTML = "";
-
-  batchAddItems.forEach((it, idx)=>{
-    const card = document.createElement("div");
-    card.className = "card";
-    card.style.background = "#0f0f10";
-    card.style.padding = "10px";
-
-    card.innerHTML = `
-      <div class="row" style="align-items:end;">
-        <div style="flex:2 1 220px;">
-          <div class="small muted">Exercise</div>
-              <div style="font-weight:700; margin-top:4px;">${escHTML(it.name)}</div>
-        </div>
-
-        <label style="flex:0 0 120px;">Sets
-          <input type="number" min="1" value="${it.sets}" data-bsets="${idx}" placeholder="3" />
-        </label>
-
-        <label style="flex:1 1 160px;">Reps
-          <input value="${it.reps}" data-breps="${idx}" placeholder="8–10" />
-        </label>
-
-        <button type="button" class="miniBtn danger" data-bremove="${idx}">Remove</button>
-      </div>
-    `;
-
-    batchAddList.appendChild(card);
-  });
-
-  // wire inputs
-  batchAddList.querySelectorAll("[data-bsets]").forEach(inp=>{
-    inp.addEventListener("input", ()=>{
-      const i = Number(inp.getAttribute("data-bsets"));
-      batchAddItems[i].sets = inp.value;
-    });
-  });
-
-  batchAddList.querySelectorAll("[data-breps]").forEach(inp=>{
-    inp.addEventListener("input", ()=>{
-      const i = Number(inp.getAttribute("data-breps"));
-      batchAddItems[i].reps = inp.value;
-    });
-  });
-
-  batchAddList.querySelectorAll("[data-bremove]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const i = Number(btn.getAttribute("data-bremove"));
-      batchAddItems.splice(i,1);
-      renderBatchAddList();
-    });
-  });
-  // auto-focus first sets input
-setTimeout(()=>{
-  batchAddList.querySelector("input[data-bsets]")?.focus();
-}, 0);
-}
-
-[batchAddCloseBtn, batchAddCancelBtn].forEach(btn=>{
-  btn?.addEventListener("click", closeBatchAddModal);
-});
-batchAddModal?.addEventListener("click", (e)=>{ if(e.target === batchAddModal) closeBatchAddModal(); });
-
-batchAddConfirmBtn?.addEventListener("click", ()=>{
-  // validate
-  for(const it of batchAddItems){
-    const sets = Number(it.sets);
-    const reps = String(it.reps || "").trim();
-    if(!sets || sets <= 0){
-      alert(`Enter sets for: ${it.name}`);
-      return;
-    }
-    if(!reps){
-      alert(`Enter reps for: ${it.name}`);
-      return;
-    }
+  if(typeof exPickOnConfirm === "function"){
+    exPickOnConfirm(exPickSelected);
   }
 
-  // add to current draft day
-  const k = DAY_KEYS[editDayIndex];
-  const day = draftRoutine.days[k];
-
-  batchAddItems.forEach(it=>{
-    day.exercises.push({
-      name: canonicalExerciseName(it.name),
-      sets: Number(it.sets),
-      reps: String(it.reps).trim(),
-      notes: ""
-    });
-  });
-
-  closeBatchAddModal();
-  renderRtDayPanel();
-  buildRoutineExerciseSuggestions();
-  renderLiftSearchDropdown();
+  closeExercisePicker();
 });
-
 
 [exPickCloseBtn, exPickCancelBtn].forEach(btn=>btn.addEventListener("click", closeExercisePicker));
 exPickModal.addEventListener("click", (e)=>{ if(e.target === exPickModal) closeExercisePicker(); });
+
 
 function progressExerciseType(exName){
   const ex = String(exName || "").trim();
