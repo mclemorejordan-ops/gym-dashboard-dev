@@ -2462,7 +2462,7 @@ header{
           <div class="hint">Tap to choose from your library</div>
         </div>
 
-       <label style="width:160px;">Type
+<label style="width:160px;">Type
   <select id="rtAddExType">
     <option value="strength">Weightlifting</option>
     <option value="cardio">Cardio</option>
@@ -2470,16 +2470,55 @@ header{
   </select>
 </label>
 
-<label style="width:110px;">Sets
-  <input id="rtAddExSets" type="number" min="1" placeholder="3" />
-</label>
+<!-- Strength fields -->
+<div id="rtAddStrengthFields" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+  <label style="width:110px;">Sets
+    <input id="rtAddExSets" type="number" min="1" placeholder="3" />
+  </label>
 
+  <label style="width:140px;">Reps
+    <input id="rtAddExReps" placeholder="8–10" />
+  </label>
+</div>
 
-        <label style="width:140px;">Reps
-          <input id="rtAddExReps" placeholder="8–10" />
-        </label>
+<!-- Cardio fields -->
+<div id="rtAddCardioFields" style="display:none; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+  <label style="width:120px;">Duration (min)
+    <input id="rtAddCardioMin" type="number" min="0" inputmode="numeric" placeholder="20" />
+  </label>
 
-        <button id="rtAddExBtn" class="tap">Add</button>
+  <label style="width:120px;">Duration (sec)
+    <input id="rtAddCardioSec" type="number" min="0" max="59" inputmode="numeric" placeholder="0" />
+  </label>
+
+  <label style="width:150px;">Distance (miles)
+    <input id="rtAddCardioDist" type="number" step="0.01" min="0" inputmode="decimal" placeholder="2.50" />
+  </label>
+</div>
+
+<!-- Core fields -->
+<div id="rtAddCoreFields" style="display:none; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+  <label style="width:110px;">Sets
+    <input id="rtAddCoreSets" type="number" min="1" placeholder="3" />
+  </label>
+
+  <label style="width:180px;">Core mode
+    <select id="rtAddCoreMode">
+      <option value="reps">Reps (sets x reps)</option>
+      <option value="time">Timed holds (sets x seconds)</option>
+    </select>
+  </label>
+
+  <label id="rtAddCoreRepsWrap" style="width:140px;">Reps
+    <input id="rtAddCoreReps" placeholder="12–15" />
+  </label>
+
+  <label id="rtAddCoreSecWrap" style="width:160px; display:none;">Seconds
+    <input id="rtAddCoreSec" type="number" min="0" inputmode="numeric" placeholder="45" />
+  </label>
+</div>
+
+<button id="rtAddExBtn" class="tap">Add</button>
       </div>
 
       <div id="rtExList" style="margin-top:12px; display:grid; gap:10px;"></div>
@@ -6094,16 +6133,106 @@ const rtDayLabel = document.getElementById("rtDayLabel");
 const rtRestToggle = document.getElementById("rtRestToggle");
 const rtDayRestNotice = document.getElementById("rtDayRestNotice");
 
-const rtAddExName = document.getElementById("rtAddExName");
-const rtAddExSets = document.getElementById("rtAddExSets");
-const rtAddExReps = document.getElementById("rtAddExReps");
-const rtAddExType = document.getElementById("rtAddExType");
+const rtAddStrengthFields = document.getElementById("rtAddStrengthFields");
+const rtAddCardioFields = document.getElementById("rtAddCardioFields");
+const rtAddCoreFields = document.getElementById("rtAddCoreFields");
+
+const rtAddCardioMin = document.getElementById("rtAddCardioMin");
+const rtAddCardioSec = document.getElementById("rtAddCardioSec");
+const rtAddCardioDist = document.getElementById("rtAddCardioDist");
+
+const rtAddCoreSets = document.getElementById("rtAddCoreSets");
+const rtAddCoreMode = document.getElementById("rtAddCoreMode");
+const rtAddCoreReps = document.getElementById("rtAddCoreReps");
+const rtAddCoreSec = document.getElementById("rtAddCoreSec");
+const rtAddCoreRepsWrap = document.getElementById("rtAddCoreRepsWrap");
+const rtAddCoreSecWrap = document.getElementById("rtAddCoreSecWrap");
+
 const rtAddExBtn = document.getElementById("rtAddExBtn");
 const rtExList = document.getElementById("rtExList");
 const rtAddMultiBtn = document.getElementById("rtAddMultiBtn");
 const rtExSuggestions = document.getElementById("rtExSuggestions");
 
-  function openAddExercisePicker(){
+  setRtAddMode(rtAddExType?.value || "strength");
+
+function applyRtAddTypeHints(type){
+  const t = String(type || "strength").toLowerCase();
+  const mode = (t === "cardio") ? "cardio" : (t === "core" ? "core" : "strength");
+
+  // Keep existing required fields/validation logic intact.
+  // We only adjust helpful defaults + placeholders so the green box “adapts”.
+  if(mode === "cardio"){
+    if(rtAddExSets && (!rtAddExSets.value || Number(rtAddExSets.value) <= 0)) rtAddExSets.value = "1";
+    if(rtAddExReps) rtAddExReps.placeholder = "e.g., 20 min • 2.50 mi (Duration + Distance)";
+  } else if(mode === "core"){
+    if(rtAddExSets && (!rtAddExSets.value || Number(rtAddExSets.value) <= 0)) rtAddExSets.value = "3";
+    if(rtAddExReps) rtAddExReps.placeholder = "e.g., 12–15 (or 45 sec holds)";
+  } else {
+    if(rtAddExSets && (!rtAddExSets.value || Number(rtAddExSets.value) <= 0)) rtAddExSets.value = "3";
+    if(rtAddExReps) rtAddExReps.placeholder = "e.g., 8–10";
+  }
+}
+
+function inferRoutineEditorTypeForExercise(exName){
+  const canon = canonicalExerciseName(String(exName || "").trim());
+  if(!canon) return "strength";
+
+  // 1) Prefer the most recent lift type for that exercise (best signal)
+  const lastAny = getLastLiftForExercise(canon, null);
+  if(lastAny && lastAny.type){
+    return normalizeLiftType(lastAny.type);
+  }
+
+  // 2) Otherwise, look for it in existing routines (stored routine exercise type)
+  for(const r of (routines || [])){
+    const days = r?.days || {};
+    for(const k of DAY_KEYS){
+      const exList = days?.[k]?.exercises;
+      if(!Array.isArray(exList)) continue;
+      for(const ex of exList){
+        if(normExName(ex?.name) === normExName(canon)){
+          return normalizeLiftType(ex?.type);
+        }
+      }
+    }
+  }
+
+  // 3) Default
+  return "strength";
+}
+
+function setRtAddMode(mode){
+  const m = (String(mode||"strength").toLowerCase() === "cardio")
+    ? "cardio"
+    : (String(mode||"strength").toLowerCase() === "core" ? "core" : "strength");
+
+  if(rtAddStrengthFields) rtAddStrengthFields.style.display = (m === "strength") ? "flex" : "none";
+  if(rtAddCardioFields) rtAddCardioFields.style.display = (m === "cardio") ? "flex" : "none";
+  if(rtAddCoreFields) rtAddCoreFields.style.display = (m === "core") ? "flex" : "none";
+
+  // Core sub-mode toggle
+  if(m === "core"){
+    const coreMode = String(rtAddCoreMode?.value || "reps").toLowerCase();
+    if(rtAddCoreRepsWrap) rtAddCoreRepsWrap.style.display = (coreMode === "time") ? "none" : "block";
+    if(rtAddCoreSecWrap)  rtAddCoreSecWrap.style.display  = (coreMode === "time") ? "block" : "none";
+  }
+}
+
+function inferRoutineEditorTypeForExercise(exName){
+  const canon = canonicalExerciseName(String(exName || "").trim());
+  if(!canon) return "strength";
+
+  // Prefer most recent logged entry type (best signal)
+  const lastAny = getLastLiftForExercise(canon, null);
+  if(lastAny && lastAny.type){
+    return normalizeLiftType(lastAny.type);
+  }
+
+  // Otherwise fall back to "strength"
+  return "strength";
+}
+
+function openAddExercisePicker(){
   // ✅ remember where the Routine Editor modal is scrolled
   const modalCard = document.querySelector("#rtModal > div");
   const prevScroll = modalCard ? modalCard.scrollTop : 0;
@@ -6111,12 +6240,19 @@ const rtExSuggestions = document.getElementById("rtExSuggestions");
   // ✅ kill focus so iOS doesn’t scroll the page
   rtAddExName.blur();
 
-  // ✅ open picker
   openExercisePicker({
     title: "Pick exercise to add",
     initial: rtAddExName.value,
     onConfirm: (picked)=>{
-      rtAddExName.value = picked;
+      const canon = canonicalExerciseName(picked);
+      rtAddExName.value = canon;
+
+      // ✅ auto-populate Type based on last logged type (if any)
+      const inferred = inferRoutineEditorTypeForExercise(canon);
+      if(rtAddExType) rtAddExType.value = inferred;
+
+      // ✅ show the correct field group for that type
+      setRtAddMode(inferred);
 
       // ✅ restore modal scroll after pick
       setTimeout(()=>{
@@ -6124,6 +6260,19 @@ const rtExSuggestions = document.getElementById("rtExSuggestions");
       }, 0);
     }
   });
+
+  // ✅ restore immediately too (covers iOS “jump” before picker paints)
+  setTimeout(()=>{
+    if(modalCard) modalCard.scrollTop = prevScroll;
+  }, 0);
+}
+
+
+// If user manually changes Type in the green box, keep the fields “adapted”
+rtAddExType?.addEventListener("change", ()=>{
+  applyRtAddTypeHints(rtAddExType.value);
+});
+
 
   // ✅ restore immediately too (covers iOS “jump” before picker paints)
   setTimeout(()=>{
@@ -6141,6 +6290,14 @@ rtAddExName.addEventListener("click", (e)=>{
 rtAddExName.addEventListener("focus", (e)=>{
   e.preventDefault();
   openAddExercisePicker();
+});
+
+  rtAddExType?.addEventListener("change", ()=>{
+  setRtAddMode(rtAddExType.value);
+});
+
+rtAddCoreMode?.addEventListener("change", ()=>{
+  setRtAddMode(rtAddExType?.value || "core");
 });
 
   
@@ -6367,26 +6524,86 @@ rtAddExBtn.addEventListener("click", ()=>{
   const day = draftRoutine.days[k];
 
   const name = canonicalExerciseName(String(rtAddExName.value||"").trim());
-  const sets = Number(rtAddExSets.value)||0;
-  const reps = String(rtAddExReps.value||"").trim();
   const type = (String(rtAddExType?.value||"strength").toLowerCase()==="cardio")
     ? "cardio"
     : (String(rtAddExType?.value||"strength").toLowerCase()==="core" ? "core" : "strength");
 
   if(!name) return alert("Enter an exercise name.");
-  if(!sets || sets <= 0) return alert("Enter sets (number).");
-  if(!reps) return alert("Enter reps (e.g., 8–10).");
+
+  // Build routine fields in the existing schema (sets + reps),
+  // but populated from the correct UI inputs.
+  let sets = 0;
+  let reps = "";
+
+  if(type === "strength"){
+    sets = Number(rtAddExSets?.value)||0;
+    reps = String(rtAddExReps?.value||"").trim();
+
+    if(!sets || sets <= 0) return alert("Enter sets (number).");
+    if(!reps) return alert("Enter reps (e.g., 8–10).");
+  }
+
+  if(type === "cardio"){
+    const min = Number(rtAddCardioMin?.value)||0;
+    const sec = Number(rtAddCardioSec?.value)||0;
+    const dist = Number(rtAddCardioDist?.value)||0;
+
+    const durTotal = (min*60) + sec;
+
+    // Cardio is not sets-based, but keep schema stable
+    sets = 1;
+
+    // Require at least duration or distance
+    if(durTotal <= 0 && dist <= 0) return alert("Enter cardio duration and/or distance.");
+
+    const durStr = (durTotal > 0) ? `${min}:${String(sec).padStart(2,"0")}` : "";
+    const distStr = (dist > 0) ? `${dist.toFixed(2)} mi` : "";
+
+    reps = [durStr, distStr].filter(Boolean).join(" • ");
+  }
+
+  if(type === "core"){
+    sets = Number(rtAddCoreSets?.value)||0;
+    const coreMode = String(rtAddCoreMode?.value || "reps").toLowerCase();
+
+    if(!sets || sets <= 0) return alert("Enter sets (number).");
+
+    if(coreMode === "time"){
+      const s = Number(rtAddCoreSec?.value)||0;
+      if(!s || s <= 0) return alert("Enter seconds for timed holds.");
+      reps = `${s} sec`;
+    } else {
+      const r = String(rtAddCoreReps?.value||"").trim();
+      if(!r) return alert("Enter reps (e.g., 12–15).");
+      reps = r;
+    }
+  }
 
   day.exercises.push({name, type, sets, reps, notes:""});
+
+  // Reset inputs
   rtAddExName.value = "";
-  rtAddExSets.value = "";
-  rtAddExReps.value = "";
+
+  if(rtAddExSets) rtAddExSets.value = "";
+  if(rtAddExReps) rtAddExReps.value = "";
+
+  if(rtAddCardioMin) rtAddCardioMin.value = "";
+  if(rtAddCardioSec) rtAddCardioSec.value = "";
+  if(rtAddCardioDist) rtAddCardioDist.value = "";
+
+  if(rtAddCoreSets) rtAddCoreSets.value = "";
+  if(rtAddCoreReps) rtAddCoreReps.value = "";
+  if(rtAddCoreSec) rtAddCoreSec.value = "";
+  if(rtAddCoreMode) rtAddCoreMode.value = "reps";
+
   if(rtAddExType) rtAddExType.value = "strength";
+  setRtAddMode("strength");
 
   renderRtDayPanel();
   buildRoutineExerciseSuggestions();
   renderLiftSearchDropdown();
 });
+
 
 
   rtAddMultiBtn?.addEventListener("click", ()=>{
