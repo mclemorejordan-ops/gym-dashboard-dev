@@ -6596,11 +6596,6 @@ function hasProfileCompleted(){
   return String(p.name || "").trim().length > 0; // you can relax this if name is optional
 }
 
-function hasAtLeastOneRoutine(){
-  const rts = LS.get(KEY_ROUTINES, []);
-  return Array.isArray(rts) && rts.length > 0;
-}
-
 function routeInitialScreen(){
   hydrateOnboardingInputs();
 
@@ -6634,11 +6629,6 @@ function routeInitialScreen(){
 function showUpdateBanner(){
   const b = document.getElementById("updateBanner");
   if(b) b.style.display = "block";
-}
-
-function hideUpdateBanner(){
-  const b = document.getElementById("updateBanner");
-  if(b) b.style.display = "none";
 }
 
 function setUpdateBannerSub(text){
@@ -6866,13 +6856,6 @@ function startVersionPolling(){
   }, VERSION_CHECK_INTERVAL_MS);
 }
 
-function stopVersionPolling(){
-  if(_versionPollTimer){
-    clearInterval(_versionPollTimer);
-    _versionPollTimer = null;
-  }
-}
-
 document.addEventListener("visibilitychange", ()=>{
   if(document.visibilityState === "visible"){
     // Re-check when user comes back (common after deployment)
@@ -6889,31 +6872,6 @@ const KEY_UP_LAST_RESULT   = "gym_updates_last_result_v1";
 const KEY_UP_FAIL_COUNT    = "gym_updates_fail_count_v1";
 const KEY_UP_LAST_SUCCESS  = "gym_updates_last_success_v1";
 
-// Build string (your mock shows ISO “2026-02-11T15:22Z”)
-const APP_BUILD = "2026-02-11T15:22Z";
-
-function fmtDateTime(ms){
-  if(!ms) return "—";
-  try{
-    const d = new Date(Number(ms));
-    return d.toLocaleString(undefined, {
-      year:"numeric", month:"short", day:"2-digit",
-      hour:"2-digit", minute:"2-digit"
-    }).replace(",", "") + " •";
-  }catch{
-    return "—";
-  }
-}
-
-async function getServiceWorkerState(){
-  try{
-    if(!("serviceWorker" in navigator)) return "OFF";
-    const reg = await navigator.serviceWorker.getRegistration();
-    return reg ? "ON" : "OFF";
-  }catch{
-    return "OFF";
-  }
-}
 
 function setText(id, text){
   const el = document.getElementById(id);
