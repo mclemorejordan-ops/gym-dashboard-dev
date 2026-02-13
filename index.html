@@ -275,7 +275,77 @@
       color: var(--muted);
       line-height: 1.35;
     }
+    /* Home Dashboard */
+    .homeRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
+    .dots{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items:center;
+    }
+    .dotDay{
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+    }
+    .dotDay.on{
+      background: rgba(55,214,122,.55);
+      border-color: rgba(55,214,122,.50);
+    }
+    .dotLabel{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .ringWrap{
+      width: 120px;
+      height: 120px;
+      border-radius: 999px;
+      position: relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      flex: 0 0 auto;
+    }
+    .ringWrap::before{
+      content:"";
+      position:absolute;
+      inset: 8px;
+      border-radius: 999px;
+      background: rgba(11,15,23,.95);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .ringText{
+      position: relative;
+      z-index: 2;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      text-align:center;
+      gap: 2px;
+    }
+    .ringText .big{
+      font-size: 18px;
+      font-weight: 850;
+      letter-spacing:.2px;
+    }
+    .ringText .small{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.2;
+    }
         /* Routine Editor */
     .pillrow{ display:flex; gap:8px; flex-wrap:wrap; }
     .pill{
@@ -659,6 +729,56 @@
 
     const uid = (prefix="id") => `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 
+        const pad2 = (n) => String(n).padStart(2, "0");
+
+    const Dates = {
+      todayISO(){
+        const d = new Date();
+        return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      },
+      // weekStartsOn: "mon" | "sun"
+      startOfWeekISO(dateISO, weekStartsOn){
+        const d = new Date(dateISO + "T00:00:00");
+        const dow = d.getDay(); // 0=Sun..6=Sat
+        const weekStart = (weekStartsOn === "sun") ? 0 : 1;
+        // how many days to subtract to get week start
+        let diff = dow - weekStart;
+        if(diff < 0) diff += 7;
+        d.setDate(d.getDate() - diff);
+        return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      },
+      addDaysISO(dateISO, days){
+        const d = new Date(dateISO + "T00:00:00");
+        d.setDate(d.getDate() + days);
+        return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      },
+      sameISO(a,b){ return String(a) === String(b); }
+    };
+
+    function getTodayWorkout(){
+      const routine = Routines.getActive();
+      if(!routine || !(routine.days?.length)) return { routine: null, day: null, dayIndex: null };
+
+      const today = new Date();
+      const idx = today.getDay(); // 0=Sun..6=Sat
+      // Our routine days are stored order 0..6 (Day 1..Day 7)
+      const day = routine.days.find(d => d.order === idx) || routine.days[idx] || null;
+      return { routine, day, dayIndex: idx };
+    }
+
+    function isTrained(dateISO){
+      return (state.attendance || []).includes(dateISO);
+    }
+
+    function toggleTrained(dateISO){
+      state.attendance = state.attendance || [];
+      const i = state.attendance.indexOf(dateISO);
+      if(i >= 0) state.attendance.splice(i, 1);
+      else state.attendance.push(dateISO);
+      Storage.save(state);
+    }
+
+
     const normName = (s) => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
 
     /********************
@@ -900,7 +1020,48 @@
       const found = (state.exerciseLibrary?.[type] || []).find(x => x.id === exerciseId);
       return found?.name || fallback || "Unknown exercise";
     }
+    /********************
+     * 4c) Protein (Today) Helpers (Step 5)
+     ********************/
+    function getProteinForDate(dateISO){
+      state.logs = state.logs || { workouts: [], weight: [], protein: [] };
+      state.logs.protein = state.logs.protein || [];
+      let entry = state.logs.protein.find(x => x.dateISO === dateISO);
+      if(!entry){
+        entry = { dateISO, meals: [] }; // meals: [{ id, label, grams }]
+        state.logs.protein.push(entry);
+        Storage.save(state);
+      }
+      return entry;
+    }
 
+    function upsertMeal(dateISO, mealId, label, grams){
+      const p = getProteinForDate(dateISO);
+      p.meals = p.meals || [];
+      const idx = p.meals.findIndex(m => m.id === mealId);
+      const clean = {
+        id: mealId || uid("meal"),
+        label: (label || "").trim() || "Meal",
+        grams: Math.max(0, Math.round(Number(grams) || 0))
+      };
+      if(idx >= 0) p.meals[idx] = clean;
+      else p.meals.push(clean);
+      Storage.save(state);
+      return clean.id;
+    }
+
+    function deleteMeal(dateISO, mealId){
+      const p = getProteinForDate(dateISO);
+      p.meals = p.meals || [];
+      const idx = p.meals.findIndex(m => m.id === mealId);
+      if(idx >= 0) p.meals.splice(idx, 1);
+      Storage.save(state);
+    }
+
+    function totalProtein(dateISO){
+      const p = getProteinForDate(dateISO);
+      return (p.meals || []).reduce((sum,m) => sum + (Number(m.grams)||0), 0);
+    }
     /********************
      * 5) Modal
      ********************/
@@ -1130,38 +1291,208 @@
       },
 
       Home(){
+        ExerciseLibrary.ensureSeeded();
+
+        const todayISO = Dates.todayISO();
+        const weekStartsOn = state.profile?.weekStartsOn || "mon";
+        const weekStartISO = Dates.startOfWeekISO(todayISO, weekStartsOn);
+
+        const { routine, day } = getTodayWorkout();
+
+        const trainedThisWeek = [];
+        for(let i=0;i<7;i++){
+          const dISO = Dates.addDaysISO(weekStartISO, i);
+          trainedThisWeek.push({ dateISO: dISO, trained: isTrained(dISO) });
+        }
+
+        // Protein
+        const goal = Number(state.profile?.proteinGoal) || 0;
+        const done = totalProtein(todayISO);
+        const left = Math.max(0, goal - done);
+        const pct = goal > 0 ? Math.max(0, Math.min(1, done / goal)) : 0;
+        const deg = Math.round(pct * 360);
+
+        const openProteinModal = () => {
+          Modal.open({
+            title: "Today’s protein",
+            bodyNode: buildProteinTodayModal(todayISO, goal)
+          });
+        };
+
+        const openCheckIn = () => {
+          toggleTrained(todayISO);
+          renderView();
+        };
+
+        const workoutTitle = !routine ? "No routine selected"
+          : (!day ? "No day found"
+          : (day.isRest ? "Rest Day" : day.label));
+
+        const workoutSub = !routine ? "Go to Routine → create/select a routine."
+          : (!day ? "Open Routine Editor to fix day mapping."
+          : (day.isRest ? "Recovery day. Hydrate + mobility."
+          : `${(day.exercises || []).length} exercises planned`));
+
+        const workoutExercises = (day?.isRest || !day) ? []
+          : (day.exercises || []).map(rx => resolveExerciseName(rx.type, rx.exerciseId, rx.nameSnap));
+
+        const ring = el("div", {
+          class:"ringWrap",
+          style: `background: conic-gradient(rgba(124,92,255,.95) 0deg ${deg}deg, rgba(255,255,255,.10) ${deg}deg 360deg);`
+        }, [
+          el("div", { class:"ringText" }, [
+            el("div", { class:"big", text: `${left}g` }),
+            el("div", { class:"small", text: "left" }),
+            el("div", { class:"small", text: `${done} / ${goal}g` })
+          ])
+        ]);
+
+        const dots = el("div", { class:"dots" });
+        trainedThisWeek.forEach((d, idx) => {
+          const dot = el("div", { class:"dotDay" + (d.trained ? " on" : "") });
+          dots.appendChild(dot);
+        });
+
+        const weekLabel = weekStartsOn === "sun" ? "Week (Sun–Sat)" : "Week (Mon–Sun)";
+
         return el("div", { class:"grid cols2" }, [
           el("div", { class:"card" }, [
-            el("h2", { text:"Today" }),
+            el("h2", { text:"Today’s workout" }),
             el("div", { class:"kpi" }, [
-              el("div", { class:"big", text:"Today’s workout" }),
-              el("div", { class:"small", text:"Next step: auto-select workout from your routine + day-of-week." })
+              el("div", { class:"big", text: workoutTitle }),
+              el("div", { class:"small", text: workoutSub })
             ]),
-            el("div", { style:"height:12px" }),
-            el("button", { class:"btn primary" }, ["Quick Check-In (coming)"])
+            el("div", { style:"height:10px" }),
+
+            (workoutExercises.length === 0)
+              ? el("div", { class:"note", text: day?.isRest ? "Rest day is enabled." : "Add exercises in Routine Editor." })
+              : el("div", { class:"list" }, workoutExercises.slice(0,6).map(n =>
+                  el("div", { class:"item" }, [
+                    el("div", { class:"left" }, [ el("div", { class:"name", text: n }) ]),
+                    el("div", { class:"actions" }, [ el("div", { class:"meta", text:"Planned" }) ])
+                  ])
+                )),
+
+            el("div", { style:"height:10px" }),
+            el("div", { class:"btnrow" }, [
+              el("button", { class:"btn primary", onClick: openCheckIn }, [isTrained(todayISO) ? "Undo check-in" : "Check in"]),
+              el("button", { class:"btn", onClick: () => navigate("routine") }, ["Edit routine"])
+            ])
           ]),
+
           el("div", { class:"card" }, [
             el("h2", { text:"Protein" }),
-            el("div", { class:"kpi" }, [
-              el("div", { class:"big", text:"Ring + grams left" }),
-              el("div", { class:"small", text:`Goal: ${state.profile?.proteinGoal ?? 0}g/day (live updates coming)` })
+            el("div", { class:"homeRow" }, [
+              el("div", { class:"kpi" }, [
+                el("div", { class:"big", text: `${left}g left` }),
+                el("div", { class:"small", text:"Tap to log meals for today." })
+              ]),
+              el("div", { onClick: openProteinModal }, [ ring ])
             ]),
-            el("div", { style:"height:12px" }),
-            el("button", { class:"btn" }, ["Add meals (coming)"])
+            el("div", { style:"height:10px" }),
+            el("div", { class:"btnrow" }, [
+              el("button", { class:"btn primary", onClick: openProteinModal }, ["Log meals"])
+            ])
           ]),
+
           el("div", { class:"card" }, [
             el("h2", { text:"Attendance" }),
-            el("div", { class:"muted", text:"Weekly dots + tap check-in. Calendar view later." })
+            el("div", { class:"note", text: weekLabel }),
+            el("div", { style:"height:10px" }),
+            dots,
+            el("div", { style:"height:10px" }),
+            el("div", { class:"note", text:`This week: ${trainedThisWeek.filter(x => x.trained).length} sessions` })
           ]),
+
           el("div", { class:"card" }, [
-            el("h2", { text:"Library" }),
-            el("div", { class:"muted", text:`Exercises saved: ${
+            el("h2", { text:"Quick stats" }),
+            el("div", { class:"note", text:`Exercises saved: ${
               (state.exerciseLibrary.weightlifting?.length||0) +
               (state.exerciseLibrary.cardio?.length||0) +
               (state.exerciseLibrary.core?.length||0)
-            }` })
+            }` }),
+            el("div", { style:"height:10px" }),
+            el("div", { class:"note", text:`Active routine: ${Routines.getActive()?.name || "—"}` })
           ])
         ]);
+
+        function buildProteinTodayModal(dateISO, goal){
+          const container = el("div", { class:"grid" });
+
+          const listHost = el("div", { class:"list" });
+          const footer = el("div", { class:"note" });
+
+          function repaint(){
+            listHost.innerHTML = "";
+
+            const p = getProteinForDate(dateISO);
+            const meals = p.meals || [];
+
+            if(meals.length === 0){
+              listHost.appendChild(el("div", { class:"note", text:"No meals logged yet. Add one below." }));
+            }else{
+              meals.forEach(m => {
+                listHost.appendChild(el("div", { class:"item" }, [
+                  el("div", { class:"left" }, [
+                    el("div", { class:"name", text: m.label }),
+                    el("div", { class:"meta", text: `${m.grams}g` })
+                  ]),
+                  el("div", { class:"actions" }, [
+                    el("button", { class:"mini", onClick: () => openMealEditor(m) }, ["Edit"]),
+                    el("button", { class:"mini danger", onClick: () => { deleteMeal(dateISO, m.id); repaint(); renderView(); } }, ["Delete"])
+                  ])
+                ]));
+              });
+            }
+
+            const done = totalProtein(dateISO);
+            const left = Math.max(0, goal - done);
+            footer.textContent = `Today: ${done}g • Left: ${left}g • Goal: ${goal}g`;
+          }
+
+          function openMealEditor(meal){
+            const labelInput = el("input", { type:"text", placeholder:"Meal name", value: meal?.label || "" });
+            const gramsInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Protein grams", min:"0", value: meal?.grams ?? "" });
+            const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+            Modal.open({
+              title: meal ? "Edit meal" : "Add meal",
+              bodyNode: el("div", {}, [
+                el("label", {}, [ el("span", { text:"Label" }), labelInput ]),
+                el("label", {}, [ el("span", { text:"Protein (grams)" }), gramsInput ]),
+                err,
+                el("div", { style:"height:12px" }),
+                el("div", { class:"btnrow" }, [
+                  el("button", {
+                    class:"btn primary",
+                    onClick: () => {
+                      err.style.display = "none";
+                      const label = (labelInput.value || "").trim();
+                      const grams = Number(gramsInput.value);
+                      if(!label){ err.textContent="Label required."; err.style.display="block"; return; }
+                      if(!Number.isFinite(grams) || grams < 0){ err.textContent="Enter valid grams."; err.style.display="block"; return; }
+                      upsertMeal(dateISO, meal?.id || null, label, grams);
+                      Modal.close();
+                      repaint();
+                      renderView(); // update ring live
+                    }
+                  }, ["Save"]),
+                  el("button", { class:"btn", onClick: () => { Modal.close(); } }, ["Cancel"])
+                ])
+              ])
+            });
+          }
+
+          const addBtn = el("button", { class:"btn primary", onClick: () => openMealEditor(null) }, ["Add meal"]);
+
+          container.appendChild(el("div", { class:"note", text:`Date: ${dateISO}` }));
+          container.appendChild(listHost);
+          container.appendChild(el("div", { class:"btnrow" }, [ addBtn ]));
+          container.appendChild(footer);
+
+          repaint();
+          return container;
+        }
       },
 
            Routine(){
