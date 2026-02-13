@@ -172,17 +172,10 @@
       line-height: 1.35;
     }
 
-    .form{
-      display:grid;
-      gap: 10px;
-    }
-    .row2{
-      display:grid;
-      gap: 10px;
-    }
-    @media (min-width: 640px){
-      .row2{ grid-template-columns: 1fr 1fr; }
-    }
+    .form{ display:grid; gap: 10px; }
+    .row2{ display:grid; gap: 10px; }
+    @media (min-width: 640px){ .row2{ grid-template-columns: 1fr 1fr; } }
+
     label{
       display:flex;
       flex-direction:column;
@@ -257,13 +250,8 @@
       background: rgba(255,255,255,.92);
     }
 
-    .tplGrid{
-      display:grid;
-      gap: 10px;
-    }
-    @media (min-width: 640px){
-      .tplGrid{ grid-template-columns: 1fr 1fr; }
-    }
+    .tplGrid{ display:grid; gap: 10px; }
+    @media (min-width: 640px){ .tplGrid{ grid-template-columns: 1fr 1fr; } }
     .tpl{
       border-radius: 16px;
       padding: 12px;
@@ -274,16 +262,8 @@
       transition: transform .06s ease;
     }
     .tpl:active{ transform: translateY(1px); }
-    .tpl .name{
-      font-weight: 780;
-      letter-spacing: .2px;
-      margin-bottom: 4px;
-    }
-    .tpl .desc{
-      color: var(--muted);
-      font-size: 12.5px;
-      line-height: 1.35;
-    }
+    .tpl .name{ font-weight: 780; letter-spacing: .2px; margin-bottom: 4px; }
+    .tpl .desc{ color: var(--muted); font-size: 12.5px; line-height: 1.35; }
     .tpl.selected{
       border-color: rgba(124,92,255,.34);
       background: rgba(124,92,255,.12);
@@ -296,6 +276,91 @@
       line-height: 1.35;
     }
 
+    /* Library UI */
+    .seg{
+      display:flex;
+      gap: 8px;
+      padding: 6px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+    }
+    .segbtn{
+      flex:1;
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      border-radius: 12px;
+      padding: 10px 10px;
+      font-weight: 750;
+      font-size: 12.5px;
+      color: var(--muted);
+      background: transparent;
+      user-select:none;
+    }
+    .segbtn.active{
+      color: var(--text);
+      background: rgba(124,92,255,.16);
+      border: 1px solid rgba(124,92,255,.22);
+    }
+
+    .list{
+      display:grid;
+      gap: 10px;
+    }
+    .item{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      border-radius: 16px;
+      padding: 12px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .item .left{
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .item .name{
+      font-weight: 820;
+      letter-spacing: .15px;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 58vw;
+    }
+    .item .meta{
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .item .actions{
+      display:flex;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    .mini{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      border-radius: 12px;
+      padding: 10px 10px;
+      font-weight: 750;
+      font-size: 12px;
+      color: var(--text);
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      user-select:none;
+    }
+    .mini.danger{
+      background: rgba(255,92,122,.14);
+      border-color: rgba(255,92,122,.28);
+    }
+
+    /* Bottom nav */
     .nav{
       position: fixed;
       left: 0;
@@ -356,6 +421,7 @@
       border-color: rgba(124,92,255,.30);
     }
 
+    /* Modal */
     .modalHost{
       position: fixed;
       inset: 0;
@@ -451,8 +517,8 @@
     const DefaultState = () => ({
       schemaVersion: 1,
       createdAt: Date.now(),
-      profile: null, // { name, proteinGoal, weekStartsOn: "mon"|"sun", hideRestDays: boolean }
-      routines: [],  // [{ id, name, templateKey, createdAt, days:[{ id, label, isRest, exercises:[] }] }]
+      profile: null,
+      routines: [],
       activeRoutineId: null,
       exerciseLibrary: {
         weightlifting: [],
@@ -495,7 +561,6 @@
      ********************/
     const $ = (sel, root=document) => root.querySelector(sel);
 
-    // ✅ FIX: normalize event names to lowercase so onClick works (click), onInput works (input), etc.
     const el = (tag, attrs={}, children=[]) => {
       const n = document.createElement(tag);
       for (const [k,v] of Object.entries(attrs)){
@@ -513,6 +578,8 @@
     };
 
     const uid = (prefix="id") => `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
+
+    const normName = (s) => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
 
     /********************
      * 3) Routine templates
@@ -573,7 +640,78 @@
     }
 
     /********************
-     * 4) Modal
+     * 4) Exercise Library Module (Step 3)
+     ********************/
+    const ExerciseLibrary = {
+      typeKeys: ["weightlifting","cardio","core"],
+      typeLabel(type){
+        if(type === "weightlifting") return "Weightlifting";
+        if(type === "cardio") return "Cardio";
+        return "Core";
+      },
+      ensureSeeded(){
+        // Only seed if ALL empty
+        const lib = state.exerciseLibrary || (state.exerciseLibrary = { weightlifting:[], cardio:[], core:[] });
+        const empty = (lib.weightlifting?.length||0) === 0 && (lib.cardio?.length||0) === 0 && (lib.core?.length||0) === 0;
+        if(!empty) return;
+
+        lib.weightlifting = [
+          { id: uid("ex"), type:"weightlifting", name:"Bench Press", equipment:"barbell", primaryMuscle:"chest", isCompound:true, createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Incline Dumbbell Press", equipment:"dumbbell", primaryMuscle:"chest", isCompound:true, createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Lat Pulldown", equipment:"cable", primaryMuscle:"back", isCompound:true, createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Squat", equipment:"barbell", primaryMuscle:"legs", isCompound:true, createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Curl", equipment:"dumbbell", primaryMuscle:"biceps", isCompound:false, createdAt:Date.now() }
+        ];
+
+        lib.cardio = [
+          { id: uid("ex"), type:"cardio", name:"Treadmill Run", modality:"run", supportsIncline:true, createdAt:Date.now() },
+          { id: uid("ex"), type:"cardio", name:"Stationary Bike", modality:"bike", supportsIncline:false, createdAt:Date.now() },
+          { id: uid("ex"), type:"cardio", name:"Rowing Machine", modality:"row", supportsIncline:false, createdAt:Date.now() }
+        ];
+
+        lib.core = [
+          { id: uid("ex"), type:"core", name:"Plank", equipment:"bodyweight", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Hanging Knee Raise", equipment:"bodyweight", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Cable Crunch", equipment:"cable", createdAt:Date.now() }
+        ];
+
+        Storage.save(state);
+      },
+      list(type){
+        return (state.exerciseLibrary?.[type] || []);
+      },
+      existsByName(type, name, excludeId=null){
+        const n = normName(name);
+        return this.list(type).some(x => normName(x.name) === n && x.id !== excludeId);
+      },
+      add(type, data){
+        if(this.existsByName(type, data.name)) throw new Error("Exercise already exists in this category.");
+        const ex = { id: uid("ex"), type, createdAt: Date.now(), ...data };
+        state.exerciseLibrary[type].push(ex);
+        Storage.save(state);
+        return ex;
+      },
+      update(type, id, patch){
+        const arr = this.list(type);
+        const idx = arr.findIndex(x => x.id === id);
+        if(idx < 0) throw new Error("Exercise not found.");
+        const nextName = patch.name ?? arr[idx].name;
+        if(this.existsByName(type, nextName, id)) throw new Error("Another exercise with that name already exists.");
+        arr[idx] = { ...arr[idx], ...patch };
+        Storage.save(state);
+        return arr[idx];
+      },
+      remove(type, id){
+        const arr = this.list(type);
+        const idx = arr.findIndex(x => x.id === id);
+        if(idx < 0) return;
+        arr.splice(idx, 1);
+        Storage.save(state);
+      }
+    };
+
+    /********************
+     * 5) Modal
      ********************/
     const Modal = {
       open({ title, bodyNode }){
@@ -597,7 +735,7 @@
     $("#modalBackdrop").addEventListener("click", Modal.close);
 
     /********************
-     * 5) Router + Views
+     * 6) Router + Views
      ********************/
     const Routes = {
       home: { label: "Home" },
@@ -658,6 +796,9 @@
       else if(currentRoute === "more") root.appendChild(Views.More());
     }
 
+    /********************
+     * 7) Views
+     ********************/
     const Views = {
       Onboarding(){
         let hideRestDays = true;
@@ -727,6 +868,9 @@
           state.routines = [routine];
           state.activeRoutineId = routine.id;
 
+          // Seed library if empty
+          ExerciseLibrary.ensureSeeded();
+
           Storage.save(state);
           navigate("home");
         };
@@ -790,13 +934,6 @@
                 }
               }, ["Reset"])
             ])
-          ]),
-          el("div", { class:"card" }, [
-            el("h2", { text:"What you’re building" }),
-            el("div", { class:"note", html:
-              "This runs fully on-device for Safari “Add to Home Screen.”<br/>" +
-              "No account, no login, no cloud—unless you export/import backups."
-            })
           ])
         ]);
       },
@@ -826,17 +963,357 @@
             el("div", { class:"muted", text:"Weekly dots + tap check-in. Calendar view later." })
           ]),
           el("div", { class:"card" }, [
-            el("h2", { text:"Routine" }),
-            el("div", { class:"muted", text:`Active routine: ${state.routines.find(r => r.id === state.activeRoutineId)?.name || "—"}` })
+            el("h2", { text:"Library" }),
+            el("div", { class:"muted", text:`Exercises saved: ${
+              (state.exerciseLibrary.weightlifting?.length||0) +
+              (state.exerciseLibrary.cardio?.length||0) +
+              (state.exerciseLibrary.core?.length||0)
+            }` })
           ])
         ]);
       },
 
       Routine(){
+        ExerciseLibrary.ensureSeeded();
+
+        let tab = "weightlifting";
+        let query = "";
+
+        const listHost = el("div", { class:"list" });
+
+        const searchInput = el("input", { type:"text", placeholder:"Search exercises…" });
+        searchInput.addEventListener("input", () => {
+          query = searchInput.value || "";
+          renderList();
+        });
+
+        const seg = el("div", { class:"seg" });
+        const segButtons = {};
+        ExerciseLibrary.typeKeys.forEach(t => {
+          const b = el("button", {
+            class:"segbtn" + (t === tab ? " active" : ""),
+            onClick: () => {
+              tab = t;
+              Object.entries(segButtons).forEach(([k, btn]) => btn.classList.toggle("active", k === tab));
+              renderList();
+            }
+          }, [ExerciseLibrary.typeLabel(t)]);
+          segButtons[t] = b;
+          seg.appendChild(b);
+        });
+
+        const metaText = () => {
+          const total = ExerciseLibrary.list(tab).length;
+          const shown = getFiltered().length;
+          return shown === total ? `${total} exercises` : `${shown} of ${total} shown`;
+        };
+
+        const getFiltered = () => {
+          const q = normName(query);
+          const items = [...ExerciseLibrary.list(tab)];
+          items.sort((a,b) => (a.name||"").localeCompare(b.name||""));
+          if(!q) return items;
+          return items.filter(x => normName(x.name).includes(q));
+        };
+
+        const openAddModal = () => {
+          Modal.open({
+            title: `Add ${ExerciseLibrary.typeLabel(tab)} exercise`,
+            bodyNode: buildExerciseForm({
+              mode: "add",
+              type: tab,
+              initial: null,
+              onSave: (data) => {
+                try{
+                  ExerciseLibrary.add(tab, data);
+                  Modal.close();
+                  renderView(); // refresh Routine tab UI
+                }catch(e){
+                  showFormError(e.message || "Unable to add exercise.");
+                }
+              }
+            })
+          });
+        };
+
+        const openEditModal = (ex) => {
+          Modal.open({
+            title: `Edit: ${ex.name}`,
+            bodyNode: buildExerciseForm({
+              mode: "edit",
+              type: tab,
+              initial: ex,
+              onSave: (data) => {
+                try{
+                  ExerciseLibrary.update(tab, ex.id, data);
+                  Modal.close();
+                  renderView();
+                }catch(e){
+                  showFormError(e.message || "Unable to save changes.");
+                }
+              }
+            })
+          });
+        };
+
+        const showFormError = (msg) => {
+          const box = $("#formError");
+          if(box){
+            box.textContent = msg;
+            box.style.display = "block";
+          }
+        };
+
+        function renderList(){
+          listHost.innerHTML = "";
+
+          const items = getFiltered();
+          const headerLine = el("div", { class:"note", text: metaText() });
+          listHost.appendChild(headerLine);
+
+          if(items.length === 0){
+            listHost.appendChild(el("div", { class:"note", text:"No exercises found. Try a different search or add one." }));
+            return;
+          }
+
+          items.forEach(ex => {
+            const meta = formatExerciseMeta(ex);
+            const row = el("div", { class:"item" }, [
+              el("div", { class:"left" }, [
+                el("div", { class:"name", text: ex.name }),
+                el("div", { class:"meta", text: meta })
+              ]),
+              el("div", { class:"actions" }, [
+                el("button", { class:"mini", onClick: () => openEditModal(ex) }, ["Edit"]),
+                el("button", {
+                  class:"mini danger",
+                  onClick: () => {
+                    Modal.open({
+                      title: "Delete exercise?",
+                      bodyNode: el("div", {}, [
+                        el("div", { class:"note", text:`This removes "${ex.name}" from your ${ExerciseLibrary.typeLabel(tab)} library.` }),
+                        el("div", { style:"height:12px" }),
+                        el("div", { class:"btnrow" }, [
+                          el("button", {
+                            class:"btn danger",
+                            onClick: () => {
+                              ExerciseLibrary.remove(tab, ex.id);
+                              Modal.close();
+                              renderView();
+                            }
+                          }, ["Delete"]),
+                          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                        ])
+                      ])
+                    });
+                  }
+                }, ["Delete"])
+              ])
+            ]);
+            listHost.appendChild(row);
+          });
+        }
+
+        function formatExerciseMeta(ex){
+          if(ex.type === "weightlifting"){
+            const a = ex.equipment ? `Equipment: ${titleCase(ex.equipment)}` : "Equipment: —";
+            const b = ex.primaryMuscle ? `Muscle: ${titleCase(ex.primaryMuscle)}` : "Muscle: —";
+            const c = typeof ex.isCompound === "boolean" ? (ex.isCompound ? "Compound" : "Isolation") : "—";
+            return `${a} • ${b} • ${c}`;
+          }
+          if(ex.type === "cardio"){
+            const a = ex.modality ? `Mode: ${titleCase(ex.modality)}` : "Mode: —";
+            const b = ex.supportsIncline ? "Incline: Yes" : "Incline: No";
+            return `${a} • ${b}`;
+          }
+          // core
+          const a = ex.equipment ? `Equipment: ${titleCase(ex.equipment)}` : "Equipment: —";
+          return `${a}`;
+        }
+
+        function titleCase(s){
+          return (s||"").toString().replace(/_/g," ").replace(/\b\w/g, m => m.toUpperCase());
+        }
+
+        function buildExerciseForm({ mode, type, initial, onSave }){
+          const err = el("div", { id:"formError", class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+          const nameInput = el("input", { type:"text", placeholder:"Exercise name" });
+          nameInput.value = initial?.name || "";
+
+          const form = el("div", { class:"form" });
+
+          // Common
+          form.appendChild(el("label", {}, [
+            el("span", { text:"Name" }),
+            nameInput
+          ]));
+
+          if(type === "weightlifting"){
+            const equipment = el("select", {});
+            ["dumbbell","barbell","machine","cable","bodyweight","other"].forEach(v => {
+              equipment.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
+            });
+            equipment.value = initial?.equipment || "dumbbell";
+
+            const muscle = el("select", {});
+            ["chest","back","legs","shoulders","biceps","triceps","glutes","hamstrings","quads","calves","full body","other"].forEach(v => {
+              muscle.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
+            });
+            muscle.value = initial?.primaryMuscle || "chest";
+
+            let isCompound = (typeof initial?.isCompound === "boolean") ? initial.isCompound : true;
+            const compoundSwitch = el("div", { class:"switch " + (isCompound ? "on" : "") });
+            compoundSwitch.addEventListener("click", () => {
+              isCompound = !isCompound;
+              compoundSwitch.classList.toggle("on", isCompound);
+            });
+
+            form.appendChild(el("div", { class:"row2" }, [
+              el("label", {}, [ el("span", { text:"Equipment" }), equipment ]),
+              el("label", {}, [ el("span", { text:"Primary muscle" }), muscle ])
+            ]));
+
+            form.appendChild(el("div", { class:"toggle" }, [
+              el("div", { class:"ttext" }, [
+                el("div", { class:"a", text:"Compound lift" }),
+                el("div", { class:"b material", text:"Used later for volume/PR logic and routine templates." })
+              ]),
+              compoundSwitch
+            ]));
+
+            form.appendChild(err);
+
+            const saveBtn = el("button", {
+              class:"btn primary",
+              onClick: () => {
+                err.style.display = "none";
+                const name = (nameInput.value || "").trim();
+                if(!name){ err.textContent = "Name is required."; err.style.display="block"; return; }
+                onSave({
+                  name,
+                  equipment: equipment.value,
+                  primaryMuscle: muscle.value,
+                  isCompound
+                });
+              }
+            }, [mode === "add" ? "Add exercise" : "Save changes"]);
+
+            return el("div", {}, [
+              form,
+              el("div", { style:"height:12px" }),
+              el("div", { class:"btnrow" }, [
+                saveBtn,
+                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+              ])
+            ]);
+          }
+
+          if(type === "cardio"){
+            const modality = el("select", {});
+            ["run","bike","row","stairmaster","elliptical","walk","other"].forEach(v => {
+              modality.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
+            });
+            modality.value = initial?.modality || "run";
+
+            let supportsIncline = !!initial?.supportsIncline;
+            const inclineSwitch = el("div", { class:"switch " + (supportsIncline ? "on" : "") });
+            inclineSwitch.addEventListener("click", () => {
+              supportsIncline = !supportsIncline;
+              inclineSwitch.classList.toggle("on", supportsIncline);
+            });
+
+            form.appendChild(el("label", {}, [ el("span", { text:"Modality" }), modality ]));
+            form.appendChild(el("div", { class:"toggle" }, [
+              el("div", { class:"ttext" }, [
+                el("div", { class:"a", text:"Supports incline" }),
+                el("div", { class:"b", text:"If enabled, cardio logs can include incline." })
+              ]),
+              inclineSwitch
+            ]));
+
+            form.appendChild(err);
+
+            const saveBtn = el("button", {
+              class:"btn primary",
+              onClick: () => {
+                err.style.display = "none";
+                const name = (nameInput.value || "").trim();
+                if(!name){ err.textContent = "Name is required."; err.style.display="block"; return; }
+                onSave({
+                  name,
+                  modality: modality.value,
+                  supportsIncline
+                });
+              }
+            }, [mode === "add" ? "Add exercise" : "Save changes"]);
+
+            return el("div", {}, [
+              form,
+              el("div", { style:"height:12px" }),
+              el("div", { class:"btnrow" }, [
+                saveBtn,
+                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+              ])
+            ]);
+          }
+
+          // core
+          const equipment = el("select", {});
+          ["bodyweight","weighted","cable","other"].forEach(v => {
+            equipment.appendChild(el("option", { value:v, text: v.replace(/\b\w/g, m => m.toUpperCase()) }));
+          });
+          equipment.value = initial?.equipment || "bodyweight";
+
+          form.appendChild(el("label", {}, [ el("span", { text:"Equipment" }), equipment ]));
+          form.appendChild(err);
+
+          const saveBtn = el("button", {
+            class:"btn primary",
+            onClick: () => {
+              err.style.display = "none";
+              const name = (nameInput.value || "").trim();
+              if(!name){ err.textContent = "Name is required."; err.style.display="block"; return; }
+              onSave({
+                name,
+                equipment: equipment.value
+              });
+            }
+          }, [mode === "add" ? "Add exercise" : "Save changes"]);
+
+          return el("div", {}, [
+            form,
+            el("div", { style:"height:12px" }),
+            el("div", { class:"btnrow" }, [
+              saveBtn,
+              el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+            ])
+          ]);
+        }
+
+        // initial render
+        renderList();
+
         return el("div", { class:"grid" }, [
           el("div", { class:"card" }, [
-            el("h2", { text:"Routine" }),
-            el("div", { class:"muted", text:"Next step: routine editor + rest day toggle + add exercises from library." })
+            el("h2", { text:"Exercise Library" }),
+            el("div", { class:"note", text:"This is your saved exercise list used by Routine + Log Sets. Add anything you don’t see here." }),
+            el("div", { style:"height:10px" }),
+            seg,
+            el("div", { style:"height:10px" }),
+            el("div", { class:"row2" }, [
+              el("label", {}, [
+                el("span", { text:"Search" }),
+                searchInput
+              ]),
+              el("div", { style:"display:flex; align-items:end;" }, [
+                el("button", { class:"btn primary", onClick: openAddModal }, ["Add exercise"])
+              ])
+            ])
+          ]),
+          el("div", { class:"card" }, [
+            el("h2", { text:"Results" }),
+            listHost
           ])
         ]);
       },
@@ -908,8 +1385,11 @@
     };
 
     /********************
-     * 6) Boot
+     * 8) Boot
      ********************/
+    // If already onboarded and library is empty, seed it (won't overwrite non-empty)
+    if(state.profile) ExerciseLibrary.ensureSeeded();
+
     renderNav();
     renderView();
   </script>
