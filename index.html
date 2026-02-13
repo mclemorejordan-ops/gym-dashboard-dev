@@ -4954,13 +4954,13 @@ function openExercisePicker({ title="Pick Exercise", initial="", onConfirm }){
 
   exPickSearch.value = "";
   renderExercisePickerList();
-  lockBodyScroll();                 // ✅ ADD
+  lockBodyScroll();
   exPickModal.style.display = "block";
 }
 
 function closeExercisePicker(){
   exPickModal.style.display = "none";
-  unlockBodyScroll(); // ✅ ADD THIS
+  unlockBodyScroll();
   exPickSelected = "";
   exPickOnConfirm = null;
 }
@@ -4974,15 +4974,14 @@ function renderExercisePickerList(){
 
   exPickList.innerHTML = "";
 
-  // ✅ "Create new" option when typing
+  // "Create new" option when typing
   if(rawQ){
     const exists = all.some(n => normExName(n) === normExName(rawQ));
     if(!exists){
       const create = document.createElement("div");
       create.className = "exPickItem";
 
-      // ✅ BUG FIX: never inject raw user input into innerHTML (prevents broken markup / XSS)
-      create.innerHTML = ""; // clear
+      // Build safely (no raw innerHTML with user input)
       const row = document.createElement("div");
       row.className = "exPickRow";
 
@@ -4996,7 +4995,7 @@ function renderExercisePickerList(){
         const created = addCustomExercise(rawQ);
         if(!created) return;
 
-        // SINGLE: create + immediately select + confirm + close
+        // create + immediately confirm + close
         exPickSelected = created;
 
         if(typeof exPickOnConfirm === "function"){
@@ -5042,7 +5041,6 @@ function renderExercisePickerList(){
 exPickSearch.addEventListener("input", renderExercisePickerList);
 
 exPickConfirmBtn.addEventListener("click", ()=>{
-  // single mode
   if(!exPickSelected){
     alert("Pick an exercise first.");
     return;
@@ -5057,7 +5055,6 @@ exPickConfirmBtn.addEventListener("click", ()=>{
 
 [exPickCloseBtn, exPickCancelBtn].forEach(btn=>btn.addEventListener("click", closeExercisePicker));
 exPickModal.addEventListener("click", (e)=>{ if(e.target === exPickModal) closeExercisePicker(); });
-
 
 function progressExerciseType(exName){
   const ex = String(exName || "").trim();
