@@ -1024,6 +1024,84 @@ button.mini.added{
   pointer-events: auto;
   box-shadow: 0 18px 48px rgba(0,0,0,.55);
 } 
+/* Settings accordion + search */
+.settingsWrap{ display:flex; flex-direction:column; gap: 10px; }
+.settingsSearch{
+  width: 100%;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+}
+.settingsSearch .ico{ opacity:.75; font-size: 14px; }
+.settingsSearch input{
+  flex:1;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  outline: none !important;
+}
+.accList{ display:flex; flex-direction:column; gap: 10px; }
+.accItem{
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  border-radius: var(--r);
+  overflow:hidden;
+}
+.accHdr{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 12px 12px;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  cursor: pointer;
+}
+.accHdr:active{ transform: scale(.995); }
+.accHdr .left{ display:flex; flex-direction:column; gap: 2px; text-align:left; }
+.accHdr .t{ font-weight: 800; letter-spacing:.1px; }
+.accHdr .s{ font-size: 12px; color: var(--muted); }
+.accHdr .chev{ opacity:.8; transform: rotate(-90deg); transition: transform .18s ease; }
+.accItem.open .accHdr{ background: rgba(255,255,255,.04); }
+.accItem.open .accHdr .chev{ transform: rotate(0deg); }
+.accBody{
+  display:none;
+  padding: 12px 12px 14px 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.accItem.open .accBody{ display:block; }
+.setRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.setRow:last-child{ border-bottom:none; padding-bottom: 0; }
+.setRow .meta{ color: var(--muted); font-size: 12px; }
+.setLink{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.05);
+  cursor:pointer;
+}
+.setLink:active{ transform: scale(.995); }
+.setLink .l{ display:flex; flex-direction:column; gap:2px; }
+.setLink .a{ font-weight: 800; }
+.setLink .b{ font-size: 12px; color: var(--muted); }
   </style>
 </head>
 
@@ -1160,7 +1238,18 @@ button.mini.added{
       Storage.save(state);
     }
     let state = Storage.load();
-
+    // UI-only ephemeral state (kept out of Storage)
+const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
+  settings: {
+    q: "",
+    open: { "profile": true, "library": false, "backup": false, "data": false, "debug": false }
+  },
+  libraryManage: {
+    q: "",
+    type: "weightlifting",
+    equipment: "all"
+  }
+});
     /********************
      * 2) Helpers
      ********************/
@@ -2196,7 +2285,7 @@ const Modal = {
     /********************
      * 6) Router + Views
      ********************/
-    const Routes = {
+const Routes = {
   // Bottom nav (mobile-first)
   home: { label: "Home", nav:true },
   routine: { label: "Routine", nav:true },
@@ -2206,8 +2295,10 @@ const Modal = {
   // Non-nav routes (opened via buttons/links)
   weight: { label: "Weight", nav:false },
   attendance: { label: "Attendance", nav:false },
-  routine_editor: { label: "Routine Editor", nav:false }
+  routine_editor: { label: "Routine Editor", nav:false },
+  exercise_library: { label: "Exercise Library", nav:false }
 };
+
 
 const NAV_KEYS = Object.entries(Routes)
   .filter(([,v]) => v.nav)
@@ -2262,10 +2353,11 @@ function renderNav(){
         return;
       }
 
-         if(currentRoute === "home") root.appendChild(Views.Home());
+if(currentRoute === "home") root.appendChild(Views.Home());
 else if(currentRoute === "routine") root.appendChild(Views.Routine());
 else if(currentRoute === "progress") root.appendChild(Views.Progress());
 else if(currentRoute === "settings") root.appendChild(Views.Settings());
+else if(currentRoute === "exercise_library") root.appendChild(Views.ExerciseLibraryManager());
 else if(currentRoute === "weight") root.appendChild(Views.Weight());
 else if(currentRoute === "attendance") root.appendChild(Views.Attendance());
 else if(currentRoute === "routine_editor") root.appendChild(Views.RoutineEditor());
@@ -4390,7 +4482,1292 @@ el("div", { class:"card" }, [
         ]);
       }
     }; // ✅ end Views object
-Views.RoutineEditor = function(){
+Views.ExerciseLibraryManager = function(){
+  ExerciseLibrary.ensureSeeded();
+
+  const ui = UIState.libraryManage;
+  const root = el("div", { class:"grid" });
+
+  // Header
+  root.appendChild(el("div", { class:"card" }, [
+    el("div", { class:"kpi" }, [
+      el("div", { class:"big", text:"Exercise Library" }),
+      el("div", { class:"small", text:"Search, add, edit, or delete exercises." })
+    ]),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", { class:"btn", onClick: () => navigate("settings") }, ["← Settings"]),
+      el("button", { class:"btn primary", onClick: () => openAddEditModal(null) }, ["+ Add Exercise"])
+    ])
+  ]));
+
+  // Controls card
+  const controls = el("div", { class:"card" }, [
+    el("h2", { text:"Filters" })
+  ]);
+
+  const typeChips = el("div", { class:"chips" });
+  ExerciseLibrary.typeKeys.forEach(t => {
+    typeChips.appendChild(el("div", {
+      class:"chip" + (ui.type === t ? " on" : ""),
+      onClick: () => { ui.type = t; ui.equipment = "all"; renderView(); }
+    }, [ExerciseLibrary.typeLabel(t)]));
+  });
+
+  const search = el("input", { type:"text", placeholder:"Search exercises…", value: ui.q || "" });
+  search.addEventListener("input", (e) => { ui.q = e.target.value || ""; renderView(); });
+
+  const equipSelect = el("select", {});
+  equipSelect.appendChild(el("option", { value:"all", text:"All equipment" }));
+  const equipSet = new Set();
+  ExerciseLibrary.list(ui.type).forEach(x => { if(x.equipment) equipSet.add(x.equipment); });
+  Array.from(equipSet).sort().forEach(eq => equipSelect.appendChild(el("option", { value:eq, text:eq })));
+  equipSelect.value = ui.equipment || "all";
+  equipSelect.addEventListener("change", (e) => { ui.equipment = e.target.value || "all"; renderView(); });
+
+  controls.appendChild(el("div", { class:"note", text:"Type" }));
+  controls.appendChild(typeChips);
+  controls.appendChild(el("div", { style:"height:10px" }));
+  controls.appendChild(el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Search" }), search ]),
+    el("label", {}, [ el("span", { text:"Equipment" }), equipSelect ])
+  ]));
+
+  root.appendChild(controls);
+
+  // List card
+  const listCard = el("div", { class:"card" }, [
+    el("h2", { text:"Exercises" }),
+    el("div", { class:"note", text:"Tip: Deleting an exercise will not erase old logs (they use the saved name snapshot)." })
+  ]);
+
+  const listHost = el("div", { style:"display:flex; flex-direction:column; gap:10px; margin-top:10px;" });
+
+  const q = (ui.q || "").trim().toLowerCase();
+  const eq = ui.equipment || "all";
+
+  const items = ExerciseLibrary.list(ui.type)
+    .filter(x => !q || (x.name || "").toLowerCase().includes(q))
+    .filter(x => eq === "all" || (x.equipment || "") === eq)
+    .sort((a,b) => (a.name || "").localeCompare(b.name || ""));
+
+  if(items.length === 0){
+    listHost.appendChild(el("div", { class:"note", text:"No exercises match your filters." }));
+  } else {
+    items.forEach(ex => {
+      const sub = (() => {
+        if(ui.type === "weightlifting"){
+          const parts = [];
+          if(ex.primaryMuscle) parts.push(ex.primaryMuscle);
+          if(ex.equipment) parts.push(ex.equipment);
+          if(typeof ex.isCompound === "boolean") parts.push(ex.isCompound ? "compound" : "isolation");
+          return parts.join(" • ") || "—";
+        }
+        if(ui.type === "cardio"){
+          const parts = [];
+          if(ex.modality) parts.push(ex.modality);
+          if(ex.supportsIncline) parts.push("incline");
+          return parts.join(" • ") || "—";
+        }
+        const parts = [];
+        if(ex.equipment) parts.push(ex.equipment);
+        return parts.join(" • ") || "—";
+      })();
+
+      listHost.appendChild(el("div", { class:"item" }, [
+        el("div", { style:"font-weight:860; letter-spacing:.1px;", text: ex.name }),
+        el("div", { class:"meta", text: sub }),
+        el("div", { style:"height:10px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", { class:"btn", onClick: () => openAddEditModal(ex) }, ["Edit"]),
+          el("button", {
+            class:"btn danger",
+            onClick: () => attemptDelete(ex)
+          }, ["Delete"])
+        ])
+      ]));
+    });
+  }
+
+  listCard.appendChild(listHost);
+  root.appendChild(listCard);
+
+  function countRoutineRefs(type, exerciseId){
+    let count = 0;
+    (state.routines || []).forEach(r => {
+      (r.days || []).forEach(d => {
+        (d.exercises || []).forEach(rx => {
+          if(rx.type === type && rx.exerciseId === exerciseId) count++;
+        });
+      });
+    });
+    return count;
+  }
+
+  function attemptDelete(ex){
+    const refs = countRoutineRefs(ui.type, ex.id);
+    const note = refs > 0
+      ? `This exercise is currently used in ${refs} routine slot(s). If you delete it, routines will still show the saved name snapshot, but you won’t be able to select it again.`
+      : "Delete this exercise from your library?";
+
+    Modal.open({
+      title: "Delete exercise",
+      bodyNode: el("div", {}, [
+        el("div", { class:"note", text: note }),
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn danger",
+            onClick: () => {
+              ExerciseLibrary.remove(ui.type, ex.id);
+              Modal.close();
+              renderView();
+              showToast("Exercise deleted");
+            }
+          }, ["Delete"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  }
+
+  function openAddEditModal(existing){
+    const isEdit = !!existing;
+
+    const name = el("input", { type:"text", value: existing?.name || "", placeholder:"Bench Press" });
+
+    const body = el("div", {}, [
+      el("div", { class:"note", text: isEdit ? "Update this exercise." : "Add a new exercise to your library." }),
+      el("div", { style:"height:10px" }),
+      el("label", {}, [ el("span", { text:"Name" }), name ])
+    ]);
+
+    // Type-specific fields
+    let equipment = null, primaryMuscle = null, isCompound = null, modality = null, supportsIncline = null;
+
+    if(ui.type === "weightlifting"){
+      equipment = el("select", {});
+      ["barbell","dumbbell","machine","cable","bodyweight","other"].forEach(v => equipment.appendChild(el("option", { value:v, text:v })));
+      equipment.value = existing?.equipment || "barbell";
+
+      primaryMuscle = el("select", {});
+      ["chest","back","legs","shoulders","biceps","triceps","glutes","core","full","other"].forEach(v => primaryMuscle.appendChild(el("option", { value:v, text:v })));
+      primaryMuscle.value = existing?.primaryMuscle || "chest";
+
+      isCompound = el("select", {});
+      isCompound.appendChild(el("option", { value:"true", text:"Compound" }));
+      isCompound.appendChild(el("option", { value:"false", text:"Isolation" }));
+      isCompound.value = (existing?.isCompound === false) ? "false" : "true";
+
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Equipment" }), equipment ]),
+        el("label", {}, [ el("span", { text:"Primary muscle" }), primaryMuscle ])
+      ]));
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("label", {}, [ el("span", { text:"Style" }), isCompound ]));
+    }
+    else if(ui.type === "cardio"){
+      modality = el("select", {});
+      ["run","bike","row","stair","elliptical","walk","other"].forEach(v => modality.appendChild(el("option", { value:v, text:v })));
+      modality.value = existing?.modality || "run";
+
+      supportsIncline = el("select", {});
+      supportsIncline.appendChild(el("option", { value:"true", text:"Supports incline" }));
+      supportsIncline.appendChild(el("option", { value:"false", text:"No incline" }));
+      supportsIncline.value = (existing?.supportsIncline) ? "true" : "false";
+
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Modality" }), modality ]),
+        el("label", {}, [ el("span", { text:"Incline" }), supportsIncline ])
+      ]));
+    }
+    else {
+      equipment = el("select", {});
+      ["bodyweight","cable","machine","other"].forEach(v => equipment.appendChild(el("option", { value:v, text:v })));
+      equipment.value = existing?.equipment || "bodyweight";
+
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("label", {}, [ el("span", { text:"Equipment" }), equipment ]));
+    }
+
+    const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+    body.appendChild(el("div", { style:"height:10px" }));
+    body.appendChild(err);
+    body.appendChild(el("div", { style:"height:12px" }));
+    body.appendChild(el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn primary",
+        onClick: () => {
+          err.style.display = "none";
+          try{
+            const nm = (name.value || "").trim();
+            if(!nm) throw new Error("Name is required.");
+
+            if(ui.type === "weightlifting"){
+              const payload = {
+                name: nm,
+                equipment: equipment.value,
+                primaryMuscle: primaryMuscle.value,
+                isCompound: (isCompound.value === "true")
+              };
+              if(isEdit) ExerciseLibrary.update(ui.type, existing.id, payload);
+              else ExerciseLibrary.add(ui.type, payload);
+            } else if(ui.type === "cardio"){
+              const payload = {
+                name: nm,
+                modality: modality.value,
+                supportsIncline: (supportsIncline.value === "true")
+              };
+              if(isEdit) ExerciseLibrary.update(ui.type, existing.id, payload);
+              else ExerciseLibrary.add(ui.type, payload);
+            } else {
+              const payload = { name: nm, equipment: equipment.value };
+              if(isEdit) ExerciseLibrary.update(ui.type, existing.id, payload);
+              else ExerciseLibrary.add(ui.type, payload);
+            }
+
+            Modal.close();
+            renderView();
+            showToast(isEdit ? "Exercise updated" : "Exercise added");
+          }catch(e){
+            err.textContent = e.message || "Could not save.";
+            err.style.display = "block";
+          }
+        }
+      }, [isEdit ? "Save" : "Add"]),
+      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+    ]));
+
+    Modal.open({
+      title: isEdit ? "Edit exercise" : "Add exercise",
+      bodyNode: body
+    });
+  }
+
+  return root;
+};
+Views.ExerciseLibraryManager = function(){
+  ExerciseLibrary.ensureSeeded();
+
+  const ui = UIState.libraryManage;
+  const root = el("div", { class:"grid" });
+
+  // Header
+  root.appendChild(el("div", { class:"card" }, [
+    el("div", { class:"kpi" }, [
+      el("div", { class:"big", text:"Exercise Library" }),
+      el("div", { class:"small", text:"Search, add, edit, or delete exercises." })
+    ]),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", { class:"btn", onClick: () => navigate("settings") }, ["← Settings"]),
+      el("button", { class:"btn primary", onClick: () => openAddEditModal(null) }, ["+ Add Exercise"])
+    ])
+  ]));
+
+  // Controls card
+  const controls = el("div", { class:"card" }, [
+    el("h2", { text:"Filters" })
+  ]);
+
+  const typeChips = el("div", { class:"chips" });
+  ExerciseLibrary.typeKeys.forEach(t => {
+    typeChips.appendChild(el("div", {
+      class:"chip" + (ui.type === t ? " on" : ""),
+      onClick: () => { ui.type = t; ui.equipment = "all"; renderView(); }
+    }, [ExerciseLibrary.typeLabel(t)]));
+  });
+
+  const search = el("input", { type:"text", placeholder:"Search exercises…", value: ui.q || "" });
+  search.addEventListener("input", (e) => { ui.q = e.target.value || ""; renderView(); });
+
+  const equipSelect = el("select", {});
+  equipSelect.appendChild(el("option", { value:"all", text:"All equipment" }));
+  const equipSet = new Set();
+  ExerciseLibrary.list(ui.type).forEach(x => { if(x.equipment) equipSet.add(x.equipment); });
+  Array.from(equipSet).sort().forEach(eq => equipSelect.appendChild(el("option", { value:eq, text:eq })));
+  equipSelect.value = ui.equipment || "all";
+  equipSelect.addEventListener("change", (e) => { ui.equipment = e.target.value || "all"; renderView(); });
+
+  controls.appendChild(el("div", { class:"note", text:"Type" }));
+  controls.appendChild(typeChips);
+  controls.appendChild(el("div", { style:"height:10px" }));
+  controls.appendChild(el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Search" }), search ]),
+    el("label", {}, [ el("span", { text:"Equipment" }), equipSelect ])
+  ]));
+
+  root.appendChild(controls);
+
+  // List card
+  const listCard = el("div", { class:"card" }, [
+    el("h2", { text:"Exercises" }),
+    el("div", { class:"note", text:"Tip: Deleting an exercise will not erase old logs (they use the saved name snapshot)." })
+  ]);
+
+  const listHost = el("div", { style:"display:flex; flex-direction:column; gap:10px; margin-top:10px;" });
+
+  const q = (ui.q || "").trim().toLowerCase();
+  const eq = ui.equipment || "all";
+
+  const items = ExerciseLibrary.list(ui.type)
+    .filter(x => !q || (x.name || "").toLowerCase().includes(q))
+    .filter(x => eq === "all" || (x.equipment || "") === eq)
+    .sort((a,b) => (a.name || "").localeCompare(b.name || ""));
+
+  if(items.length === 0){
+    listHost.appendChild(el("div", { class:"note", text:"No exercises match your filters." }));
+  } else {
+    items.forEach(ex => {
+      const sub = (() => {
+        if(ui.type === "weightlifting"){
+          const parts = [];
+          if(ex.primaryMuscle) parts.push(ex.primaryMuscle);
+          if(ex.equipment) parts.push(ex.equipment);
+          if(typeof ex.isCompound === "boolean") parts.push(ex.isCompound ? "compound" : "isolation");
+          return parts.join(" • ") || "—";
+        }
+        if(ui.type === "cardio"){
+          const parts = [];
+          if(ex.modality) parts.push(ex.modality);
+          if(ex.supportsIncline) parts.push("incline");
+          return parts.join(" • ") || "—";
+        }
+        const parts = [];
+        if(ex.equipment) parts.push(ex.equipment);
+        return parts.join(" • ") || "—";
+      })();
+
+      listHost.appendChild(el("div", { class:"item" }, [
+        el("div", { style:"font-weight:860; letter-spacing:.1px;", text: ex.name }),
+        el("div", { class:"meta", text: sub }),
+        el("div", { style:"height:10px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", { class:"btn", onClick: () => openAddEditModal(ex) }, ["Edit"]),
+          el("button", {
+            class:"btn danger",
+            onClick: () => attemptDelete(ex)
+          }, ["Delete"])
+        ])
+      ]));
+    });
+  }
+
+  listCard.appendChild(listHost);
+  root.appendChild(listCard);
+
+  function countRoutineRefs(type, exerciseId){
+    let count = 0;
+    (state.routines || []).forEach(r => {
+      (r.days || []).forEach(d => {
+        (d.exercises || []).forEach(rx => {
+          if(rx.type === type && rx.exerciseId === exerciseId) count++;
+        });
+      });
+    });
+    return count;
+  }
+
+  function attemptDelete(ex){
+    const refs = countRoutineRefs(ui.type, ex.id);
+    const note = refs > 0
+      ? `This exercise is currently used in ${refs} routine slot(s). If you delete it, routines will still show the saved name snapshot, but you won’t be able to select it again.`
+      : "Delete this exercise from your library?";
+
+    Modal.open({
+      title: "Delete exercise",
+      bodyNode: el("div", {}, [
+        el("div", { class:"note", text: note }),
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn danger",
+            onClick: () => {
+              ExerciseLibrary.remove(ui.type, ex.id);
+              Modal.close();
+              renderView();
+              showToast("Exercise deleted");
+            }
+          }, ["Delete"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  }
+
+  function openAddEditModal(existing){
+    const isEdit = !!existing;
+
+    const name = el("input", { type:"text", value: existing?.name || "", placeholder:"Bench Press" });
+
+    const body = el("div", {}, [
+      el("div", { class:"note", text: isEdit ? "Update this exercise." : "Add a new exercise to your library." }),
+      el("div", { style:"height:10px" }),
+      el("label", {}, [ el("span", { text:"Name" }), name ])
+    ]);
+
+    // Type-specific fields
+    let equipment = null, primaryMuscle = null, isCompound = null, modality = null, supportsIncline = null;
+
+    if(ui.type === "weightlifting"){
+      equipment = el("select", {});
+      ["barbell","dumbbell","machine","cable","bodyweight","other"].forEach(v => equipment.appendChild(el("option", { value:v, text:v })));
+      equipment.value = existing?.equipment || "barbell";
+
+      primaryMuscle = el("select", {});
+      ["chest","back","legs","shoulders","biceps","triceps","glutes","core","full","other"].forEach(v => primaryMuscle.appendChild(el("option", { value:v, text:v })));
+      primaryMuscle.value = existing?.primaryMuscle || "chest";
+
+      isCompound = el("select", {});
+      isCompound.appendChild(el("option", { value:"true", text:"Compound" }));
+      isCompound.appendChild(el("option", { value:"false", text:"Isolation" }));
+      isCompound.value = (existing?.isCompound === false) ? "false" : "true";
+
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Equipment" }), equipment ]),
+        el("label", {}, [ el("span", { text:"Primary muscle" }), primaryMuscle ])
+      ]));
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("label", {}, [ el("span", { text:"Style" }), isCompound ]));
+    }
+    else if(ui.type === "cardio"){
+      modality = el("select", {});
+      ["run","bike","row","stair","elliptical","walk","other"].forEach(v => modality.appendChild(el("option", { value:v, text:v })));
+      modality.value = existing?.modality || "run";
+
+      supportsIncline = el("select", {});
+      supportsIncline.appendChild(el("option", { value:"true", text:"Supports incline" }));
+      supportsIncline.appendChild(el("option", { value:"false", text:"No incline" }));
+      supportsIncline.value = (existing?.supportsIncline) ? "true" : "false";
+
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Modality" }), modality ]),
+        el("label", {}, [ el("span", { text:"Incline" }), supportsIncline ])
+      ]));
+    }
+    else {
+      equipment = el("select", {});
+      ["bodyweight","cable","machine","other"].forEach(v => equipment.appendChild(el("option", { value:v, text:v })));
+      equipment.value = existing?.equipment || "bodyweight";
+
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("label", {}, [ el("span", { text:"Equipment" }), equipment ]));
+    }
+
+    const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+    body.appendChild(el("div", { style:"height:10px" }));
+    body.appendChild(err);
+    body.appendChild(el("div", { style:"height:12px" }));
+    body.appendChild(el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn primary",
+        onClick: () => {
+          err.style.display = "none";
+          try{
+            const nm = (name.value || "").trim();
+            if(!nm) throw new Error("Name is required.");
+
+            if(ui.type === "weightlifting"){
+              const payload = {
+                name: nm,
+                equipment: equipment.value,
+                primaryMuscle: primaryMuscle.value,
+                isCompound: (isCompound.value === "true")
+              };
+              if(isEdit) ExerciseLibrary.update(ui.type, existing.id, payload);
+              else ExerciseLibrary.add(ui.type, payload);
+            } else if(ui.type === "cardio"){
+              const payload = {
+                name: nm,
+                modality: modality.value,
+                supportsIncline: (supportsIncline.value === "true")
+              };
+              if(isEdit) ExerciseLibrary.update(ui.type, existing.id, payload);
+              else ExerciseLibrary.add(ui.type, payload);
+            } else {
+              const payload = { name: nm, equipment: equipment.value };
+              if(isEdit) ExerciseLibrary.update(ui.type, existing.id, payload);
+              else ExerciseLibrary.add(ui.type, payload);
+            }
+
+            Modal.close();
+            renderView();
+            showToast(isEdit ? "Exercise updated" : "Exercise added");
+          }catch(e){
+            err.textContent = e.message || "Could not save.";
+            err.style.display = "block";
+          }
+        }
+      }, [isEdit ? "Save" : "Add"]),
+      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+    ]));
+
+    Modal.open({
+      title: isEdit ? "Edit exercise" : "Add exercise",
+      bodyNode: body
+    });
+  }
+
+  return root;
+};
+    Settings(){
+  // Persist across renders (not saved to Storage)
+  const ui = UIState.settings;
+
+  const normalize = (s) => (s||"").toString().trim().toLowerCase();
+
+  // --- Backup / Import modals (existing behavior, kept) ---
+  function openImportPasteModal(){
+    const ta = el("textarea", {
+      style:"width:100%; min-height: 260px; border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: rgba(255,255,255,.92); font-size: 12px; outline:none; resize: vertical;",
+      placeholder:"Paste your backup JSON here…"
+    });
+
+    const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+    Modal.open({
+      title: "Import from paste",
+      bodyNode: el("div", {}, [
+        el("div", { class:"note", text:"This will overwrite your current data in this browser." }),
+        el("div", { style:"height:10px" }),
+        ta,
+        err,
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn danger",
+            onClick: () => {
+              err.style.display = "none";
+              try{
+                importBackupJSON(ta.value || "");
+                Modal.close();
+                navigate("home");
+              }catch(e){
+                err.textContent = e.message || "Import failed.";
+                err.style.display = "block";
+              }
+            }
+          }, ["Import (overwrite)"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  }
+
+  function openImportFileModal(){
+    const input = el("input", { type:"file", accept:"application/json,.json" });
+    const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+    Modal.open({
+      title: "Import from file",
+      bodyNode: el("div", {}, [
+        el("div", { class:"note", text:"Choose a .json backup file. Import overwrites current data." }),
+        el("div", { style:"height:10px" }),
+        input,
+        err,
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn danger",
+            onClick: async () => {
+              err.style.display = "none";
+              try{
+                const f = input.files?.[0];
+                if(!f) throw new Error("Select a JSON file first.");
+                const txt = await f.text();
+                importBackupJSON(txt);
+                Modal.close();
+                navigate("home");
+              }catch(e){
+                err.textContent = e.message || "Import failed.";
+                err.style.display = "block";
+              }
+            }
+          }, ["Import (overwrite)"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  }
+
+  // --- helpers ---
+  const bytesToNice = (n) => {
+    const b = Math.max(0, Number(n) || 0);
+    const units = ["B","KB","MB","GB"];
+    let v = b, i = 0;
+    while(v >= 1024 && i < units.length-1){ v /= 1024; i++; }
+    return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+  };
+
+  const appStorageBytes = () => {
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? raw.length * 2 : 0; // rough UTF-16 estimate
+    }catch(e){ return 0; }
+  };
+
+  const confirmModal = ({ title, note, confirmText="Confirm", danger=true, onConfirm }) => {
+    Modal.open({
+      title,
+      bodyNode: el("div", {}, [
+        el("div", { class:"note", text: note || "" }),
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class: danger ? "btn danger" : "btn primary",
+            onClick: () => {
+              onConfirm?.();
+              Modal.close();
+            }
+          }, [confirmText]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  };
+
+  // --- Profile bindings ---
+  const profile = state.profile || (state.profile = { name:"User", proteinGoal:150, weekStartsOn:"mon", hideRestDays:true });
+
+  const nameInput = el("input", { type:"text", value: profile.name || "" });
+  const proteinInput = el("input", { type:"number", inputmode:"numeric", min:"0", value: String(profile.proteinGoal ?? "") });
+
+  const weekSelect = el("select", {});
+  weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
+  weekSelect.appendChild(el("option", { value:"sun", text:"Sunday" }));
+  weekSelect.value = (profile.weekStartsOn === "sun") ? "sun" : "mon";
+
+  const hideRestSwitch = el("div", { class:"switch" + (profile.hideRestDays ? " on" : "") });
+  hideRestSwitch.addEventListener("click", () => {
+    profile.hideRestDays = !profile.hideRestDays;
+    hideRestSwitch.classList.toggle("on", profile.hideRestDays);
+    Storage.save(state);
+  });
+
+  const saveProfile = () => {
+    const cleanName = (nameInput.value || "").trim();
+    const cleanProtein = Number(proteinInput.value);
+    if(!cleanName) throw new Error("Name cannot be empty.");
+    if(!Number.isFinite(cleanProtein) || cleanProtein <= 0) throw new Error("Enter a valid daily protein goal.");
+    profile.name = cleanName;
+    profile.proteinGoal = Math.round(cleanProtein);
+    profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
+    Storage.save(state);
+    showToast("Settings saved");
+    renderView();
+  };
+
+  // --- Accordion section builder ---
+  const match = (hay) => {
+    const q = normalize(ui.q);
+    if(!q) return true;
+    return normalize(hay).includes(q);
+  };
+
+  const makeSection = ({ key, title, subtitle, keywords=[], bodyNode }) => {
+    const searchable = [title, subtitle, ...(keywords||[])].join(" ");
+    const hit = match(searchable);
+
+    // If searching, auto-open matches and hide non-matches
+    if(ui.q){
+      ui.open[key] = !!hit;
+    }
+
+    const item = el("div", { class:"accItem" + (ui.open[key] ? " open" : ""), "data-key": key });
+    if(!hit) item.style.display = "none";
+
+    const hdr = el("button", {
+      class:"accHdr",
+      onClick: () => {
+        ui.open[key] = !ui.open[key];
+        renderView();
+      }
+    }, [
+      el("div", { class:"left" }, [
+        el("div", { class:"t", text: title }),
+        el("div", { class:"s", text: subtitle })
+      ]),
+      el("div", { class:"chev", text:"▾" })
+    ]);
+
+    const body = el("div", { class:"accBody" }, [bodyNode]);
+
+    item.appendChild(hdr);
+    item.appendChild(body);
+    return item;
+  };
+
+  // --- Section bodies ---
+  const profileBody = el("div", {}, [
+    el("div", { class:"setRow" }, [
+      el("div", {}, [
+        el("div", { style:"font-weight:820;", text:"Name" }),
+        el("div", { class:"meta", text:"Shown on Home" })
+      ]),
+      nameInput
+    ]),
+    el("div", { class:"setRow" }, [
+      el("div", {}, [
+        el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
+        el("div", { class:"meta", text:"grams/day" })
+      ]),
+      proteinInput
+    ]),
+    el("div", { class:"setRow" }, [
+      el("div", {}, [
+        el("div", { style:"font-weight:820;", text:"Week starts on" }),
+        el("div", { class:"meta", text:"Affects Home week view" })
+      ]),
+      weekSelect
+    ]),
+    el("div", { class:"setRow" }, [
+      el("div", {}, [
+        el("div", { style:"font-weight:820;", text:"Hide rest days" }),
+        el("div", { class:"meta", text:"Keep Home focused on training days" })
+      ]),
+      hideRestSwitch
+    ]),
+    el("div", { style:"height:12px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", { class:"btn primary", onClick: () => {
+        try{ saveProfile(); }
+        catch(e){
+          Modal.open({
+            title:"Save failed",
+            bodyNode: el("div", {}, [
+              el("div", { class:"note", text: e?.message || "Could not save settings." }),
+              el("div", { style:"height:12px" }),
+              el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+            ])
+          });
+        }
+      }}, ["Save changes"])
+    ])
+  ]);
+
+  const libraryBody = el("div", {}, [
+    el("div", { class:"setLink", onClick: () => navigate("exercise_library") }, [
+      el("div", { class:"l" }, [
+        el("div", { class:"a", text:"Open Exercise Library Manager" }),
+        el("div", { class:"b", text:"Add, edit, and delete exercises" })
+      ]),
+      el("div", { style:"opacity:.8", text:"→" })
+    ]),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"note", text:"Tip: Exercises removed from the library will still display in old logs using the saved name snapshot." })
+  ]);
+
+  const backupBody = el("div", {}, [
+    el("div", { class:"note", text:"Export your full app data as JSON. Import will overwrite your current data in this browser." }),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn primary",
+        onClick: () => {
+          try{
+            const txt = exportBackupJSON();
+            const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+            downloadTextFile(`gym-dashboard-backup_${stamp}.json`, txt);
+          }catch(e){
+            Modal.open({
+              title:"Export failed",
+              bodyNode: el("div", {}, [
+                el("div", { class:"note", text: e.message || "Could not export backup." }),
+                el("div", { style:"height:12px" }),
+                el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+              ])
+            });
+          }
+        }
+      }, ["Export JSON backup"]),
+      el("button", {
+        class:"btn",
+        onClick: () => {
+          Modal.open({
+            title: "Copy backup JSON",
+            bodyNode: el("div", {}, [
+              el("div", { class:"note", text:"Copy/paste this JSON anywhere safe." }),
+              el("div", { style:"height:10px" }),
+              el("textarea", {
+                style:"width:100%; min-height: 260px; border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: rgba(255,255,255,.92); font-size: 12px; outline:none; resize: vertical;",
+              }, [exportBackupJSON()]),
+              el("div", { style:"height:12px" }),
+              el("button", { class:"btn primary", onClick: Modal.close }, ["Done"])
+            ])
+          });
+        }
+      }, ["View JSON"])
+    ]),
+    el("div", { style:"height:14px" }),
+    el("div", { class:"note", text:"Import options:" }),
+    el("div", { style:"height:8px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", { class:"btn danger", onClick: openImportPasteModal }, ["Import (paste JSON)"]),
+      el("button", { class:"btn danger", onClick: openImportFileModal }, ["Import (upload file)"])
+    ]),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"note", text:"Tip: Export a backup before you import." })
+  ]);
+
+  const dataBody = el("div", {}, [
+    el("div", { class:"note", text:"Repair tools and targeted clears." }),
+    el("div", { style:"height:10px" }),
+
+    el("div", { class:"setLink", onClick: () => {
+      confirmModal({
+        title: "Repair workout logs",
+        note: "Removes duplicate log entries (same date + routine exercise). Keeps the most recent.",
+        confirmText: "Repair logs",
+        danger: true,
+        onConfirm: () => {
+          const seen = new Map();
+          const cleaned = [];
+          (state.logs?.workouts || [])
+            .slice()
+            .sort((a,b)=> (b.createdAt||0) - (a.createdAt||0))
+            .forEach(e => {
+              const key = `${e.dateISO}_${e.routineExerciseId}`;
+              if(!seen.has(key)){
+                seen.set(key,true);
+                cleaned.push(e);
+              }
+            });
+          state.logs.workouts = cleaned;
+          Storage.save(state);
+          showToast("Duplicates removed");
+        }
+      });
+    }}, [
+      el("div", { class:"l" }, [
+        el("div", { class:"a", text:"Repair workout logs" }),
+        el("div", { class:"b", text:"Remove duplicates (keeps most recent)" })
+      ]),
+      el("div", { style:"opacity:.8", text:"→" })
+    ]),
+
+    el("div", { style:"height:10px" }),
+    el("div", { class:"note", text:"Clear specific data:" }),
+    el("div", { style:"height:8px" }),
+
+    el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn danger",
+        onClick: () => confirmModal({
+          title: "Clear workout logs",
+          note: "Deletes all workout logs. This cannot be undone.",
+          confirmText: "Clear workouts",
+          danger: true,
+          onConfirm: () => { state.logs.workouts = []; Storage.save(state); showToast("Workout logs cleared"); }
+        })
+      }, ["Clear workouts"]),
+      el("button", {
+        class:"btn danger",
+        onClick: () => confirmModal({
+          title: "Clear weight logs",
+          note: "Deletes all weigh-ins. This cannot be undone.",
+          confirmText: "Clear weight",
+          danger: true,
+          onConfirm: () => { state.logs.weight = []; Storage.save(state); showToast("Weight logs cleared"); }
+        })
+      }, ["Clear weight"])
+    ]),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn danger",
+        onClick: () => confirmModal({
+          title: "Clear protein logs",
+          note: "Deletes all protein entries. This cannot be undone.",
+          confirmText: "Clear protein",
+          danger: true,
+          onConfirm: () => { state.logs.protein = []; Storage.save(state); showToast("Protein logs cleared"); }
+        })
+      }, ["Clear protein"]),
+      el("button", {
+        class:"btn danger",
+        onClick: () => confirmModal({
+          title: "Clear attendance",
+          note: "Deletes attendance history. This cannot be undone.",
+          confirmText: "Clear attendance",
+          danger: true,
+          onConfirm: () => { state.attendance = []; Storage.save(state); showToast("Attendance cleared"); }
+        })
+      }, ["Clear attendance"])
+    ])
+  ]);
+
+  const debugBody = el("div", {}, [
+    el("div", { class:"note", text:`Schema v${state.schemaVersion} • Approx storage: ${bytesToNice(appStorageBytes())}` }),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn",
+        onClick: () => Modal.open({
+          title: "Current State (JSON)",
+          bodyNode: el("pre", { style:"white-space:pre-wrap; font-size:12px; color: rgba(255,255,255,.85);" }, [
+            JSON.stringify(state, null, 2)
+          ])
+        })
+      }, ["View state JSON"]),
+      el("button", {
+        class:"btn danger",
+        onClick: () => {
+          Modal.open({
+            title: "Reset local data",
+            bodyNode: el("div", {}, [
+              el("div", { class:"note", text:"This clears everything saved in this browser for the app." }),
+              el("div", { style:"height:12px" }),
+              el("div", { class:"btnrow" }, [
+                el("button", {
+                  class:"btn danger",
+                  onClick: () => {
+                    Storage.reset();
+                    state = Storage.load();
+                    Modal.close();
+                    navigate("home");
+                  }
+                }, ["Reset"]),
+                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+              ])
+            ])
+          });
+        }
+      }, ["Reset local data"])
+    ])
+  ]);
+
+  // --- Search Bar ---
+  const searchInput = el("input", {
+    type:"text",
+    placeholder:"Search settings…",
+    value: ui.q || ""
+  });
+  searchInput.addEventListener("input", (e) => {
+    ui.q = e.target.value || "";
+    renderView();
+  });
+
+  const root = el("div", { class:"settingsWrap" }, [
+    el("div", { class:"settingsSearch" }, [
+      el("div", { class:"ico", text:"🔎" }),
+      searchInput
+    ]),
+    el("div", { class:"accList" }, [
+      makeSection({
+        key:"profile",
+        title:"Profile & Preferences",
+        subtitle:"Name, protein goal, week start, rest days",
+        keywords:["name","protein","week","rest","goal"],
+        bodyNode: profileBody
+      }),
+      makeSection({
+        key:"library",
+        title:"Exercise Library",
+        subtitle:"Manage exercises (add/edit/delete)",
+        keywords:["exercise","library","weightlifting","cardio","core"],
+        bodyNode: libraryBody
+      }),
+      makeSection({
+        key:"backup",
+        title:"Backup & Restore",
+        subtitle:"Export/import JSON backups",
+        keywords:["backup","import","export","json","restore"],
+        bodyNode: backupBody
+      }),
+      makeSection({
+        key:"data",
+        title:"Data Tools",
+        subtitle:"Repair duplicates + clear specific data",
+        keywords:["repair","duplicates","clear","logs","attendance"],
+        bodyNode: dataBody
+      }),
+      makeSection({
+        key:"debug",
+        title:"Debug / About",
+        subtitle:"View raw state + reset local data",
+        keywords:["debug","reset","state","storage"],
+        bodyNode: debugBody
+      })
+    ])
+  ]);
+
+  return root;
+}
+Views.ExerciseLibraryManager = function(){
+  ExerciseLibrary.ensureSeeded();
+
+  const ui = UIState.libraryManage;
+  const root = el("div", { class:"grid" });
+
+  // Header
+  root.appendChild(el("div", { class:"card" }, [
+    el("div", { class:"kpi" }, [
+      el("div", { class:"big", text:"Exercise Library" }),
+      el("div", { class:"small", text:"Search, add, edit, or delete exercises." })
+    ]),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", { class:"btn", onClick: () => navigate("settings") }, ["← Settings"]),
+      el("button", { class:"btn primary", onClick: () => openAddEditModal(null) }, ["+ Add Exercise"])
+    ])
+  ]));
+
+  // Controls card
+  const controls = el("div", { class:"card" }, [
+    el("h2", { text:"Filters" })
+  ]);
+
+  const typeChips = el("div", { class:"chips" });
+  ExerciseLibrary.typeKeys.forEach(t => {
+    typeChips.appendChild(el("div", {
+      class:"chip" + (ui.type === t ? " on" : ""),
+      onClick: () => { ui.type = t; ui.equipment = "all"; renderView(); }
+    }, [ExerciseLibrary.typeLabel(t)]));
+  });
+
+  const search = el("input", { type:"text", placeholder:"Search exercises…", value: ui.q || "" });
+  search.addEventListener("input", (e) => { ui.q = e.target.value || ""; renderView(); });
+
+  const equipSelect = el("select", {});
+  equipSelect.appendChild(el("option", { value:"all", text:"All equipment" }));
+  const equipSet = new Set();
+  ExerciseLibrary.list(ui.type).forEach(x => { if(x.equipment) equipSet.add(x.equipment); });
+  Array.from(equipSet).sort().forEach(eq => equipSelect.appendChild(el("option", { value:eq, text:eq })));
+  equipSelect.value = ui.equipment || "all";
+  equipSelect.addEventListener("change", (e) => { ui.equipment = e.target.value || "all"; renderView(); });
+
+  controls.appendChild(el("div", { class:"note", text:"Type" }));
+  controls.appendChild(typeChips);
+  controls.appendChild(el("div", { style:"height:10px" }));
+  controls.appendChild(el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Search" }), search ]),
+    el("label", {}, [ el("span", { text:"Equipment" }), equipSelect ])
+  ]));
+
+  root.appendChild(controls);
+
+  // List card
+  const listCard = el("div", { class:"card" }, [
+    el("h2", { text:"Exercises" }),
+    el("div", { class:"note", text:"Tip: Deleting an exercise will not erase old logs (they use the saved name snapshot)." })
+  ]);
+
+  const listHost = el("div", { style:"display:flex; flex-direction:column; gap:10px; margin-top:10px;" });
+
+  const q = (ui.q || "").trim().toLowerCase();
+  const eq = ui.equipment || "all";
+
+  const items = ExerciseLibrary.list(ui.type)
+    .filter(x => !q || (x.name || "").toLowerCase().includes(q))
+    .filter(x => eq === "all" || (x.equipment || "") === eq)
+    .sort((a,b) => (a.name || "").localeCompare(b.name || ""));
+
+  if(items.length === 0){
+    listHost.appendChild(el("div", { class:"note", text:"No exercises match your filters." }));
+  } else {
+    items.forEach(ex => {
+      const sub = (() => {
+        if(ui.type === "weightlifting"){
+          const parts = [];
+          if(ex.primaryMuscle) parts.push(ex.primaryMuscle);
+          if(ex.equipment) parts.push(ex.equipment);
+          if(typeof ex.isCompound === "boolean") parts.push(ex.isCompound ? "compound" : "isolation");
+          return parts.join(" • ") || "—";
+        }
+        if(ui.type === "cardio"){
+          const parts = [];
+          if(ex.modality) parts.push(ex.modality);
+          if(ex.supportsIncline) parts.push("incline");
+          return parts.join(" • ") || "—";
+        }
+        const parts = [];
+        if(ex.equipment) parts.push(ex.equipment);
+        return parts.join(" • ") || "—";
+      })();
+
+      listHost.appendChild(el("div", { class:"item" }, [
+        el("div", { style:"font-weight:860; letter-spacing:.1px;", text: ex.name }),
+        el("div", { class:"meta", text: sub }),
+        el("div", { style:"height:10px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", { class:"btn", onClick: () => openAddEditModal(ex) }, ["Edit"]),
+          el("button", {
+            class:"btn danger",
+            onClick: () => attemptDelete(ex)
+          }, ["Delete"])
+        ])
+      ]));
+    });
+  }
+
+  listCard.appendChild(listHost);
+  root.appendChild(listCard);
+
+  function countRoutineRefs(type, exerciseId){
+    let count = 0;
+    (state.routines || []).forEach(r => {
+      (r.days || []).forEach(d => {
+        (d.exercises || []).forEach(rx => {
+          if(rx.type === type && rx.exerciseId === exerciseId) count++;
+        });
+      });
+    });
+    return count;
+  }
+
+  function attemptDelete(ex){
+    const refs = countRoutineRefs(ui.type, ex.id);
+    const note = refs > 0
+      ? `This exercise is currently used in ${refs} routine slot(s). If you delete it, routines will still show the saved name snapshot, but you won’t be able to select it again.`
+      : "Delete this exercise from your library?";
+
+    Modal.open({
+      title: "Delete exercise",
+      bodyNode: el("div", {}, [
+        el("div", { class:"note", text: note }),
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn danger",
+            onClick: () => {
+              ExerciseLibrary.remove(ui.type, ex.id);
+              Modal.close();
+              renderView();
+              showToast("Exercise deleted");
+            }
+          }, ["Delete"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  }
+
+  function openAddEditModal(existing){
+    const isEdit = !!existing;
+
+    const name = el("input", { type:"text", value: existing?.name || "", placeholder:"Bench Press" });
+
+    const body = el("div", {}, [
+      el("div", { class:"note", text: isEdit ? "Update this exercise." : "Add a new exercise to your library." }),
+      el("div", { style:"height:10px" }),
+      el("label", {}, [ el("span", { text:"Name" }), name ])
+    ]);
+
+    // Type-specific fields
+    let equipment = null, primaryMuscle = null, isCompound = null, modality = null, supportsIncline = null;
+
+    if(ui.type === "weightlifting"){
+      equipment = el("select", {});
+      ["barbell","dumbbell","machine","cable","bodyweight","other"].forEach(v => equipment.appendChild(el("option", { value:v, text:v })));
+      equipment.value = existing?.equipment || "barbell";
+
+      primaryMuscle = el("select", {});
+      ["chest","back","legs","shoulders","biceps","triceps","glutes","core","full","other"].forEach(v => primaryMuscle.appendChild(el("option", { value:v, text:v })));
+      primaryMuscle.value = existing?.primaryMuscle || "chest";
+
+      isCompound = el("select", {});
+      isCompound.appendChild(el("option", { value:"true", text:"Compound" }));
+      isCompound.appendChild(el("option", { value:"false", text:"Isolation" }));
+      isCompound.value = (existing?.isCompound === false) ? "false" : "true";
+
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Equipment" }), equipment ]),
+        el("label", {}, [ el("span", { text:"Primary muscle" }), primaryMuscle ])
+      ]));
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("label", {}, [ el("span", { text:"Style" }), isCompound ]));
+    }
+    else if(ui.type === "cardio"){
+      modality = el("select", {});
+      ["run","bike","row","stair","elliptical","walk","other"].forEach(v => modality.appendChild(el("option", { value:v, text:v })));
+      modality.value = existing?.modality || "run";
+
+      supportsIncline = el("select", {});
+      supportsIncline.appendChild(el("option", { value:"true", text:"Supports incline" }));
+      supportsIncline.appendChild(el("option", { value:"false", text:"No incline" }));
+      supportsIncline.value = (existing?.supportsIncline) ? "true" : "false";
+
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Modality" }), modality ]),
+        el("label", {}, [ el("span", { text:"Incline" }), supportsIncline ])
+      ]));
+    }
+    else {
+      equipment = el("select", {});
+      ["bodyweight","cable","machine","other"].forEach(v => equipment.appendChild(el("option", { value:v, text:v })));
+      equipment.value = existing?.equipment || "bodyweight";
+
+      body.appendChild(el("div", { style:"height:10px" }));
+      body.appendChild(el("label", {}, [ el("span", { text:"Equipment" }), equipment ]));
+    }
+
+    const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+    body.appendChild(el("div", { style:"height:10px" }));
+    body.appendChild(err);
+    body.appendChild(el("div", { style:"height:12px" }));
+    body.appendChild(el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn primary",
+        onClick: () => {
+          err.style.display = "none";
+          try{
+            const nm = (name.value || "").trim();
+            if(!nm) throw new Error("Name is required.");
+
+            if(ui.type === "weightlifting"){
+              const payload = {
+                name: nm,
+                equipment: equipment.value,
+                primaryMuscle: primaryMuscle.value,
+                isCompound: (isCompound.value === "true")
+              };
+              if(isEdit) ExerciseLibrary.update(ui.type, existing.id, payload);
+              else ExerciseLibrary.add(ui.type, payload);
+            } else if(ui.type === "cardio"){
+              const payload = {
+                name: nm,
+                modality: modality.value,
+                supportsIncline: (supportsIncline.value === "true")
+              };
+              if(isEdit) ExerciseLibrary.update(ui.type, existing.id, payload);
+              else ExerciseLibrary.add(ui.type, payload);
+            } else {
+              const payload = { name: nm, equipment: equipment.value };
+              if(isEdit) ExerciseLibrary.update(ui.type, existing.id, payload);
+              else ExerciseLibrary.add(ui.type, payload);
+            }
+
+            Modal.close();
+            renderView();
+            showToast(isEdit ? "Exercise updated" : "Exercise added");
+          }catch(e){
+            err.textContent = e.message || "Could not save.";
+            err.style.display = "block";
+          }
+        }
+      }, [isEdit ? "Save" : "Add"]),
+      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+    ]));
+
+    Modal.open({
+      title: isEdit ? "Edit exercise" : "Add exercise",
+      bodyNode: body
+    });
+  }
+
+  return root;
+};
+
+    Views.RoutineEditor = function(){
   ExerciseLibrary.ensureSeeded();
 
   const root = el("div", { class:"grid" });
