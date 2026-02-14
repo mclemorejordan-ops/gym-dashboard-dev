@@ -7,6 +7,7 @@
 
   <!-- iOS Add to Home Screen -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Gym Dashboard" />
 
@@ -3847,45 +3848,44 @@ function openLogEntryEditor(entry){
       const desc = WeightEngine.listDesc();
       tableHost.innerHTML = "";
 
-      if(desc.length === 0){
+           if(desc.length === 0){
         tableHost.appendChild(el("div", { class:"note", text:"No entries yet. Add one above." }));
       }else{
-}else{
-  desc.slice(0, 40).forEach(row => {
-    tableHost.appendChild(el("div", { class:"item" }, [
-      el("div", { class:"left" }, [
-        el("div", { class:"name", text: row.dateISO }),
-        el("div", { class:"meta", text: `${row.weight}` })
-      ]),
-      el("div", { class:"actions" }, [
-        el("button", {
-          class:"mini danger",
-          onClick: () => {
-            Modal.open({
-              title: "Delete entry?",
-              center: true,
-              bodyNode: el("div", {}, [
-                el("div", { class:"note", text:`Delete ${row.weight} on ${row.dateISO}?` }),
-                el("div", { style:"height:12px" }),
-                el("div", { class:"btnrow" }, [
-                  el("button", {
-                    class:"btn danger",
-                    onClick: () => {
-                      WeightEngine.remove(row.id);
-                      Modal.close();
-                      repaint();
-                    }
-                  }, ["Delete"]),
-                  el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-                ])
-              ])
-            });
-          }
-        }, ["Delete"])
-      ])
-    ]));
-  });
-}
+        desc.slice(0, 40).forEach(row => {
+          tableHost.appendChild(el("div", { class:"item" }, [
+            el("div", { class:"left" }, [
+              el("div", { class:"name", text: row.dateISO }),
+              el("div", { class:"meta", text: `${row.weight}` })
+            ]),
+            el("div", { class:"actions" }, [
+              el("button", {
+                class:"mini danger",
+                onClick: () => {
+                  Modal.open({
+                    title: "Delete entry?",
+                    center: true,
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"note", text:`Delete ${row.weight} on ${row.dateISO}?` }),
+                      el("div", { style:"height:12px" }),
+                      el("div", { class:"btnrow" }, [
+                        el("button", {
+                          class:"btn danger",
+                          onClick: () => {
+                            WeightEngine.remove(row.id);
+                            Modal.close();
+                            repaint();
+                          }
+                        }, ["Delete"]),
+                        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                      ])
+                    ])
+                  });
+                }
+              }, ["Delete"])
+            ])
+          ]));
+        });
+      }
 
       // Chart (last 30 points)
       const asc = WeightEngine.listAsc().slice(-30);
