@@ -2119,10 +2119,17 @@ function renderNav(){
         return;
       }
 
-          if(currentRoute === "home") root.appendChild(Views.Home());
+         if(currentRoute === "home") root.appendChild(Views.Home());
 else if(currentRoute === "routine") root.appendChild(Views.Routine());
 else if(currentRoute === "progress") root.appendChild(Views.Progress());
 else if(currentRoute === "settings") root.appendChild(Views.Settings());
+else if(currentRoute === "weight") root.appendChild(Views.Weight());
+else if(currentRoute === "attendance") root.appendChild(Views.Attendance());
+else if(currentRoute === "routine_editor") root.appendChild(Views.RoutineEditor());
+else root.appendChild(el("div", { class:"card" }, [
+  el("h2", { text:"Not found" }),
+  el("div", { class:"note", text:`Unknown route: ${currentRoute}` })
+]));
     }
 
     /********************
@@ -3374,6 +3381,266 @@ Routine(){
         ]);
       }
     }; // ✅ end Views object
+    RoutineEditor(){
+  ExerciseLibrary.ensureSeeded();
+
+  const root = el("div", { class:"grid" });
+  const active = Routines.getActive();
+
+  if(!active){
+    root.appendChild(el("div", { class:"card" }, [
+      el("h2", { text:"Routine Editor" }),
+      el("div", { class:"note", text:"No active routine found. Go back and select a routine." }),
+      el("div", { style:"height:12px" }),
+      el("button", { class:"btn primary", onClick: () => navigate("routine") }, ["Back to Routine"])
+    ]));
+    return root;
+  }
+
+  const header = el("div", { class:"card" }, [
+    el("h2", { text:"Routine Editor" }),
+    el("div", { class:"note", text:`Editing: ${active.name}` }),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn",
+        onClick: () => navigate("routine")
+      }, ["Back to Routine"]),
+      el("button", {
+        class:"btn",
+        onClick: () => renameRoutine(active.id)
+      }, ["Rename"]),
+      el("button", {
+        class:"btn",
+        onClick: () => { Routines.duplicate(active.id); renderView(); }
+      }, ["Duplicate"]),
+      el("button", {
+        class:"btn danger",
+        onClick: () => confirmDelete(active.id)
+      }, ["Delete"])
+    ])
+  ]);
+
+  const daysCard = el("div", { class:"card" }, [
+    el("h2", { text:"Days" }),
+    el("div", { class:"note", text:"Tap a day to edit label, rest day, or exercises." })
+  ]);
+
+  const daysGrid = el("div", { class:"dayGrid" });
+  daysCard.appendChild(el("div", { style:"height:10px" }));
+  daysCard.appendChild(daysGrid);
+
+  root.appendChild(header);
+  root.appendChild(daysCard);
+
+  repaintDays();
+  return root;
+
+  function repaintDays(){
+    const r = Routines.getActive();
+    daysGrid.innerHTML = "";
+
+    (r.days || []).forEach(day => {
+      const exCount = (day.exercises || []).length;
+
+      const card = el("div", { class:"dayCard" }, [
+        el("div", { class:"dayTop" }, [
+          el("div", { class:"dayTitle" }, [
+            el("div", { class:"lbl", text: `${["SUN","MON","TUE","WED","THU","FRI","SAT"][day.order]} — ${day.label}` }),
+            el("div", { class:"sub", text: day.isRest ? "Rest day" : `${exCount} exercises` })
+          ]),
+          el("button", {
+            class:"mini",
+            onClick: () => editDay(day)
+          }, ["Edit"])
+        ])
+      ]);
+
+      const list = el("div", { class:"exList" });
+
+      if(day.isRest){
+        list.appendChild(el("div", { class:"note", text:"No exercises on rest days." }));
+      }else if(exCount === 0){
+        list.appendChild(el("div", { class:"note", text:"No exercises yet. Tap Edit → Add exercise." }));
+      }else{
+        (day.exercises || []).forEach(rx => {
+          const name = resolveExerciseName(rx.type, rx.exerciseId, rx.nameSnap);
+          list.appendChild(el("div", { class:"exRow" }, [
+            el("div", { class:"n", text:name }),
+            el("button", {
+              class:"mini danger",
+              onClick: () => { Routines.removeExerciseFromDay(r.id, day.id, rx.id); repaintDays(); }
+            }, ["Remove"])
+          ]));
+        });
+      }
+
+      card.appendChild(list);
+      daysGrid.appendChild(card);
+    });
+  }
+
+  function renameRoutine(routineId){
+    const input = el("input", { type:"text", value: Routines.getActive()?.name || "" });
+    const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+    Modal.open({
+      title: "Rename routine",
+      bodyNode: el("div", {}, [
+        el("label", {}, [ el("span", { text:"Name" }), input ]),
+        err,
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn primary",
+            onClick: () => {
+              const name = (input.value || "").trim();
+              if(!name){ err.textContent="Enter a name."; err.style.display="block"; return; }
+              Routines.rename(routineId, name);
+              Modal.close();
+              renderView();
+            }
+          }, ["Save"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  }
+
+  function confirmDelete(routineId){
+    Modal.open({
+      title: "Delete routine?",
+      bodyNode: el("div", {}, [
+        el("div", { class:"note", text:"This deletes the routine. Logs stay, but the routine schedule will be removed." }),
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn danger",
+            onClick: () => {
+              Routines.remove(routineId);
+              Modal.close();
+              navigate("routine");
+            }
+          }, ["Delete"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  }
+
+  function editDay(day){
+    const r = Routines.getActive();
+
+    const labelInput = el("input", { type:"text", value: day.label || "" });
+
+    const restSwitch = el("div", { class:"switch" + (day.isRest ? " on" : "") });
+    restSwitch.addEventListener("click", () => {
+      const next = !restSwitch.classList.contains("on");
+      restSwitch.classList.toggle("on", next);
+    });
+
+    const addBtn = el("button", {
+      class:"btn primary",
+      onClick: () => openAddExercise(r.id, day.id)
+    }, ["Add exercise"]);
+
+    Modal.open({
+      title: "Edit day",
+      bodyNode: el("div", {}, [
+        el("label", {}, [ el("span", { text:"Label" }), labelInput ]),
+        el("div", { style:"height:10px" }),
+        el("div", { class:"toggle" }, [
+          el("div", { class:"ttext" }, [
+            el("div", { class:"a", text:"Rest day" }),
+            el("div", { class:"b", text:"If enabled, exercises are hidden on Routine." })
+          ]),
+          restSwitch
+        ]),
+        el("div", { style:"height:12px" }),
+        addBtn,
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn",
+            onClick: () => {
+              const nextLabel = (labelInput.value || "").trim() || day.label;
+              const isRest = restSwitch.classList.contains("on");
+              Routines.setDayLabel(r.id, day.id, nextLabel);
+              Routines.setRestDay(r.id, day.id, isRest);
+              Modal.close();
+              repaintDays();
+            }
+          }, ["Save"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Close"])
+        ])
+      ])
+    });
+  }
+
+  function openAddExercise(routineId, dayId){
+    let type = "weightlifting";
+
+    const seg = el("div", { class:"seg" }, [
+      el("button", { class:"segbtn active", onClick: () => setType("weightlifting") }, ["Weightlifting"]),
+      el("button", { class:"segbtn", onClick: () => setType("cardio") }, ["Cardio"]),
+      el("button", { class:"segbtn", onClick: () => setType("core") }, ["Core"])
+    ]);
+
+    const list = el("div", { class:"list" });
+
+    function setType(t){
+      type = t;
+      [...seg.querySelectorAll(".segbtn")].forEach(b => b.classList.remove("active"));
+      if(t === "weightlifting") seg.children[0].classList.add("active");
+      if(t === "cardio") seg.children[1].classList.add("active");
+      if(t === "core") seg.children[2].classList.add("active");
+      repaint();
+    }
+
+    function repaint(){
+      list.innerHTML = "";
+      const items = (state.exerciseLibrary?.[type] || []).slice()
+        .sort((a,b) => (a.name||"").localeCompare(b.name||""));
+
+      if(items.length === 0){
+        list.appendChild(el("div", { class:"note", text:"No exercises in this category yet. Add them in Settings later." }));
+        return;
+      }
+
+      items.forEach(x => {
+        list.appendChild(el("div", { class:"item" }, [
+          el("div", { class:"left" }, [
+            el("div", { class:"name", text:x.name }),
+            el("div", { class:"meta", text: ExerciseLibrary.typeLabel(type) })
+          ]),
+          el("div", { class:"actions" }, [
+            el("button", {
+              class:"mini",
+              onClick: () => {
+                Routines.addExerciseToDay(routineId, dayId, type, x.id);
+                Modal.close();
+                repaintDays();
+              }
+            }, ["Add"])
+          ])
+        ]));
+      });
+    }
+
+    repaint();
+
+    Modal.open({
+      title: "Add exercise",
+      bodyNode: el("div", {}, [
+        seg,
+        el("div", { style:"height:10px" }),
+        list,
+        el("div", { style:"height:12px" }),
+        el("button", { class:"btn", onClick: Modal.close }, ["Close"])
+      ])
+    });
+  }
+}
     /********************
      * 8) Boot
      ********************/
