@@ -3633,28 +3633,6 @@ Progress(){
     row(bestLabel, bestVal);
     row(totalLabel, totalVal);
   }
-
-    host.appendChild(el("div", { class:"k" }, [
-      el("div", { class:"a", text:"Exercise" }),
-      el("div", { class:"b", text: exName })
-    ]));
-    host.appendChild(el("div", { class:"k" }, [
-      el("div", { class:"a", text:"Entries" }),
-      el("div", { class:"b", text: String(count) })
-    ]));
-    host.appendChild(el("div", { class:"k" }, [
-      el("div", { class:"a", text:"Last logged" }),
-      el("div", { class:"b", text: lastDate })
-    ]));
-    host.appendChild(el("div", { class:"k" }, [
-      el("div", { class:"a", text: type === "cardio" ? "Best distance" : "Best" }),
-      el("div", { class:"b", text: String(best) })
-    ]));
-    host.appendChild(el("div", { class:"k" }, [
-      el("div", { class:"a", text: type === "cardio" ? "Total time" : "Total" }),
-      el("div", { class:"b", text: type === "cardio" ? formatTime(sum) : String(sum) })
-    ]));
-  }
   },
   
   Weight(){
@@ -4488,7 +4466,8 @@ Modal.open({
     el("button", { class:"btn", onClick: Modal.close }, ["Close"])
   ])
 });
-    } };
+  } // ✅ closes openAddExercise
+};   // ✅ closes Views.RoutineEditor function
     /********************
      * 8) Boot
      ********************/
