@@ -35,6 +35,74 @@
 
       --navH: 78px;
     }
+    /* ✅ Mobile sizing scale (iPhone / Add-to-Home-Screen) */
+@media (max-width: 420px){
+  :root{
+    --r: 16px;
+    --navH: 66px;
+    .carouselCard{ padding: 12px; gap: 8px; }
+.weekDots{ gap: 8px; }
+.weekDot{ width: 10px; height: 10px; }
+.carouselSub{ font-size: 12px; }
+    .item{ padding: 10px; border-radius: 14px; }
+.item .meta{ font-size: 12px; }
+
+
+  }
+
+  .app{
+    padding: env(safe-area-inset-top) 12px calc(var(--navH) + env(safe-area-inset-bottom)) 12px;
+  }
+
+  header{
+    padding: 10px 0 8px 0;
+  }
+
+  .card{
+    padding: 12px;
+  }
+
+  .card h2{
+    font-size: 12px;
+    margin: 0 0 8px 0;
+  }
+
+  .brand .title{ font-size: 16px; }
+  .brand .subtitle{ font-size: 11px; }
+
+  .btn{
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  input, select{
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .kpi .big{ font-size: 20px; }
+  .kpi .small{ font-size: 12px; }
+
+  .ringWrap{ width: 104px; height: 104px; }
+  .ringText .big{ font-size: 16px; }
+  .ringText .small{ font-size: 11px; }
+
+  canvas{ height: 220px; }
+
+  .navbar{
+    padding: 6px;
+    border-radius: 20px;
+  }
+  .navbtn{
+    padding: 8px 6px;
+    font-size: 11px;
+    gap: 5px;
+  }
+  .navbtn .dot{
+    width: 24px;
+    height: 24px;
+  }
+}
 
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
@@ -155,6 +223,9 @@
     }
     .btn:active{ transform: translateY(1px); }
 
+   .btn.ghost{
+  background: rgba(255,255,255,.05);
+}
     .muted{ color: var(--muted); }
     .kpi{
       display:flex;
