@@ -710,7 +710,12 @@
       background: rgba(124,92,255,.22);
       border-color: rgba(124,92,255,.30);
     }
-
+/* Lock background scroll when any modal is open */
+body.modalOpen{
+  overflow: hidden;
+  height: 100%;
+  touch-action: none;
+}
     /* Modal */
     .modalHost{
       position: fixed;
@@ -2085,32 +2090,62 @@ function removeWorkoutEntriesForRoutineDay(dateISO, routineId, dayId){
     /********************
      * 5) Modal
      ********************/
-        const Modal = {
-      open({ title, bodyNode, center=false }){
-        $("#modalTitle").textContent = title || "Modal";
-        const host = $("#modalHost");
-        const body = $("#modalBody");
+      let __modalScrollY = 0;
 
-        // position mode
-        host.classList.toggle("center", !!center);
+function lockBodyScroll(){
+  __modalScrollY = window.scrollY || 0;
 
-        body.innerHTML = "";
-        if(bodyNode) body.appendChild(bodyNode);
+  // iOS-safe lock: freeze body position
+  document.body.classList.add("modalOpen");
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${__modalScrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+}
 
-        host.classList.add("show");
-        host.setAttribute("aria-hidden","false");
-      },
-      close(){
-        const host = $("#modalHost");
-        host.classList.remove("show");
-        host.classList.remove("center");
-        host.setAttribute("aria-hidden","true");
-        $("#modalBody").innerHTML = "";
-      }
-    };
+function unlockBodyScroll(){
+  document.body.classList.remove("modalOpen");
 
-    $("#modalClose").addEventListener("click", Modal.close);
-    $("#modalBackdrop").addEventListener("click", Modal.close);
+  // restore body scrolling
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+
+  window.scrollTo(0, __modalScrollY);
+}
+
+const Modal = {
+  open({ title, bodyNode, center=false }){
+    $("#modalTitle").textContent = title || "Modal";
+    const host = $("#modalHost");
+    const body = $("#modalBody");
+
+    // position mode
+    host.classList.toggle("center", !!center);
+
+    body.innerHTML = "";
+    if(bodyNode) body.appendChild(bodyNode);
+
+    host.classList.add("show");
+    host.setAttribute("aria-hidden","false");
+
+    // ✅ lock background scroll for every modal
+    lockBodyScroll();
+  },
+  close(){
+    const host = $("#modalHost");
+    host.classList.remove("show");
+    host.classList.remove("center");
+    host.setAttribute("aria-hidden","true");
+    $("#modalBody").innerHTML = "";
+
+    // ✅ unlock background scroll
+    unlockBodyScroll();
+  }
+};
 
     /********************
      * 6) Router + Views
