@@ -3100,22 +3100,6 @@ if(selectedIndex === todayIndex && isDayComplete(todayISO, day)){
 
   el("div", { class:"note", text:`🏆 Lifetime Max: ${maxText}` }),
 
-  el("div", { style:"height:10px" }),
-
-  el("div", { class:"rHdrRow" }, [
-    el("button", {
-      class:"btn primary",
-      onClick: () => openExerciseLogger(rx, day)
-    }, ["Log Sets"]),
-
-    el("button", {
-      class:"btn ghost",
-      onClick: () => openExerciseHistoryModal(rx.type, rx.exerciseId, exName)
-    }, ["History →"])
-  ])
-]));
-
-
         el("div", { style:"height:10px" }),
 
         el("div", { class:"rHdrRow" }, [
