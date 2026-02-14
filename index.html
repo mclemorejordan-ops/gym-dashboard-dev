@@ -942,7 +942,17 @@
   border-color: rgba(124,92,255,.55);
   box-shadow: 0 0 0 2px rgba(124,92,255,.25);
 }
+    
+/* Disabled (already added) look */
+.item.disabledRow{
+  opacity: .72;
+  filter: saturate(.9);
+}
 
+button.mini.disabledBtn{
+  opacity: .9;
+  cursor: default;
+}
 button.mini.added{
   background: rgba(124,92,255,.2);
   border-color: rgba(124,92,255,.6);
@@ -3628,17 +3638,107 @@ const addMultiBtn = el("button", {
       if(t === "cardio") seg.children[1].classList.add("active");
       if(t === "core") seg.children[2].classList.add("active");
       repaint();
+      updateLiveCount();
     }
 
-    function repaint(){
-      list.innerHTML = "";
-      const items = (state.exerciseLibrary?.[type] || []).slice()
-        .sort((a,b) => (a.name||"").localeCompare(b.name||""));
+// Tracks what the user adds during THIS open session (for live count)
+const addedThisSession = new Set();
 
-      if(items.length === 0){
-        list.appendChild(el("div", { class:"note", text:"No exercises in this category yet. Add them in Settings later." }));
-        return;
+// Live count UI (only shown in keepOpen mode)
+const liveCount = el("div", {
+  class:"note",
+  style:"margin-top:8px; margin-bottom:10px; display:none;"
+}, ["0 exercises added"]);
+
+function updateLiveCount(){
+  if(!opts.keepOpen){
+    liveCount.style.display = "none";
+    return;
+  }
+  liveCount.style.display = "block";
+  liveCount.textContent = `${addedThisSession.size} exercise${addedThisSession.size === 1 ? "" : "s"} added`;
+}
+
+function getExistingSetForDay(){
+  const r = Routines.getActive();
+  const day = (r?.days || []).find(d => d.id === dayId);
+  const s = new Set();
+  (day?.exercises || []).forEach(rx => {
+    // store by type+id to avoid collisions
+    s.add(`${rx.type}:${rx.exerciseId}`);
+  });
+  return s;
+}
+
+function repaint(){
+  list.innerHTML = "";
+
+  const existing = getExistingSetForDay();
+
+  const items = (state.exerciseLibrary?.[type] || []).slice()
+    .sort((a,b) => (a.name||"").localeCompare(b.name||""));
+
+  if(items.length === 0){
+    list.appendChild(el("div", { class:"note", text:"No exercises in this category yet. Add them in Settings later." }));
+    updateLiveCount();
+    return;
+  }
+
+  items.forEach(x => {
+    const key = `${type}:${x.id}`;
+    const alreadyInDay = existing.has(key);
+
+    const row = el("div", { class:"item" });
+    const btn = el("button", { class:"mini" }, ["Add"]);
+
+    // Left info
+    row.appendChild(
+      el("div", { class:"left" }, [
+        el("div", { class:"name", text:x.name }),
+        el("div", { class:"meta", text: ExerciseLibrary.typeLabel(type) })
+      ])
+    );
+
+    // Action button
+    row.appendChild(
+      el("div", { class:"actions" }, [ btn ])
+    );
+
+    // If it's already on the day, disable immediately (persist across reopen)
+    if(alreadyInDay){
+      row.classList.add("selected", "disabledRow");
+      btn.classList.add("added", "disabledBtn");
+      btn.textContent = "Added ✓";
+      btn.disabled = true;
+    }
+
+    btn.addEventListener("click", () => {
+      // guard: no duplicates
+      if(btn.disabled) return;
+
+      // Add
+      Routines.addExerciseToDay(routineId, dayId, type, x.id);
+      repaintDays();
+
+      if(opts.keepOpen){
+        // Visual feedback + session count
+        addedThisSession.add(key);
+        row.classList.add("selected");
+        btn.classList.add("added", "disabledBtn");
+        btn.textContent = "Added ✓";
+        btn.disabled = true;
+
+        updateLiveCount();
+      }else{
+        Modal.close();
       }
+    });
+
+    list.appendChild(row);
+  });
+
+  updateLiveCount();
+}
 
 items.forEach(x => {
 
@@ -3680,16 +3780,16 @@ items.forEach(x => {
 
     repaint();
 
-    Modal.open({
-      title: "Add exercise",
-      bodyNode: el("div", {}, [
-        seg,
-        el("div", { style:"height:10px" }),
-        list,
-        el("div", { style:"height:12px" }),
-        el("button", { class:"btn", onClick: Modal.close }, ["Close"])
-      ])
-    });
+Modal.open({
+  title: "Add exercise",
+  bodyNode: el("div", {}, [
+    seg,
+    liveCount,
+    list,
+    el("div", { style:"height:12px" }),
+    el("button", { class:"btn", onClick: Modal.close }, ["Close"])
+  ])
+});
   }
 };
     /********************
