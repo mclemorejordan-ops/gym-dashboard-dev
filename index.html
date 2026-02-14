@@ -2123,6 +2123,14 @@ function removeWorkoutEntriesForRoutineDay(dateISO, routineId, dayId){
     Storage.save(state);
   }catch(e){}
 }
+// Remove a single workout entry by id
+function removeWorkoutEntryById(entryId){
+  try{
+    LogEngine.ensure();
+    state.logs.workouts = (state.logs.workouts || []).filter(e => e.id !== entryId);
+    Storage.save(state);
+  }catch(e){}
+}
 
     /********************
      * 5) Modal
@@ -2674,42 +2682,79 @@ Routine(){
     routine = Routines.getActive(); // ✅ always refresh active routine
     return (routine?.days || []).find(d => d.order === index) || null;
   }
+function openRoutinePicker(anchorBtn){
+  const all = Routines.getAll() || [];
 
-  function openRoutinePicker(anchorBtn){
-    const all = Routines.getAll();
-    if(!all || all.length === 0){
-      showToast("No routines found.");
-      return;
-    }
+  const activeId = Routines.getActive()?.id || null;
 
-    const activeId = Routines.getActive()?.id || null;
+  // Ensure template-created routines don't collide on name
+  function uniqueRoutineName(base){
+    const names = new Set((all || []).map(r => normName(r.name)));
+    if(!names.has(normName(base))) return base;
 
-    const body = el("div", {}, [
-      el("div", { class:"popTitle", text:"Select routine" }),
-      el("div", { style:"display:grid; gap:10px;" }, all.map(r => {
-        const isActive = (r.id === activeId);
-        return el("div", {
-          class:"popItem",
-          onClick: () => {
-            Routines.setActive(r.id);
-            routine = Routines.getActive();
-            selectedIndex = todayIndex;
-
-            PopoverClose();     // ✅ now truly closes
-            repaint();          // ✅ updates immediately
-          }
-        }, [
-          el("div", { class:"l" }, [
-            el("div", { class:"n", text:r.name }),
-            el("div", { class:"m", text: isActive ? "Currently active" : "Tap to activate" })
-          ]),
-          isActive ? el("div", { class:"popBadge", text:"Active" }) : el("div", { class:"m", text:"" })
-        ]);
-      }))
-    ]);
-
-    PopoverOpen(anchorBtn, body);
+    let n = 2;
+    while(names.has(normName(`${base} (${n})`))) n++;
+    return `${base} (${n})`;
   }
+
+  const body = el("div", {}, [
+    // Existing routines (if any)
+    el("div", { class:"popTitle", text:"Select routine" }),
+    (all.length === 0)
+      ? el("div", { class:"note", text:"No routines yet. Choose a template below to create one." })
+      : el("div", { style:"display:grid; gap:10px;" }, all.map(r => {
+          const isActive = (r.id === activeId);
+          return el("div", {
+            class:"popItem",
+            onClick: () => {
+              Routines.setActive(r.id);
+              routine = Routines.getActive();
+              selectedIndex = todayIndex;
+
+              PopoverClose();
+              repaint();
+            }
+          }, [
+            el("div", { class:"l" }, [
+              el("div", { class:"n", text:r.name }),
+              el("div", { class:"m", text: isActive ? "Currently active" : "Tap to activate" })
+            ]),
+            isActive ? el("div", { class:"popBadge", text:"Active" }) : el("div", { class:"m", text:"" })
+          ]);
+        })),
+
+    // Default templates (always shown)
+    el("div", { style:"height:10px" }),
+    el("div", { class:"popTitle", text:"Default templates" }),
+    el("div", { style:"display:grid; gap:10px;" }, (RoutineTemplates || []).map(tpl => {
+      return el("div", {
+        class:"popItem",
+        onClick: () => {
+          const name = uniqueRoutineName(tpl.name || "Routine");
+          // NOTE: This assumes your Routines.addFromTemplate supports (key, name).
+          // If it only accepts (key), remove the "name" argument below.
+          Routines.addFromTemplate(tpl.key, name);
+
+          routine = Routines.getActive();
+          selectedIndex = todayIndex;
+
+          PopoverClose();
+          repaint();
+          showToast(`Created: ${name}`);
+        }
+      }, [
+        el("div", { class:"l" }, [
+          el("div", { class:"n", text: tpl.name }),
+          el("div", { class:"m", text: tpl.desc || "Template" })
+        ]),
+        el("div", { class:"m", text:"Add" })
+      ]);
+    }))
+  ]);
+
+  PopoverOpen(anchorBtn, body);
+}
+
   // Phase 3: Per-exercise Workout Execution (logger)
 function openExerciseLogger(rx, day, defaultDateISO){
   ExerciseLibrary.ensureSeeded();
@@ -3501,6 +3546,28 @@ Progress(){
     all.forEach(r => routineSelect.appendChild(el("option", { value:r.id, text:r.name })));
     routineSelect.value = routineId || "";
   }
+  function confirmDeleteLog(entry){
+    Modal.open({
+      title: "Delete log?",
+      bodyNode: el("div", { class:"grid" }, [
+        el("div", { class:"note", text:`This will permanently delete this log entry:` }),
+        el("div", { class:"note", text:`${entry.dateISO} • ${tableLine(entry)}` }),
+        el("div", { style:"height:10px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn danger",
+            onClick: () => {
+              removeWorkoutEntryById(entry.id);
+              Modal.close();
+              repaint(true);
+              showToast("Deleted");
+            }
+          }, ["Delete"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  }
 
   function repaint(forceChart){
     // Exercise dropdown
@@ -3575,9 +3642,15 @@ Progress(){
             el("div", { class:"meta", text: tableLine(e) })
           ]),
           el("div", { class:"actions" }, [
-            el("div", { class:"meta", text: prLine(e.pr) })
+            el("div", { class:"meta", text: prLine(e.pr) }),
+            el("div", { style:"height:8px" }),
+            el("button", {
+              class:"btn danger",
+              onClick: () => confirmDeleteLog(e)
+            }, ["Delete"])
           ])
         ]));
+
       });
     }
 
