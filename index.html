@@ -957,6 +957,22 @@ button.mini.added{
   border-color: rgba(124,92,255,.6);
   color: rgba(255,255,255,.95);
 }
+   /* Floating Next → nudge */
+.floatNext{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  display: none;
+  justify-content: center;
+  z-index: 90;
+  pointer-events: none;
+}
+.floatNext.show{ display:flex; }
+.floatNext .btn{
+  pointer-events: auto;
+  box-shadow: 0 18px 48px rgba(0,0,0,.55);
+} 
   </style>
 </head>
 
@@ -2045,6 +2061,18 @@ function PopoverClose(){
   p.host.style.display = "none";   // ✅ actually hide it
   p.panel.innerHTML = "";          // ✅ clear list so it doesn't linger
 }
+// Remove all workout log entries for a specific routine/day/date (manual override)
+function removeWorkoutEntriesForRoutineDay(dateISO, routineId, dayId){
+  try{
+    LogEngine.ensure();
+    state.logs.workouts = (state.logs.workouts || []).filter(e => !(
+      e.dateISO === dateISO &&
+      e.routineId === routineId &&
+      e.dayId === dayId
+    ));
+    Storage.save(state);
+  }catch(e){}
+}
 
     /********************
      * 5) Modal
@@ -2557,7 +2585,288 @@ Routine(){
 
     PopoverOpen(anchorBtn, body);
   }
+  // Phase 3: Per-exercise Workout Execution (logger)
+function openExerciseLogger(rx, day){
+  ExerciseLibrary.ensureSeeded();
+  LogEngine.ensure();
 
+  const type = rx.type;
+  const exerciseId = rx.exerciseId;
+  const exName = resolveExerciseName(type, exerciseId, rx.nameSnap);
+
+  const header = el("div", { class:"note" }, [
+    `${exName} • ${ExerciseLibrary.typeLabel(type)} • ${todayISO}`
+  ]);
+
+  // Show last entry snapshot (optional)
+  const last = LogEngine.entriesForExercise(type, exerciseId)[0] || null;
+  const lastLine = el("div", { class:"note" }, [
+    last ? `Last: ${formatEntryOneLine(type, last)}` : "Last: —"
+  ]);
+
+  const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+
+  const body = el("div", { class:"grid" }, [ header, lastLine, err ]);
+
+  if(type === "weightlifting"){
+    body.appendChild(buildWeightliftingForm());
+  }else if(type === "cardio"){
+    body.appendChild(buildCardioForm());
+  }else{
+    body.appendChild(buildCoreForm());
+  }
+
+  Modal.open({
+    title: "Log Sets",
+    bodyNode: body
+  });
+
+  function showErr(msg){
+    err.textContent = msg;
+    err.style.display = "block";
+  }
+
+  function clearErr(){
+    err.style.display = "none";
+    err.textContent = "";
+  }
+
+  function afterSave(){
+    Modal.close();
+
+    // If the whole day is now logged, auto-complete + attendance
+    if(isDayComplete(todayISO, day)){
+      attendanceAdd(todayISO);
+      showToast("Day completed ✅");
+    }
+
+    // Set Next → nudge for next unlogged (same day)
+    const next = (day.exercises || []).find(x => !hasRoutineExerciseLog(todayISO, x.id));
+    setNextNudge(next ? { dateISO: todayISO, dayOrder: day.order, nextRoutineExerciseId: next.id } : null);
+
+    repaint();
+  }
+
+  function buildWeightliftingForm(){
+    const rows = el("div", { class:"grid" }, []);
+    const setInputs = [];
+
+    const addRow = (w="", r="") => {
+      const wInput = el("input", { type:"number", inputmode:"decimal", placeholder:"Weight", value: w });
+      const rInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Reps", value: r });
+      setInputs.push({ wInput, rInput });
+
+      rows.appendChild(el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Weight" }), wInput ]),
+        el("label", {}, [ el("span", { text:"Reps" }), rInput ])
+      ]));
+    };
+
+    for(let i=0;i<4;i++) addRow();
+
+    const addBtn = el("button", { class:"btn", onClick: () => addRow() }, ["+ Add set"]);
+
+    const saveBtn = el("button", {
+      class:"btn primary",
+      onClick: () => {
+        clearErr();
+
+        const sets = setInputs.map(s => ({
+          weight: Number(s.wInput.value) || 0,
+          reps: Math.max(0, Math.floor(Number(s.rInput.value) || 0))
+        })).filter(s => s.weight > 0 || s.reps > 0);
+
+        if(sets.length === 0){
+          showErr("Enter at least one set.");
+          return;
+        }
+
+        const summary = LogEngine.computeWeightliftingSummary(sets);
+        const pr = LogEngine.computePRFlags(type, exerciseId, summary);
+
+        LogEngine.addEntry({
+          id: uid("w"),
+          createdAt: Date.now(),
+          dateISO: todayISO,
+          type,
+          exerciseId,
+          routineExerciseId: rx.id,
+          routineId: routine.id,
+          dayId: day.id,
+          dayOrder: day.order,
+          sets,
+          summary,
+          pr
+        });
+
+        afterSave();
+      }
+    }, ["Save"]);
+
+    const cancelBtn = el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]);
+
+    return el("div", { class:"card" }, [
+      el("h2", { text:"Sets" }),
+      rows,
+      el("div", { style:"height:10px" }),
+      el("div", { class:"btnrow" }, [ addBtn, saveBtn, cancelBtn ])
+    ]);
+  }
+
+  function buildCardioForm(){
+    const minInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Min", value:"" });
+    const secInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Sec", value:"" });
+    const distInput = el("input", { type:"number", inputmode:"decimal", placeholder:"Distance", value:"" });
+    const inclInput = el("input", { type:"number", inputmode:"decimal", placeholder:"Incline (optional)", value:"" });
+
+    const saveBtn = el("button", {
+      class:"btn primary",
+      onClick: () => {
+        clearErr();
+
+        const min = Math.max(0, Math.floor(Number(minInput.value) || 0));
+        const sec = Math.max(0, Math.floor(Number(secInput.value) || 0));
+        const timeSec = (min * 60) + sec;
+        const distance = Number(distInput.value) || 0;
+        const incline = (inclInput.value === "") ? null :
+          (Number.isFinite(Number(inclInput.value)) ? Number(inclInput.value) : null);
+
+        if(timeSec <= 0 && distance <= 0){
+          showErr("Enter time and/or distance.");
+          return;
+        }
+
+        const sets = [{ timeSec, distance, incline }];
+        const summary = LogEngine.computeCardioSummary(sets);
+        const pr = LogEngine.computePRFlags(type, exerciseId, summary);
+
+        LogEngine.addEntry({
+          id: uid("c"),
+          createdAt: Date.now(),
+          dateISO: todayISO,
+          type,
+          exerciseId,
+          routineExerciseId: rx.id,
+          routineId: routine.id,
+          dayId: day.id,
+          dayOrder: day.order,
+          sets,
+          summary,
+          pr
+        });
+
+        afterSave();
+      }
+    }, ["Save"]);
+
+    const cancelBtn = el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]);
+
+    return el("div", { class:"card" }, [
+      el("h2", { text:"Session" }),
+      el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Minutes" }), minInput ]),
+        el("label", {}, [ el("span", { text:"Seconds" }), secInput ])
+      ]),
+      el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Distance" }), distInput ]),
+        el("label", {}, [ el("span", { text:"Incline" }), inclInput ])
+      ]),
+      el("div", { style:"height:10px" }),
+      el("div", { class:"btnrow" }, [ saveBtn, cancelBtn ])
+    ]);
+  }
+
+  function buildCoreForm(){
+    const setsInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Sets", value:"" });
+    const repsInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Reps", value:"" });
+    const timeMinInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Min", value:"" });
+    const timeSecInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Sec", value:"" });
+    const weightInput = el("input", { type:"number", inputmode:"decimal", placeholder:"Weight (optional)", value:"" });
+
+    const saveBtn = el("button", {
+      class:"btn primary",
+      onClick: () => {
+        clearErr();
+
+        const setsN = Math.max(0, Math.floor(Number(setsInput.value) || 0));
+        const repsN = Math.max(0, Math.floor(Number(repsInput.value) || 0));
+        const tmin = Math.max(0, Math.floor(Number(timeMinInput.value) || 0));
+        const tsec = Math.max(0, Math.floor(Number(timeSecInput.value) || 0));
+        const timeSec = (tmin * 60) + tsec;
+        const weight = Number(weightInput.value) || 0;
+
+        if((setsN <= 0 || repsN <= 0) && timeSec <= 0){
+          showErr("Enter sets+reps or a time.");
+          return;
+        }
+
+        const sets = [{ sets: setsN, reps: repsN, timeSec, weight }];
+        const summary = LogEngine.computeCoreSummary(sets);
+        const pr = LogEngine.computePRFlags(type, exerciseId, summary);
+
+        LogEngine.addEntry({
+          id: uid("k"),
+          createdAt: Date.now(),
+          dateISO: todayISO,
+          type,
+          exerciseId,
+          routineExerciseId: rx.id,
+          routineId: routine.id,
+          dayId: day.id,
+          dayOrder: day.order,
+          sets,
+          summary,
+          pr
+        });
+
+        afterSave();
+      }
+    }, ["Save"]);
+
+    const cancelBtn = el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]);
+
+    return el("div", { class:"card" }, [
+      el("h2", { text:"Core" }),
+      el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Sets" }), setsInput ]),
+        el("label", {}, [ el("span", { text:"Reps" }), repsInput ])
+      ]),
+      el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Time (min)" }), timeMinInput ]),
+        el("label", {}, [ el("span", { text:"Time (sec)" }), timeSecInput ])
+      ]),
+      el("label", {}, [ el("span", { text:"Weight" }), weightInput ]),
+      el("div", { style:"height:10px" }),
+      el("div", { class:"btnrow" }, [ saveBtn, cancelBtn ])
+    ]);
+  }
+
+  function formatEntryOneLine(type, entry){
+    try{
+      if(type === "weightlifting"){
+        const bw = entry?.summary?.bestWeight;
+        const vol = entry?.summary?.totalVolume;
+        return `Top ${bw ?? "—"} • Vol ${vol ?? "—"}`;
+      }
+      if(type === "cardio"){
+        const d = entry?.summary?.distance;
+        const t = entry?.summary?.timeSec;
+        const p = entry?.summary?.paceSecPerUnit;
+        return `${d ?? "—"} units • ${formatTime(t ?? 0)} • Pace ${formatPace(p)}`;
+      }
+      const v = entry?.summary?.totalVolume;
+      return `Volume ${v ?? "—"}`;
+    }catch(e){
+      return "—";
+    }
+  }
+}
+
+function isDayComplete(dateISO, day){
+  const ex = (day?.exercises || []);
+  if(ex.length === 0) return false;
+  return ex.every(rx => hasRoutineExerciseLog(dateISO, rx.id));
+}
   function repaint(){
     routine = Routines.getActive();
     root.innerHTML = "";
@@ -2653,6 +2962,26 @@ Routine(){
       ]));
       return;
     }
+// Day completion banner (only for today)
+if(selectedIndex === todayIndex && isDayComplete(todayISO, day)){
+  root.appendChild(el("div", { class:"card" }, [
+    el("h2", { text:"Completed" }),
+    el("div", { class:"note", text:"All exercises logged for today." }),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn danger",
+        onClick: () => {
+          removeWorkoutEntriesForRoutineDay(todayISO, routine.id, day.id);
+          attendanceRemove(todayISO);
+          setNextNudge(null);
+          repaint();
+          showToast("Marked incomplete");
+        }
+      }, ["Mark incomplete"])
+    ])
+  ]));
+}
 
     // ────────────────────────────
     // Exercise Cards
@@ -2677,7 +3006,7 @@ Routine(){
         el("div", { class:"rHdrRow" }, [
           el("button", {
             class:"btn primary",
-            onClick: () => alert("Workout execution comes next phase.")
+          onClick: () => openExerciseLogger(rx, day)
           }, ["Log Sets"]),
 
           el("button", {
@@ -3499,7 +3828,11 @@ Views.RoutineEditor = function(){
       daysGrid.appendChild(card);
     });
   }
-
+// Floating Next → nudge (only meaningful for today's schedule)
+ensureFloatNext();
+if(selectedIndex === todayIndex) {
+  maybeShowNextNudge(todayISO, day);
+}
 function renameRoutine(anchorEl, routineId){
   const current = Routines.getActive();
   const input = el("input", {
@@ -3757,8 +4090,9 @@ Modal.open({
     if(state.profile) ExerciseLibrary.ensureSeeded();
     // Step 6 safety: ensure logs arrays exist even if older saved state is missing fields
     LogEngine.ensure();
-    renderNav();
-    renderView();
+ensureFloatNext(); // Phase 3: enable Floating Next → nudge container
+renderNav();
+renderView();
   </script>
 </body>
 </html>
