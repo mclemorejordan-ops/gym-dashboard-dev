@@ -2828,10 +2828,13 @@ setNextNudge(next ? {
         const summary = LogEngine.computeWeightliftingSummary(sets);
         const pr = LogEngine.computePRFlags(type, exerciseId, summary);
 
-        // Prevent duplicate (same date + routineExerciseId)
-state.logs.workouts = state.logs.workouts.filter(e =>
-  !(e.dateISO === entry.dateISO && e.routineExerciseId === entry.routineExerciseId)
+// Upsert: replace existing entry for this date + routineExerciseId
+LogEngine.ensure();
+state.logs.workouts = (state.logs.workouts || []).filter(e =>
+  !(e.dateISO === todayISO && e.routineExerciseId === rx.id)
 );
+Storage.save(state);
+
 
         
         LogEngine.addEntry({
@@ -2900,6 +2903,14 @@ state.logs.workouts = state.logs.workouts.filter(e =>
         const summary = LogEngine.computeCardioSummary(sets);
         const pr = LogEngine.computePRFlags(type, exerciseId, summary);
 
+// Upsert: replace existing entry for this date + routineExerciseId
+LogEngine.ensure();
+state.logs.workouts = (state.logs.workouts || []).filter(e =>
+  !(e.dateISO === todayISO && e.routineExerciseId === rx.id)
+);
+Storage.save(state);
+
+        
         LogEngine.addEntry({
           id: uid("c"),
           createdAt: Date.now(),
