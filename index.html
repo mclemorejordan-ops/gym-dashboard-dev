@@ -841,7 +841,9 @@ body.modalOpen{
 .popPanel{
   position:absolute;
   width: min(420px, calc(100vw - 24px));
-  max-height: min(360px, calc(100vh - 140px));
+
+  /* UPDATED: allow the picker to grow taller so all templates are visible more often */
+  max-height: min(620px, calc(100vh - 120px));
   overflow:auto;
 
   background: rgba(16,20,30,.72);
