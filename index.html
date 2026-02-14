@@ -2238,230 +2238,97 @@ else if(currentRoute === "settings") root.appendChild(Views.Settings());
         }
       },
 
-           Routine(){
-        // Routine Editor + Library (sub-tabs inside Routine)
-        ExerciseLibrary.ensureSeeded();
+Routine(){
+  const root = el("div", { class:"grid" });
 
-        let subTab = "editor"; // "editor" | "library"
-        let editingRoutineId = state.activeRoutineId;
+  if(!state.profile){
+    root.appendChild(el("div", { class:"card note" }, ["Create a profile on Home first."]));
+    return root;
+  }
 
-        const root = el("div", { class:"grid" });
+  const routine = state.routine;
+  if(!routine){
+    root.appendChild(el("div", { class:"card note" }, ["No active routine. Create one in Settings."]));
+    return root;
+  }
 
-        const seg = el("div", { class:"seg" }, [
-          el("button", {
-            class:"segbtn active",
-            onClick: () => { subTab = "editor"; paint(); }
-          }, ["Editor"]),
-          el("button", {
-            class:"segbtn",
-            onClick: () => { subTab = "library"; paint(); }
-          }, ["Library"])
-        ]);
+  const today = new Date();
+  const todayIndex = today.getDay(); // 0–6
+  const day = routine.days.find(d => d.order === todayIndex);
 
-        const headerCard = el("div", { class:"card" }, [
-          el("h2", { text:"Routine" }),
-          el("div", { class:"note", text:"Manage multiple routines, mark rest days, and add exercises from your library." }),
-          el("div", { style:"height:10px" }),
-          seg
-        ]);
+  root.appendChild(el("div", { class:"card" }, [
+    el("h2", {}, ["Routine"]),
+    el("div", { class:"note" }, [`${routine.name} • Mon–Sun`]),
 
-        const bodyCard = el("div", { class:"card" }, [
-          el("h2", { text:"Workspace" }),
-          el("div", { id:"routineWorkspace" })
-        ]);
-
-        root.appendChild(headerCard);
-        root.appendChild(bodyCard);
-
-        function setSegActive(){
-          const btns = seg.querySelectorAll(".segbtn");
-          btns[0].classList.toggle("active", subTab === "editor");
-          btns[1].classList.toggle("active", subTab === "library");
-        }
-
-        function workspace(){
-          return $("#routineWorkspace", root);
-        }
-
-        function paint(){
-          setSegActive();
-          workspace().innerHTML = "";
-          if(subTab === "library"){
-            workspace().appendChild(renderLibraryPanel());
-          }else{
-            workspace().appendChild(renderEditorPanel());
+    el("div", { class:"btnrow", style:"margin-top:10px;" }, [
+      el("button", { class:"btn ghost" }, [routine.name + " ▼"]),
+      el("button", {
+        class:"btn",
+        onClick: () => {
+          const first = document.querySelector("[data-unlogged='true']");
+          if(first){
+            first.scrollIntoView({ behavior:"smooth", block:"center" });
+            first.classList.add("pulse");
+            setTimeout(()=>first.classList.remove("pulse"),1200);
           }
         }
+      }, ["▶ Start Today"])
+    ])
+  ]));
 
-        function renderEditorPanel(){
-          const panel = el("div", { class:"grid" });
+  if(!day){
+    root.appendChild(el("div", { class:"card" }, [
+      el("h3", {}, ["Rest Day"]),
+      el("div", { class:"note" }, ["Today is a scheduled rest day."]),
+      el("button", { class:"btn" }, ["Train Anyway"])
+    ]));
+    return root;
+  }
 
-          const routines = Routines.getAll();
-          const active = Routines.getActive();
+  // Active Day Header
+  root.appendChild(el("div", { class:"card" }, [
+    el("div", { class:"note" }, [`${["SUN","MON","TUE","WED","THU","FRI","SAT"][todayIndex]} — ${day.name}`]),
+    el("div", { class:"note" }, [`${day.exercises.length} exercises`])
+  ]));
 
-          // ---- Routine list / actions
-          const routineList = el("div", { class:"list" });
+  // Weekly indicator
+  root.appendChild(el("div", { class:"card" }, [
+    el("div", { class:"note" }, ["S M T W T F S"]),
+    el("div", { class:"note" }, [
+      ["SUN","MON","TUE","WED","THU","FRI","SAT"]
+        .map((_,i)=> i===todayIndex ? "●" : "○")
+        .join(" ")
+    ])
+  ]));
 
-          const topRow = el("div", { class:"btnrow" }, [
-            el("button", {
-              class:"btn primary",
-              onClick: () => openNewRoutineModal()
-            }, ["New routine"]),
-            el("button", {
-              class:"btn",
-              onClick: () => {
-                if(!active) return;
-                try{
-                  Routines.duplicate(active.id);
-                  editingRoutineId = state.activeRoutineId;
-                  renderView();
-                }catch(e){
-                  toast(e.message || "Unable to duplicate routine.");
-                }
-              }
-            }, ["Duplicate active"]),
-            el("button", {
-              class:"btn danger",
-              onClick: () => {
-                if(!active) return;
-                Modal.open({
-                  title: "Delete active routine?",
-                  bodyNode: el("div", {}, [
-                    el("div", { class:"note", text:`This will delete "${active.name}".` }),
-                    el("div", { style:"height:12px" }),
-                    el("div", { class:"btnrow" }, [
-                      el("button", {
-                        class:"btn danger",
-                        onClick: () => {
-                          Routines.remove(active.id);
-                          editingRoutineId = state.activeRoutineId;
-                          Modal.close();
-                          renderView();
-                        }
-                      }, ["Delete"]),
-                      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-                    ])
-                  ])
-                });
-              }
-            }, ["Delete active"])
-          ]);
+  // Exercises
+  day.exercises.forEach((rx, idx)=>{
+    const ex = ExerciseStore.findById(rx.exerciseId);
+    if(!ex) return;
 
-          // routine pills
-          const pills = el("div", { class:"pillrow" });
-          routines.forEach(r => {
-            pills.appendChild(el("div", {
-              class:"pill" + (r.id === (editingRoutineId || state.activeRoutineId) ? " active" : ""),
-              onClick: () => {
-                editingRoutineId = r.id;
-                Routines.setActive(r.id);
-                renderView();
-              }
-            }, [r.name]));
-          });
+    const logged = false; // logging logic comes next phase
 
-          // rename active
-          const renameBtn = el("button", {
-            class:"btn",
-            onClick: () => {
-              const r = Routines.getActive();
-              if(!r) return;
-              Modal.open({
-                title: "Rename routine",
-                bodyNode: buildRenameRoutine(r)
-              });
-            }
-          }, ["Rename active"]);
+    const card = el("div", {
+      class:"card",
+      "data-unlogged": logged ? "false" : "true"
+    }, [
+      el("h3", {}, [ex.name]),
+      el("div", { class:"note" }, [`${rx.sets} × ${rx.reps}`]),
+      el("div", { class:"note" }, ["🏆 Lifetime Max: —"]),
+      el("div", { class:"btnrow" }, [
+        el("button", {
+          class:"btn",
+          onClick: ()=> alert("Log screen coming next phase")
+        }, ["Log Sets"]),
+        el("button", { class:"btn ghost" }, ["History →"])
+      ])
+    ]);
 
-          routineList.appendChild(el("div", { class:"note", text:"Tap a routine to set it active and edit it below." }));
-          routineList.appendChild(el("div", { style:"height:10px" }));
-          routineList.appendChild(pills);
-          routineList.appendChild(el("div", { style:"height:10px" }));
-          routineList.appendChild(el("div", { class:"btnrow" }, [renameBtn]));
+    root.appendChild(card);
+  });
 
-          // ---- Editor for active routine
-          const editor = el("div", { class:"grid" });
-
-          if(!active){
-            editor.appendChild(el("div", { class:"note", text:"No routines yet. Create one to begin." }));
-          }else{
-            const showRestDays = !state.profile?.hideRestDays;
-
-            const days = (active.days || []).filter(d => showRestDays ? true : !d.isRest);
-
-            const dayGrid = el("div", { class:"dayGrid" });
-
-            days.forEach(day => {
-              dayGrid.appendChild(renderDayCard(active, day));
-            });
-
-            editor.appendChild(el("div", { class:"note", text:`Editing: ${active.name}` }));
-            editor.appendChild(dayGrid);
-          }
-
-          panel.appendChild(el("div", { class:"card" }, [
-            el("h2", { text:"Routines" }),
-            topRow,
-            el("div", { style:"height:10px" }),
-            routineList
-          ]));
-
-          panel.appendChild(el("div", { class:"card" }, [
-            el("h2", { text:"Editor" }),
-            editor
-          ]));
-
-          return panel;
-        }
-
-        function renderDayCard(routine, day){
-          const exItems = (day.exercises || []);
-
-          const restSwitch = el("div", { class:"switch " + (day.isRest ? "on" : "") });
-          restSwitch.addEventListener("click", () => {
-            Routines.setRestDay(routine.id, day.id, !day.isRest);
-            renderView();
-          });
-
-          const renameDayBtn = el("button", {
-            class:"mini",
-            onClick: () => {
-              Modal.open({
-                title: "Rename day",
-                bodyNode: buildRenameDay(routine, day)
-              });
-            }
-          }, ["Rename"]);
-
-          const addOneBtn = el("button", {
-            class:"mini",
-            onClick: () => openPickExerciseModal(routine, day, "single")
-          }, ["Add"]);
-
-          const addManyBtn = el("button", {
-            class:"mini",
-            onClick: () => openPickExerciseModal(routine, day, "multi")
-          }, ["Add multiple"]);
-
-          const exList = el("div", { class:"exList" });
-          if(exItems.length === 0){
-            exList.appendChild(el("div", { class:"note", text:"No exercises yet." }));
-          }else{
-            exItems.forEach(rx => {
-              const name = resolveExerciseName(rx.type, rx.exerciseId, rx.nameSnap);
-              exList.appendChild(el("div", { class:"exRow" }, [
-                el("div", { class:"n", text: name }),
-                el("button", {
-                  class:"mini danger",
-                  onClick: () => {
-                    Routines.removeExerciseFromDay(routine.id, day.id, rx.id);
-                    renderView();
-                  }
-                }, ["Remove"])
-              ]));
-            });
-          }
-
+  return root;
+}
           return el("div", { class:"dayCard" }, [
             el("div", { class:"dayTop" }, [
               el("div", { class:"dayTitle" }, [
