@@ -765,6 +765,14 @@
       cursor:pointer;
       font-weight: 700;
     }
+    .pulse{
+  animation: pulseAnim 1.2s ease;
+}
+@keyframes pulseAnim{
+  0%{ box-shadow: 0 0 0 0 rgba(124,92,255,.6); }
+  70%{ box-shadow: 0 0 0 10px rgba(124,92,255,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(124,92,255,0); }
+}
   </style>
 </head>
 
@@ -2241,638 +2249,146 @@ else if(currentRoute === "settings") root.appendChild(Views.Settings());
 Routine(){
   const root = el("div", { class:"grid" });
 
-  if(!state.profile){
-    root.appendChild(el("div", { class:"card note" }, ["Create a profile on Home first."]));
-    return root;
-  }
-
-  // ✅ Use the real routines engine (supports multiple routines + active switching)
   const routine = Routines.getActive();
   if(!routine){
-    root.appendChild(el("div", { class:"card note" }, ["No active routine. Create one in Settings."]));
-    return root;
-  }
-
-  const today = new Date();
-  const todayIndex = today.getDay(); // 0–6 (Sun–Sat)
-
-  // routine.days are stored in 0..6 order; also some versions include day.order
-  const day =
-    (routine.days || []).find(d => d.order === todayIndex) ||
-    (routine.days || [])[todayIndex] ||
-    null;
-
-  function openRoutinePicker(){
-    const all = Routines.getAll();
-
-    const body = el("div", { class:"grid" }, [
-      el("div", { class:"note" }, ["Select an active routine:"]),
-      el("div", { class:"list" }, all.map(r => {
-        const isActive = r.id === state.activeRoutineId;
-        return el("div", { class:"item" }, [
-          el("div", { class:"left" }, [
-            el("div", { class:"name", text: r.name || "Routine" }),
-            el("div", { class:"meta", text: isActive ? "Active" : "" })
-          ]),
-          el("div", { class:"actions" }, [
-            el("button", {
-              class:"mini" + (isActive ? " primary" : ""),
-              onClick: () => {
-                Routines.setActive(r.id);
-                Modal.close();
-                renderView();
-              }
-            }, [isActive ? "Active" : "Use"])
-          ])
-        ]);
-      }))
-    ]);
-
-    Modal.open({ title: "Routines", bodyNode: body });
-  }
-
-  root.appendChild(el("div", { class:"card" }, [
-    el("h2", {}, ["Routine"]),
-    el("div", { class:"note" }, [`${routine.name} • Mon–Sun`]),
-
-    el("div", { class:"btnrow", style:"margin-top:10px;" }, [
-      // ✅ This is now the dropdown/picker (NOT settings)
-      el("button", {
-        class:"btn ghost",
-        onClick: openRoutinePicker
-      }, [routine.name + " ▼"]),
-
-      el("button", {
-        class:"btn",
-        onClick: () => {
-          const first = document.querySelector("[data-unlogged='true']");
-          if(first){
-            first.scrollIntoView({ behavior:"smooth", block:"center" });
-            first.classList.add("pulse");
-            setTimeout(()=>first.classList.remove("pulse"),1200);
-          }
-        }
-      }, ["▶ Start Today"])
-    ])
-  ]));
-
-  // ✅ Rest day handling (you asked to still show today but mark Rest)
-  if(!day || day.isRest){
     root.appendChild(el("div", { class:"card" }, [
-      el("h3", {}, ["Rest Day"]),
-      el("div", { class:"note" }, ["Today is a scheduled rest day."]),
-      el("div", { class:"note" }, ["(You can still log a workout manually if you want.)"])
+      el("h2", { text:"Routine" }),
+      el("div", { class:"note", text:"No active routine found. Create one in Settings." })
     ]));
     return root;
   }
 
-  // Active Day Header
-  root.appendChild(el("div", { class:"card" }, [
-    el("div", { class:"note" }, [`${["SUN","MON","TUE","WED","THU","FRI","SAT"][todayIndex]} — ${day.label || day.name || "Training"}`]),
-    el("div", { class:"note" }, [`${(day.exercises || []).length} exercises`])
-  ]));
+  const today = new Date();
+  const todayIndex = today.getDay();
+  const todayISO = today.toISOString().slice(0,10);
 
-  // Weekly indicator
-  root.appendChild(el("div", { class:"card" }, [
-    el("div", { class:"note" }, ["S M T W T F S"]),
-    el("div", { class:"note" }, [
-      ["SUN","MON","TUE","WED","THU","FRI","SAT"]
-        .map((_,i)=> i===todayIndex ? "●" : "○")
-        .join(" ")
-    ])
-  ]));
+  let selectedIndex = todayIndex;
 
-  // Exercises
-  (day.exercises || []).forEach((rx)=>{
-    const ex = ExerciseStore.findById(rx.exerciseId);
-    if(!ex) return;
+  function getDay(index){
+    return (routine.days || []).find(d => d.order === index);
+  }
 
-    const logged = false; // logging logic comes next phase
+  function repaint(){
+    root.innerHTML = "";
 
-    const card = el("div", {
-      class:"card",
-      "data-unlogged": logged ? "false" : "true"
-    }, [
-      el("h3", {}, [ex.name]),
-      el("div", { class:"note" }, [`${rx.sets} × ${rx.reps}`]),
-      el("div", { class:"note" }, ["🏆 Lifetime Max: —"]),
+    const day = getDay(selectedIndex);
+
+    // Header
+    root.appendChild(el("div", { class:"card" }, [
+      el("h2", { text:"Routine" }),
+      el("div", { class:"note", text:`${routine.name} • Mon–Sun` }),
+      el("div", { style:"height:10px" }),
       el("div", { class:"btnrow" }, [
+        el("button", { class:"btn ghost", onClick: openRoutinePicker }, [`${routine.name} ▼`]),
         el("button", {
-          class:"btn",
-          onClick: ()=> alert("Log screen coming next phase")
-        }, ["Log Sets"]),
-        el("button", { class:"btn ghost" }, ["History →"])
+          class:"btn primary",
+          onClick: () => {
+            selectedIndex = todayIndex;
+            repaint();
+            setTimeout(()=>{
+              const first = root.querySelector("[data-unlogged='true']");
+              if(first){
+                first.scrollIntoView({ behavior:"smooth", block:"center" });
+                first.classList.add("pulse");
+                setTimeout(()=>first.classList.remove("pulse"),1200);
+              }
+            },0);
+          }
+        }, ["▶ Start Today"])
       ])
-    ]);
+    ]));
 
-    root.appendChild(card);
-  });
+    if(!day){
+      root.appendChild(el("div", { class:"card note" }, ["No day found."]));
+      return;
+    }
 
+    const dayNames = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+
+    root.appendChild(el("div", { class:"card" }, [
+      el("div", { class:"note", text:`${dayNames[selectedIndex]} — ${day.label || "Day"}` }),
+      el("div", { class:"note", text: day.isRest ? "Rest Day" : `${(day.exercises||[]).length} exercises` })
+    ]));
+
+    if(day.isRest){
+      root.appendChild(el("div", { class:"card" }, [
+        el("h3", { text:"Rest" }),
+        el("div", { class:"note", text:"Today is a scheduled rest day." })
+      ]));
+      return;
+    }
+
+    (day.exercises || []).forEach(rx => {
+
+      const exName = resolveExerciseName(rx.type, rx.exerciseId, rx.nameSnap);
+      const logged = hasRoutineExerciseLog(todayISO, rx.id);
+
+      const max = lifetimeMaxSet(rx.type, rx.exerciseId);
+      const maxText = max ? `${max.weight} × ${max.reps}` : "—";
+
+      root.appendChild(el("div", {
+        class:"card",
+        id:`rx_${rx.id}`,
+        "data-unlogged": logged ? "false" : "true"
+      }, [
+        el("div", { style:"font-weight:800;" , text: exName }),
+        el("div", { class:"note", text:`🏆 Lifetime Max: ${maxText}` }),
+        el("div", { style:"height:10px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn primary",
+            onClick: () => alert("Workout execution comes next phase.")
+          }, ["Log Sets"]),
+          el("button", {
+            class:"btn ghost",
+            onClick: () => navigate("progress")
+          }, ["History →"])
+        ])
+      ]));
+    });
+  }
+
+  function openRoutinePicker(){
+    const all = Routines.getAll();
+    if(!all || all.length === 0){
+      Modal.open({
+        title:"Select routine",
+        bodyNode: el("div", { class:"note", text:"No routines found." })
+      });
+      return;
+    }
+
+    const list = el("div", { class:"list" }, []);
+
+    all.forEach(r=>{
+      const active = (Routines.getActive()?.id === r.id);
+      list.appendChild(el("div", { class:"item" }, [
+        el("div", { class:"left" }, [
+          el("div", { class:"name", text:r.name }),
+          el("div", { class:"meta", text: active ? "Active" : "" })
+        ]),
+        el("div", { class:"actions" }, [
+          el("button", {
+            class:"btn",
+            onClick: ()=>{
+              Routines.setActive(r.id);
+              Modal.close();
+              repaint();
+            }
+          }, [active ? "Selected" : "Select"])
+        ])
+      ]));
+    });
+
+    Modal.open({
+      title:"Select routine",
+      bodyNode: list
+    });
+  }
+
+  repaint();
   return root;
 },
-
-          Log(){
-        ExerciseLibrary.ensureSeeded();
-        LogEngine.ensure();
-
-        const todayISO = Dates.todayISO();
-        let dateISO = todayISO;
-
-        // Source: planned exercises for today (if any), otherwise library
-        const { routine, day } = getTodayWorkout();
-        const planned = (!day || day.isRest) ? [] : (day.exercises || []);
-
-        let type = "weightlifting";
-        let exerciseId = null;
-
-        // if planned exists, default to first planned exercise
-        if(planned.length > 0){
-          const first = planned[0];
-          type = first.type;
-          exerciseId = first.exerciseId;
-        } else {
-          // otherwise default to first in library for weightlifting
-          exerciseId = (state.exerciseLibrary.weightlifting?.[0]?.id) || null;
-        }
-
-        // local set drafts
-        let sets = [];
-
-        const root = el("div", { class:"grid" });
-
-        const header = el("div", { class:"card" }, [
-          el("h2", { text:"Log Sets" }),
-          el("div", { class:"note", text:"Log Weightlifting, Cardio, or Core. Includes history and lifetime PR detection." }),
-        ]);
-
-        const workspace = el("div", { class:"card" }, [
-          el("h2", { text:"Entry" })
-        ]);
-
-        root.appendChild(header);
-        root.appendChild(workspace);
-
-        const dateInput = el("input", { type:"date", value: dateISO });
-        dateInput.addEventListener("change", () => {
-          dateISO = dateInput.value || todayISO;
-          repaint();
-        });
-
-        const typeSelect = el("select", {});
-        ["weightlifting","cardio","core"].forEach(t => {
-          typeSelect.appendChild(el("option", { value:t, text: t === "weightlifting" ? "Weightlifting" : (t === "cardio" ? "Cardio" : "Core") }));
-        });
-        typeSelect.value = type;
-        typeSelect.addEventListener("change", () => {
-          type = typeSelect.value;
-          exerciseId = pickFirstExerciseForType(type);
-          sets = defaultSetsForType(type);
-          repaint();
-        });
-
-        const exSelect = el("select", {});
-        exSelect.addEventListener("change", () => {
-          exerciseId = exSelect.value || null;
-          sets = defaultSetsForType(type);
-          repaint();
-        });
-
-        const plannedChip = el("div", { class:"note" });
-
-        const actionsRow = el("div", { class:"btnrow" }, [
-          el("button", { class:"btn", onClick: () => openHistoryModal() }, ["History"]),
-          el("button", { class:"btn primary", onClick: () => saveEntry() }, ["Save entry"])
-        ]);
-
-        const setsHost = el("div", { class:"sets" });
-        const kpiHost = el("div", { class:"note" });
-
-        workspace.appendChild(el("div", { class:"logRow2" }, [
-          el("label", {}, [ el("span", { text:"Date" }), dateInput ]),
-          el("label", {}, [ el("span", { text:"Type" }), typeSelect ])
-        ]));
-
-        workspace.appendChild(el("div", { class:"logRow2" }, [
-          el("label", {}, [ el("span", { text:"Exercise" }), exSelect ]),
-          el("div", { style:"display:flex; align-items:end; gap:10px; flex-wrap:wrap;" }, [
-            el("button", { class:"btn", onClick: () => openCreateExerciseModal() }, ["Create exercise"]),
-            el("button", { class:"btn", onClick: () => navigate("routine") }, ["Edit routine"])
-          ])
-        ]));
-
-        workspace.appendChild(el("div", { style:"height:8px" }));
-        workspace.appendChild(plannedChip);
-        workspace.appendChild(el("div", { class:"hr" }));
-        workspace.appendChild(setsHost);
-        workspace.appendChild(el("div", { style:"height:8px" }));
-        workspace.appendChild(kpiHost);
-        workspace.appendChild(el("div", { style:"height:10px" }));
-        workspace.appendChild(actionsRow);
-
-        // init
-        sets = defaultSetsForType(type);
-        repaint();
-        return root;
-
-        function pickFirstExerciseForType(t){
-          // prefer planned matching type (today)
-          const plannedMatch = planned.find(p => p.type === t);
-          if(plannedMatch) return plannedMatch.exerciseId;
-
-          return (state.exerciseLibrary?.[t]?.[0]?.id) || null;
-        }
-
-        function defaultSetsForType(t){
-          if(t === "weightlifting"){
-            return [
-              { id: uid("set"), weight:"", reps:"" },
-              { id: uid("set"), weight:"", reps:"" },
-              { id: uid("set"), weight:"", reps:"" }
-            ];
-          }
-          if(t === "cardio"){
-            // single set default
-            return [
-              { id: uid("set"), timeMin:"", timeSec:"", distance:"", incline:"" }
-            ];
-          }
-          // core
-          return [
-            { id: uid("set"), sets:"", reps:"", timeMin:"", timeSec:"", weight:"" }
-          ];
-        }
-
-        function repaint(){
-          // planned indicator
-          if(planned.length > 0 && day && !day.isRest){
-            plannedChip.textContent = `Planned today (${day.label}): ${planned.length} exercises`;
-          }else if(day?.isRest){
-            plannedChip.textContent = "Today is marked as a Rest Day in your routine.";
-          }else{
-            plannedChip.textContent = "No planned exercises for today. Select from your library.";
-          }
-
-          // exercise dropdown
-          exSelect.innerHTML = "";
-          const list = (state.exerciseLibrary?.[type] || []).slice().sort((a,b) => (a.name||"").localeCompare(b.name||""));
-          if(list.length === 0){
-            exSelect.appendChild(el("option", { value:"", text:"No exercises — create one" }));
-            exerciseId = null;
-          }else{
-            list.forEach(x => exSelect.appendChild(el("option", { value:x.id, text:x.name })));
-            if(!exerciseId || !list.some(x => x.id === exerciseId)) exerciseId = list[0].id;
-            exSelect.value = exerciseId;
-          }
-
-          // sets UI
-          setsHost.innerHTML = "";
-          if(type === "weightlifting") renderWeightliftingSets();
-          else if(type === "cardio") renderCardioSets();
-          else renderCoreSets();
-
-          // KPI lifetime info
-          if(exerciseId){
-            const bests = LogEngine.lifetimeBests(type, exerciseId);
-            kpiHost.textContent = buildLifetimeText(type, bests);
-          }else{
-            kpiHost.textContent = "Create/select an exercise to see lifetime stats.";
-          }
-        }
-
-        function buildLifetimeText(t, bests){
-          if(t === "weightlifting"){
-            const bw = bests.bestWeight === null ? "—" : `${bests.bestWeight}`;
-            const b1 = bests.best1RM === null ? "—" : `${bests.best1RM}`;
-            const bv = bests.bestVolume === null ? "—" : `${bests.bestVolume}`;
-            return `Lifetime: Top Weight ${bw} • Est 1RM ${b1} • Best Volume ${bv}`;
-          }
-          if(t === "cardio"){
-            const bp = bests.bestPace === null ? "—" : formatPace(bests.bestPace);
-            return `Lifetime: Best Pace ${bp} (lower is better)`;
-          }
-          const bv = bests.bestVolume === null ? "—" : `${bests.bestVolume}`;
-          return `Lifetime: Best Core Volume ${bv}`;
-        }
-
-        function renderWeightliftingSets(){
-          const addBtn = el("button", {
-            class:"btn",
-            onClick: () => { sets.push({ id: uid("set"), weight:"", reps:"" }); repaint(); }
-          }, ["Add set"]);
-
-          sets.forEach((s, idx) => {
-            const w = el("input", { type:"number", inputmode:"decimal", placeholder:"Weight", value: s.weight ?? "", min:"0" });
-            const r = el("input", { type:"number", inputmode:"numeric", placeholder:"Reps", value: s.reps ?? "", min:"0" });
-
-            w.addEventListener("input", () => { s.weight = w.value; });
-            r.addEventListener("input", () => { s.reps = r.value; });
-
-            setsHost.appendChild(el("div", { class:"setCard" }, [
-              el("div", { class:"setTop" }, [
-                el("div", { class:"t", text:`Set ${idx+1}` }),
-                el("button", {
-                  class:"mini2 danger",
-                  onClick: () => { sets = sets.filter(x => x.id !== s.id); repaint(); }
-                }, ["Remove"])
-              ]),
-              el("div", { class:"logRow2" }, [
-                el("label", {}, [ el("span", { text:"Weight" }), w ]),
-                el("label", {}, [ el("span", { text:"Reps" }), r ])
-              ])
-            ]));
-          });
-
-          setsHost.appendChild(el("div", { class:"btnrow" }, [addBtn]));
-        }
-
-        function renderCardioSets(){
-          // single set
-          const s = sets[0] || (sets[0] = { id: uid("set"), timeMin:"", timeSec:"", distance:"", incline:"" });
-
-          const tMin = el("input", { type:"number", inputmode:"numeric", placeholder:"Min", value: s.timeMin ?? "", min:"0" });
-          const tSec = el("input", { type:"number", inputmode:"numeric", placeholder:"Sec", value: s.timeSec ?? "", min:"0", max:"59" });
-          const dist = el("input", { type:"number", inputmode:"decimal", placeholder:"Distance", value: s.distance ?? "", min:"0" });
-
-          const supportsIncline = !!(state.exerciseLibrary?.cardio || []).find(x => x.id === exerciseId)?.supportsIncline;
-          const incline = el("input", { type:"number", inputmode:"decimal", placeholder:"Incline", value: s.incline ?? "", min:"0" });
-          incline.disabled = !supportsIncline;
-
-          tMin.addEventListener("input", () => { s.timeMin = tMin.value; });
-          tSec.addEventListener("input", () => { s.timeSec = tSec.value; });
-          dist.addEventListener("input", () => { s.distance = dist.value; });
-          incline.addEventListener("input", () => { s.incline = incline.value; });
-
-          const timeSec = (Number(s.timeMin)||0)*60 + (Number(s.timeSec)||0);
-          const pace = (Number(s.distance)||0) > 0 ? (timeSec / Number(s.distance)) : null;
-
-          setsHost.appendChild(el("div", { class:"setCard" }, [
-            el("div", { class:"setTop" }, [
-              el("div", { class:"t", text:"Cardio" }),
-              el("div", { class:"chip2", text: `Pace: ${formatPace(pace)}` })
-            ]),
-            el("div", { class:"log3" }, [
-              el("label", {}, [ el("span", { text:"Time (min)" }), tMin ]),
-              el("label", {}, [ el("span", { text:"Time (sec)" }), tSec ]),
-              el("label", {}, [ el("span", { text:"Distance" }), dist ])
-            ]),
-            el("div", { class:"logRow2" }, [
-              el("label", {}, [ el("span", { text:"Incline (optional)" }), incline ]),
-              el("div", { class:"note", text: supportsIncline ? "Incline enabled for this exercise." : "Incline disabled for this exercise." })
-            ])
-          ]));
-        }
-
-        function renderCoreSets(){
-          // allow multiple core blocks
-          const addBtn = el("button", {
-            class:"btn",
-            onClick: () => { sets.push({ id: uid("set"), sets:"", reps:"", timeMin:"", timeSec:"", weight:"" }); repaint(); }
-          }, ["Add block"]);
-
-          sets.forEach((s, idx) => {
-            const setsIn = el("input", { type:"number", inputmode:"numeric", placeholder:"Sets", value: s.sets ?? "", min:"0" });
-            const repsIn = el("input", { type:"number", inputmode:"numeric", placeholder:"Reps", value: s.reps ?? "", min:"0" });
-
-            const minIn = el("input", { type:"number", inputmode:"numeric", placeholder:"Min", value: s.timeMin ?? "", min:"0" });
-            const secIn = el("input", { type:"number", inputmode:"numeric", placeholder:"Sec", value: s.timeSec ?? "", min:"0", max:"59" });
-
-            const wIn = el("input", { type:"number", inputmode:"decimal", placeholder:"Weight (optional)", value: s.weight ?? "", min:"0" });
-
-            setsIn.addEventListener("input", () => { s.sets = setsIn.value; });
-            repsIn.addEventListener("input", () => { s.reps = repsIn.value; });
-            minIn.addEventListener("input", () => { s.timeMin = minIn.value; });
-            secIn.addEventListener("input", () => { s.timeSec = secIn.value; });
-            wIn.addEventListener("input", () => { s.weight = wIn.value; });
-
-            setsHost.appendChild(el("div", { class:"setCard" }, [
-              el("div", { class:"setTop" }, [
-                el("div", { class:"t", text:`Core block ${idx+1}` }),
-                el("button", { class:"mini2 danger", onClick: () => { sets = sets.filter(x => x.id !== s.id); repaint(); } }, ["Remove"])
-              ]),
-              el("div", { class:"logRow2" }, [
-                el("label", {}, [ el("span", { text:"Sets" }), setsIn ]),
-                el("label", {}, [ el("span", { text:"Reps (optional)" }), repsIn ])
-              ]),
-              el("div", { class:"log3" }, [
-                el("label", {}, [ el("span", { text:"Time (min, optional)" }), minIn ]),
-                el("label", {}, [ el("span", { text:"Time (sec, optional)" }), secIn ]),
-                el("label", {}, [ el("span", { text:"Weight (optional)" }), wIn ])
-              ])
-            ]));
-          });
-
-          setsHost.appendChild(el("div", { class:"btnrow" }, [addBtn]));
-        }
-
-        function openCreateExerciseModal(){
-          Modal.open({
-            title: `Create ${type === "weightlifting" ? "Weightlifting" : (type === "cardio" ? "Cardio" : "Core")} exercise`,
-            bodyNode: buildExerciseFormShared({
-              mode: "add",
-              type,
-              initial: null,
-              onSave: (data, showError) => {
-                try{
-                  const ex = ExerciseLibrary.add(type, data);
-                  Modal.close();
-                  exerciseId = ex.id;
-                  typeSelect.value = type;
-                  sets = defaultSetsForType(type);
-                  repaint();
-                }catch(e){
-                  showError(e.message || "Unable to create exercise.");
-                }
-              }
-            })
-          });
-        }
-
-        function saveEntry(){
-          if(!exerciseId){
-            Modal.open({
-              title:"Missing exercise",
-              bodyNode: el("div", {}, [
-                el("div", { class:"note", text:"Select or create an exercise before saving." }),
-                el("div", { style:"height:12px" }),
-                el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
-              ])
-            });
-            return;
-          }
-
-          const nameSnap = resolveExerciseName(type, exerciseId, "");
-
-          // normalize sets by type
-          let normalizedSets = [];
-          let summary = {};
-          if(type === "weightlifting"){
-            normalizedSets = sets.map(s => ({
-              id: s.id,
-              weight: Number(s.weight) || 0,
-              reps: Math.max(0, Math.floor(Number(s.reps) || 0))
-            })).filter(s => s.weight > 0 || s.reps > 0);
-
-            if(normalizedSets.length === 0){
-              return showSaveError("Add at least one set with weight/reps.");
-            }
-
-            summary = LogEngine.computeWeightliftingSummary(normalizedSets);
-          } else if(type === "cardio"){
-            const s = sets[0] || {};
-            const t = (Number(s.timeMin)||0)*60 + (Number(s.timeSec)||0);
-            const d = Number(s.distance) || 0;
-            const inc = (s.incline === "" || s.incline === null || typeof s.incline === "undefined") ? null : Number(s.incline);
-
-            if(t <= 0 || d <= 0){
-              return showSaveError("Cardio requires time and distance.");
-            }
-
-            normalizedSets = [{
-              id: s.id || uid("set"),
-              timeSec: t,
-              distance: d,
-              incline: Number.isFinite(inc) ? inc : null
-            }];
-
-            summary = LogEngine.computeCardioSummary(normalizedSets);
-          } else {
-            normalizedSets = sets.map(s => ({
-              id: s.id,
-              sets: Math.max(0, Math.floor(Number(s.sets) || 0)),
-              reps: Math.max(0, Math.floor(Number(s.reps) || 0)),
-              timeSec: (Number(s.timeMin)||0)*60 + (Number(s.timeSec)||0),
-              weight: Number(s.weight) || 0
-            })).filter(s => s.sets > 0);
-
-            if(normalizedSets.length === 0){
-              return showSaveError("Core requires at least Sets > 0.");
-            }
-
-            summary = LogEngine.computeCoreSummary(normalizedSets);
-          }
-
-          const pr = LogEngine.computePRFlags(type, exerciseId, summary);
-
-          const entry = {
-            id: uid("log"),
-            dateISO,
-            type,
-            exerciseId,
-            nameSnap,
-            createdAt: Date.now(),
-            sets: normalizedSets,
-            summary,
-            pr
-          };
-
-          LogEngine.addEntry(entry);
-
-          // show PR toast if any
-          const prMsgs = [];
-          if(pr.isPRWeight) prMsgs.push("Top Weight PR");
-          if(pr.isPR1RM) prMsgs.push("Est 1RM PR");
-          if(pr.isPRVolume) prMsgs.push("Volume PR");
-          if(pr.isPRPace) prMsgs.push("Pace PR");
-
-          Modal.open({
-            title: prMsgs.length ? "Saved + PR!" : "Saved",
-            bodyNode: el("div", {}, [
-              el("div", { class:"note", text: prMsgs.length ? prMsgs.join(" • ") : "Entry saved." }),
-              el("div", { style:"height:12px" }),
-              el("div", { class:"btnrow" }, [
-                el("button", { class:"btn primary", onClick: () => { Modal.close(); repaint(); } }, ["OK"]),
-                el("button", { class:"btn", onClick: () => { Modal.close(); openHistoryModal(); } }, ["View history"])
-              ])
-            ])
-          });
-
-          // reset draft sets for next entry
-          sets = defaultSetsForType(type);
-          repaint();
-        }
-
-        function showSaveError(msg){
-          Modal.open({
-            title:"Can’t save",
-            bodyNode: el("div", {}, [
-              el("div", { class:"note", text: msg }),
-              el("div", { style:"height:12px" }),
-              el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
-            ])
-          });
-        }
-
-        function openHistoryModal(){
-          if(!exerciseId){
-            return Modal.open({
-              title:"History",
-              bodyNode: el("div", {}, [
-                el("div", { class:"note", text:"Select an exercise first." }),
-                el("div", { style:"height:12px" }),
-                el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
-              ])
-            });
-          }
-
-          const name = resolveExerciseName(type, exerciseId, "");
-          const entries = LogEngine.entriesForExercise(type, exerciseId).slice(0, 30);
-
-          const list = el("div", { class:"list" });
-
-          if(entries.length === 0){
-            list.appendChild(el("div", { class:"note", text:"No history yet." }));
-          }else{
-            entries.forEach(e => {
-              list.appendChild(el("div", { class:"item" }, [
-                el("div", { class:"left" }, [
-                  el("div", { class:"name", text: e.dateISO }),
-                  el("div", { class:"meta", text: historySummaryLine(e) })
-                ]),
-                el("div", { class:"actions" }, [
-                  el("div", { class:"meta", text: prBadges(e.pr) })
-                ])
-              ]));
-            });
-          }
-
-          Modal.open({
-            title: `History: ${name}`,
-            bodyNode: el("div", {}, [
-              el("div", { class:"note", text:"Most recent first." }),
-              el("div", { style:"height:10px" }),
-              list
-            ])
-          });
-        }
-
-        function historySummaryLine(e){
-          if(e.type === "weightlifting"){
-            const bw = Number.isFinite(e.summary?.bestWeight) ? e.summary.bestWeight : "—";
-            const b1 = Number.isFinite(e.summary?.best1RM) ? e.summary.best1RM : "—";
-            const vol = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
-            return `Top W: ${bw} • Est1RM: ${b1} • Vol: ${vol}`;
-          }
-          if(e.type === "cardio"){
-            const t = Number.isFinite(e.summary?.timeSec) ? formatTime(e.summary.timeSec) : "—";
-            const d = Number.isFinite(e.summary?.distance) ? e.summary.distance : "—";
-            const p = formatPace(e.summary?.paceSecPerUnit);
-            return `Time: ${t} • Dist: ${d} • Pace: ${p}`;
-          }
-          const vol = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
-          return `Core Vol: ${vol}`;
-        }
-
-        function prBadges(pr){
-          if(!pr) return "";
-          const b = [];
-          if(pr.isPRWeight) b.push("PR W");
-          if(pr.isPR1RM) b.push("PR 1RM");
-          if(pr.isPRVolume) b.push("PR Vol");
-          if(pr.isPRPace) b.push("PR Pace");
-          return b.join(" • ");
-        }
-      },
-
            Progress(){
         ExerciseLibrary.ensureSeeded();
         LogEngine.ensure();
