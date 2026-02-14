@@ -1866,26 +1866,6 @@ function renderNav(){
       else chip.textContent = "Not set up";
     }
 
-    function renderNav(){
-      const nav = $("#navbar");
-      nav.innerHTML = "";
-
-      const disabled = !state.profile;
-
-      Object.entries(Routes).forEach(([key, r]) => {
-        nav.appendChild(el("button", {
-          class: "navbtn" + (key === currentRoute ? " active" : ""),
-          onClick: () => {
-            if(disabled){ navigate("home"); return; }
-            navigate(key);
-          }
-        }, [
-          el("div", { class:"dot" }),
-          el("div", { text: r.label })
-        ]));
-      });
-    }
-
     function navigate(routeKey){
       destroyProgressChart();
       destroyWeightChart();
