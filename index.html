@@ -36,31 +36,28 @@
       --navH: 78px;
     }
     /* ✅ Mobile sizing scale (iPhone / Add-to-Home-Screen) */
+/* ✅ Mobile sizing scale (iPhone / Add-to-Home-Screen) */
 @media (max-width: 420px){
   :root{
     --r: 16px;
     --navH: 66px;
-    .carouselCard{ padding: 12px; gap: 8px; }
-.weekDots{ gap: 8px; }
-.weekDot{ width: 10px; height: 10px; }
-.carouselSub{ font-size: 12px; }
-    .item{ padding: 10px; border-radius: 14px; }
-.item .meta{ font-size: 12px; }
-
-
   }
+
+  .carouselCard{ padding: 12px; gap: 8px; }
+  .weekDots{ gap: 8px; }
+  .weekDot{ width: 10px; height: 10px; }
+  .carouselSub{ font-size: 12px; }
+
+  .item{ padding: 10px; border-radius: 14px; }
+  .item .meta{ font-size: 12px; }
 
   .app{
     padding: env(safe-area-inset-top) 12px calc(var(--navH) + env(safe-area-inset-bottom)) 12px;
   }
 
-  header{
-    padding: 10px 0 8px 0;
-  }
+  header{ padding: 10px 0 8px 0; }
 
-  .card{
-    padding: 12px;
-  }
+  .card{ padding: 12px; }
 
   .card h2{
     font-size: 12px;
