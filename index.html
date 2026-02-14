@@ -3564,171 +3564,174 @@ Progress(){
       el("div", { class:"b", text: type === "cardio" ? formatTime(sum) : String(sum) })
     ]));
   }
-},
+  },
+  
+  Weight(){
+    WeightEngine.ensure();
 
-        WeightEngine.ensure();
+    const root = el("div", { class:"grid" });
 
-        const root = el("div", { class:"grid" });
+    const header = el("div", { class:"card" }, [
+      el("h2", { text:"Weight" }),
+      el("div", { class:"note", text:"Log your bodyweight. See your trend, delta vs last entry, and 7-day average." })
+    ]);
 
-        const header = el("div", { class:"card" }, [
-          el("h2", { text:"Weight" }),
-          el("div", { class:"note", text:"Log your bodyweight. See your trend, delta vs last entry, and 7-day average." })
-        ]);
+    const entryCard = el("div", { class:"card" }, [
+      el("h2", { text:"Add entry" })
+    ]);
 
-        const entryCard = el("div", { class:"card" }, [
-          el("h2", { text:"Add entry" })
-        ]);
+    const statsCard = el("div", { class:"card" }, [
+      el("h2", { text:"Stats" })
+    ]);
 
-        const statsCard = el("div", { class:"card" }, [
-          el("h2", { text:"Stats" })
-        ]);
+    const chartCard = el("div", { class:"card" }, [
+      el("h2", { text:"Graph" })
+    ]);
 
-        const chartCard = el("div", { class:"card" }, [
-          el("h2", { text:"Graph" })
-        ]);
+    const tableCard = el("div", { class:"card" }, [
+      el("h2", { text:"Table" })
+    ]);
 
-        const tableCard = el("div", { class:"card" }, [
-          el("h2", { text:"Table" })
-        ]);
+    root.appendChild(header);
+    root.appendChild(entryCard);
+    root.appendChild(statsCard);
+    root.appendChild(chartCard);
+    root.appendChild(tableCard);
 
-        root.appendChild(header);
-        root.appendChild(entryCard);
-        root.appendChild(statsCard);
-        root.appendChild(chartCard);
-        root.appendChild(tableCard);
+    const dateInput = el("input", { type:"date", value: Dates.todayISO() });
+    const weightInput = el("input", { type:"number", inputmode:"decimal", placeholder:"e.g., 185.4", min:"0", step:"0.1" });
 
-        const dateInput = el("input", { type:"date", value: Dates.todayISO() });
-        const weightInput = el("input", { type:"number", inputmode:"decimal", placeholder:"e.g., 185.4", min:"0", step:"0.1" });
-
-        const saveBtn = el("button", {
-          class:"btn primary",
-          onClick: () => {
-            try{
-              WeightEngine.add(dateInput.value || Dates.todayISO(), weightInput.value);
-              weightInput.value = "";
-              repaint();
-            }catch(e){
-              Modal.open({
-                title: "Can’t save",
-                bodyNode: el("div", {}, [
-                  el("div", { class:"note", text: e.message || "Unable to save weight." }),
-                  el("div", { style:"height:12px" }),
-                  el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
-                ])
-              });
-            }
-          }
-        }, ["Save"]);
-
-        entryCard.appendChild(el("div", { class:"row2" }, [
-          el("label", {}, [ el("span", { text:"Date" }), dateInput ]),
-          el("label", {}, [ el("span", { text:"Weight" }), weightInput ])
-        ]));
-        entryCard.appendChild(el("div", { style:"height:10px" }));
-        entryCard.appendChild(el("div", { class:"btnrow" }, [saveBtn]));
-
-        // Stats UI
-        const statsHost = el("div", { class:"kpi" });
-        statsCard.appendChild(statsHost);
-
-        // Chart UI
-        const chartWrap = el("div", { class:"chartWrap" });
-        const canvas = el("canvas", {});
-        chartWrap.appendChild(canvas);
-
-        const dlBtn = el("button", {
-          class:"btn",
-          onClick: () => downloadCanvasPNG(canvas, `weight_${Dates.todayISO()}.png`)
-        }, ["Download PNG"]);
-
-        chartCard.appendChild(chartWrap);
-        chartCard.appendChild(el("div", { style:"height:10px" }));
-        const chartNote = el("div", { class:"note" });
-        chartCard.appendChild(chartNote);
-        chartCard.appendChild(el("div", { style:"height:10px" }));
-        chartCard.appendChild(el("div", { class:"btnrow" }, [dlBtn]));
-
-        // Table UI
-        const tableHost = el("div", { class:"list" });
-        tableCard.appendChild(tableHost);
-
-        repaint();
-        return root;
-
-        function repaint(){
-          WeightEngine.ensure();
-
-          const latest = WeightEngine.latest();
-          const prev = WeightEngine.previous();
-          const delta = WeightEngine.delta();
-
-          const avg7 = WeightEngine.avg7(latest?.dateISO || Dates.todayISO());
-
-          statsHost.innerHTML = "";
-          statsHost.appendChild(el("div", { class:"big", text: latest ? `${latest.weight}` : "—" }));
-          statsHost.appendChild(el("div", { class:"small", text: latest ? `Latest • ${latest.dateISO}` : "No weight entries yet." }));
-
-          const deltaText = (delta === null) ? "—" : (delta > 0 ? `+${delta}` : `${delta}`);
-          statsHost.appendChild(el("div", { class:"small", text: `Delta vs previous: ${deltaText}` }));
-
-          const avgText = (avg7 === null) ? "—" : `${avg7}`;
-          statsHost.appendChild(el("div", { class:"small", text: `7-day avg: ${avgText}` }));
-
-          // Table
-          const desc = WeightEngine.listDesc();
-          tableHost.innerHTML = "";
-
-          if(desc.length === 0){
-            tableHost.appendChild(el("div", { class:"note", text:"No entries yet. Add one above." }));
-          }else{
-            desc.slice(0, 45).forEach(row => {
-              tableHost.appendChild(el("div", { class:"item" }, [
-                el("div", { class:"left" }, [
-                  el("div", { class:"name", text: row.dateISO }),
-                  el("div", { class:"meta", text: `Weight: ${row.weight}` })
-                ]),
-                el("div", { class:"actions" }, [
-                  el("button", {
-                    class:"mini danger",
-                    onClick: () => {
-                      Modal.open({
-                        title: "Delete entry?",
-                        bodyNode: el("div", {}, [
-                          el("div", { class:"note", text:`Delete ${row.weight} on ${row.dateISO}?` }),
-                          el("div", { style:"height:12px" }),
-                          el("div", { class:"btnrow" }, [
-                            el("button", {
-                              class:"btn danger",
-                              onClick: () => {
-                                WeightEngine.remove(row.id);
-                                Modal.close();
-                                repaint();
-                              }
-                            }, ["Delete"]),
-                            el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-                          ])
-                        ])
-                      });
-                    }
-                  }, ["Delete"])
-                ])
-              ]));
-            });
-          }
-
-          // Chart (last 30 points)
-          const asc = WeightEngine.listAsc().slice(-30);
-          if(asc.length < 2){
-            destroyWeightChart();
-            chartNote.textContent = "Add at least 2 entries to see the trend line.";
-            return;
-          }
-
-          renderWeightChart(canvas, asc);
-          chartNote.textContent = `Showing last ${asc.length} entries`;
+    const saveBtn = el("button", {
+      class:"btn primary",
+      onClick: () => {
+        try{
+          WeightEngine.add(dateInput.value || Dates.todayISO(), weightInput.value);
+          weightInput.value = "";
+          repaint();
+        }catch(e){
+          Modal.open({
+            title: "Can’t save",
+            bodyNode: el("div", {}, [
+              el("div", { class:"note", text: e.message || "Unable to save weight." }),
+              el("div", { style:"height:12px" }),
+              el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+            ])
+          });
         }
-      },
-            Attendance(){
+      }
+    }, ["Save"]);
+
+    entryCard.appendChild(el("div", { class:"row2" }, [
+      el("label", {}, [ el("span", { text:"Date" }), dateInput ]),
+      el("label", {}, [ el("span", { text:"Weight" }), weightInput ])
+    ]));
+    entryCard.appendChild(el("div", { style:"height:10px" }));
+    entryCard.appendChild(el("div", { class:"btnrow" }, [saveBtn]));
+
+    // Stats UI
+    const statsHost = el("div", { class:"kpi" });
+    statsCard.appendChild(statsHost);
+
+    // Chart UI
+    const chartWrap = el("div", { class:"chartWrap" });
+    const canvas = el("canvas", {});
+    chartWrap.appendChild(canvas);
+
+    const dlBtn = el("button", {
+      class:"btn",
+      onClick: () => downloadCanvasPNG(canvas, `weight_${Dates.todayISO()}.png`)
+    }, ["Download PNG"]);
+
+    chartCard.appendChild(chartWrap);
+    chartCard.appendChild(el("div", { style:"height:10px" }));
+    const chartNote = el("div", { class:"note" });
+    chartCard.appendChild(chartNote);
+    chartCard.appendChild(el("div", { style:"height:10px" }));
+    chartCard.appendChild(el("div", { class:"btnrow" }, [dlBtn]));
+
+    // Table UI
+    const tableHost = el("div", { class:"list" });
+    tableCard.appendChild(tableHost);
+
+    repaint();
+    return root;
+
+    function repaint(){
+      WeightEngine.ensure();
+
+      const latest = WeightEngine.latest();
+      const prev = WeightEngine.previous();
+      const delta = WeightEngine.delta();
+
+      const avg7 = WeightEngine.avg7(latest?.dateISO || Dates.todayISO());
+
+      statsHost.innerHTML = "";
+      statsHost.appendChild(el("div", { class:"big", text: latest ? `${latest.weight}` : "—" }));
+      statsHost.appendChild(el("div", { class:"small", text: latest ? `Latest • ${latest.dateISO}` : "No weight entries yet." }));
+
+      const deltaText = (delta === null) ? "—" : (delta > 0 ? `+${delta}` : `${delta}`);
+      statsHost.appendChild(el("div", { class:"small", text: `Delta vs previous: ${deltaText}` }));
+
+      const avgText = (avg7 === null) ? "—" : `${avg7}`;
+      statsHost.appendChild(el("div", { class:"small", text: `7-day avg: ${avgText}` }));
+
+      // Table
+      const desc = WeightEngine.listDesc();
+      tableHost.innerHTML = "";
+
+      if(desc.length === 0){
+        tableHost.appendChild(el("div", { class:"note", text:"No entries yet. Add one above." }));
+      }else{
+        desc.slice(0, 45).forEach(row => {
+          tableHost.appendChild(el("div", { class:"item" }, [
+            el("div", { class:"left" }, [
+              el("div", { class:"name", text: row.dateISO }),
+              el("div", { class:"meta", text: `Weight: ${row.weight}` })
+            ]),
+            el("div", { class:"actions" }, [
+              el("button", {
+                class:"mini danger",
+                onClick: () => {
+                  Modal.open({
+                    title: "Delete entry?",
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"note", text:`Delete ${row.weight} on ${row.dateISO}?` }),
+                      el("div", { style:"height:12px" }),
+                      el("div", { class:"btnrow" }, [
+                        el("button", {
+                          class:"btn danger",
+                          onClick: () => {
+                            WeightEngine.remove(row.id);
+                            Modal.close();
+                            repaint();
+                          }
+                        }, ["Delete"]),
+                        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                      ])
+                    ])
+                  });
+                }
+              }, ["Delete"])
+            ])
+          ]));
+        });
+      }
+
+      // Chart (last 30 points)
+      const asc = WeightEngine.listAsc().slice(-30);
+      if(asc.length < 2){
+        destroyWeightChart();
+        chartNote.textContent = "Add at least 2 entries to see the trend line.";
+        return;
+      }
+
+      renderWeightChart(canvas, asc);
+      chartNote.textContent = `Showing last ${asc.length} entries`;
+    }
+  },
+
+  Attendance(){
+
         AttendanceEngine.ensure();
 
         // default month = current
