@@ -937,6 +937,17 @@
   background: rgba(124,92,255,.75);
   border-color: rgba(124,92,255,.55);
 } 
+  /* Add Multiple visual feedback */
+.item.selected{
+  border-color: rgba(124,92,255,.55);
+  box-shadow: 0 0 0 2px rgba(124,92,255,.25);
+}
+
+button.mini.added{
+  background: rgba(124,92,255,.2);
+  border-color: rgba(124,92,255,.6);
+  color: rgba(255,255,255,.95);
+}
   </style>
 </head>
 
@@ -3629,30 +3640,42 @@ const addMultiBtn = el("button", {
         return;
       }
 
-      items.forEach(x => {
-        list.appendChild(el("div", { class:"item" }, [
-          el("div", { class:"left" }, [
-            el("div", { class:"name", text:x.name }),
-            el("div", { class:"meta", text: ExerciseLibrary.typeLabel(type) })
-          ]),
-          el("div", { class:"actions" }, [
-            el("button", {
-              class:"mini",
-            onClick: () => {
-  Routines.addExerciseToDay(routineId, dayId, type, x.id);
-  repaintDays();
+items.forEach(x => {
 
-  if(opts.keepOpen){
-    showToast("Added");
-  }else{
-    Modal.close();
-  }
-}
+  const row = el("div", { class:"item" });
+  const btn = el("button", { class:"mini" }, ["Add"]);
 
-            }, ["Add"])
-          ])
-        ]));
-      });
+  row.appendChild(
+    el("div", { class:"left" }, [
+      el("div", { class:"name", text:x.name }),
+      el("div", { class:"meta", text: ExerciseLibrary.typeLabel(type) })
+    ])
+  );
+
+  row.appendChild(
+    el("div", { class:"actions" }, [ btn ])
+  );
+
+  btn.addEventListener("click", () => {
+
+    // Prevent duplicate adds in same session
+    if(btn.classList.contains("added")) return;
+
+    Routines.addExerciseToDay(routineId, dayId, type, x.id);
+    repaintDays();
+
+    if(opts.keepOpen){
+      // Visual feedback
+      btn.classList.add("added");
+      btn.textContent = "Added ✓";
+      row.classList.add("selected");
+    }else{
+      Modal.close();
+    }
+  });
+
+  list.appendChild(row);
+});
     }
 
     repaint();
