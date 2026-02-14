@@ -2636,10 +2636,12 @@ function openExerciseLogger(rx, day){
     body.appendChild(buildCoreForm());
   }
 
-  Modal.open({
-    title: "Log Sets",
-    bodyNode: body
-  });
+Modal.open({
+  title: "Log Sets",
+  center: true,
+  bodyNode: body
+});
+
 
   function showErr(msg){
     err.textContent = msg;
