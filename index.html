@@ -2683,7 +2683,7 @@ Routine(){
     return (routine?.days || []).find(d => d.order === index) || null;
   }
 function openRoutinePicker(anchorBtn){
-  const all = Routines.getAll() || [];
+let all = Routines.getAll() || [];
   const activeId = Routines.getActive()?.id || null;
 
   // Find an existing routine that was created from a template (preferred),
@@ -4427,6 +4427,59 @@ Views.RoutineEditor = function(){
       }, ["Delete"])
     ])
   ]);
+  // ────────────────────────────
+  // Templates (same 5 as Onboarding)
+  // ────────────────────────────
+  const templatesCard = el("div", { class:"card" }, [
+    el("h2", { text:"Templates" }),
+    el("div", { class:"note", text:"Choose a template to switch your active routine. If it already exists, it will activate (no duplicates)." }),
+    el("div", { style:"height:10px" })
+  ]);
+
+  const tplList = el("div", { class:"list" });
+
+  function findExistingRoutineForTemplate(tpl){
+    const all = Routines.getAll() || [];
+    // Prefer templateKey match
+    const byKey = all.find(r => String(r.templateKey || "") === String(tpl.key || ""));
+    if(byKey) return byKey;
+    // Fallback to name match (older saves)
+    const byName = all.find(r => normName(r.name) === normName(tpl.name));
+    return byName || null;
+  }
+
+  (RoutineTemplates || []).forEach(tpl => {
+    const existing = findExistingRoutineForTemplate(tpl);
+
+    tplList.appendChild(el("div", {
+      class:"item",
+      onClick: () => {
+        // If it exists, activate it (no recreation)
+        const existingNow = findExistingRoutineForTemplate(tpl);
+        if(existingNow){
+          Routines.setActive(existingNow.id);
+          showToast(`Active: ${existingNow.name}`);
+          renderView(); // re-render editor on the newly active routine
+          return;
+        }
+
+        // Otherwise create ONE routine for that template (exact template name)
+        Routines.addFromTemplate(tpl.key, tpl.name);
+        showToast(`Created: ${tpl.name}`);
+        renderView();
+      }
+    }, [
+      el("div", { class:"left" }, [
+        el("div", { class:"name", text: tpl.name }),
+        el("div", { class:"meta", text: tpl.desc || "Template" })
+      ]),
+      el("div", { class:"actions" }, [
+        el("div", { class:"meta", text: existing ? "Activate" : "Add" })
+      ])
+    ]));
+  });
+
+  templatesCard.appendChild(tplList);
 
   const daysCard = el("div", { class:"card" }, [
     el("h2", { text:"Days" }),
@@ -4437,7 +4490,8 @@ Views.RoutineEditor = function(){
   daysCard.appendChild(el("div", { style:"height:10px" }));
   daysCard.appendChild(daysGrid);
 
-  root.appendChild(header);
+  rroot.appendChild(header);
+  root.appendChild(templatesCard);
   root.appendChild(daysCard);
 
   repaintDays();
