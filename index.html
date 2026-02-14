@@ -3217,234 +3217,355 @@ if(selectedIndex === todayIndex && isDayComplete(todayISO, day)){
   return root;
 },
 
-           Progress(){
-        ExerciseLibrary.ensureSeeded();
-        LogEngine.ensure();
+Progress(){
+  ExerciseLibrary.ensureSeeded();
+  LogEngine.ensure();
 
-        // Defaults
-        let type = "weightlifting";
-        let exerciseId = (state.exerciseLibrary?.weightlifting?.[0]?.id) || null;
+  // Defaults
+  let type = "weightlifting";
+  let exerciseId = (state.exerciseLibrary?.weightlifting?.[0]?.id) || null;
 
-        // Metric default per type
-        let metric = "topWeight"; // weightlifting: topWeight|est1RM|volume
-        // cardio: pace|distance|timeSec
-        // core: volume
+  // Filters
+  let routineId = ""; // "" = All routines
+  const todayISO = Dates.todayISO();
+  let fromISO = Dates.addDaysISO(todayISO, -30);
+  let toISO = todayISO;
 
-        const root = el("div", { class:"grid" });
+  // Metric default per type
+  let metric = defaultMetricForType(type); // weightlifting: topWeight|est1RM|volume ; cardio: pace|distance|timeSec ; core: volume
 
-        const header = el("div", { class:"card" }, [
-          el("h2", { text:"Progress" }),
-          el("div", { class:"note", text:"View your history by exercise. Switch metrics and export the chart as a PNG." })
-        ]);
+  const root = el("div", { class:"grid" });
 
-        const controls = el("div", { class:"card" }, [
-          el("h2", { text:"Filters" })
-        ]);
+  // Header
+  root.appendChild(el("div", { class:"card" }, [
+    el("h2", { text:"Progress" }),
+    el("div", { class:"note", text:"Filter by date/routine and view your trends per exercise. Table shows the most recent logs." })
+  ]));
 
-        const tableCard = el("div", { class:"card" }, [
-          el("h2", { text:"Table" })
-        ]);
+  // Quick stats
+  const statsCard = el("div", { class:"card" }, [
+    el("h2", { text:"Overview" })
+  ]);
+  const statsHost = el("div", { class:"kpi" });
+  statsCard.appendChild(statsHost);
+  root.appendChild(statsCard);
 
-        const chartCard = el("div", { class:"card" }, [
-          el("h2", { text:"Graph" })
-        ]);
+  // Controls
+  const controls = el("div", { class:"card" }, [
+    el("h2", { text:"Filters" })
+  ]);
+  root.appendChild(controls);
 
-        root.appendChild(header);
-        root.appendChild(controls);
-        root.appendChild(chartCard);
-        root.appendChild(tableCard);
+  // Chart
+  const chartCard = el("div", { class:"card" }, [
+    el("h2", { text:"Graph" })
+  ]);
+  root.appendChild(chartCard);
 
-        // Controls
-        const typeSelect = el("select", {});
-        ["weightlifting","cardio","core"].forEach(t => {
-          typeSelect.appendChild(el("option", { value:t, text: t === "weightlifting" ? "Weightlifting" : (t === "cardio" ? "Cardio" : "Core") }));
-        });
+  // Table
+  const tableCard = el("div", { class:"card" }, [
+    el("h2", { text:"History" })
+  ]);
+  root.appendChild(tableCard);
 
-        const exSelect = el("select", {});
-        const metricSelect = el("select", {});
+  // Controls UI
+  const typeSelect = el("select", {});
+  ["weightlifting","cardio","core"].forEach(t => {
+    typeSelect.appendChild(el("option", {
+      value:t,
+      text: t === "weightlifting" ? "Weightlifting" : (t === "cardio" ? "Cardio" : "Core")
+    }));
+  });
 
-        const chartWrap = el("div", { class:"chartWrap" });
-        const canvas = el("canvas", {});
-        chartWrap.appendChild(canvas);
+  const routineSelect = el("select", {});
+  routineSelect.appendChild(el("option", { value:"", text:"All routines" }));
 
-        const downloadBtn = el("button", {
-          class:"btn",
-          onClick: () => {
-            const exName = resolveExerciseName(type, exerciseId, "exercise").replace(/\s+/g,"_");
-            downloadCanvasPNG(canvas, `progress_${type}_${exName}.png`);
-          }
-        }, ["Download PNG"]);
+  const exSelect = el("select", {});
+  const metricSelect = el("select", {});
 
-        const refreshBtn = el("button", {
-          class:"btn",
-          onClick: () => repaint(true)
-        }, ["Refresh"]);
+  const fromInput = el("input", { type:"date", value: fromISO });
+  const toInput   = el("input", { type:"date", value: toISO });
 
-        controls.appendChild(el("div", { class:"row2" }, [
-          el("label", {}, [ el("span", { text:"Type" }), typeSelect ]),
-          el("label", {}, [ el("span", { text:"Exercise" }), exSelect ])
-        ]));
+  const chartWrap = el("div", { class:"chartWrap" });
+  const canvas = el("canvas", {});
+  chartWrap.appendChild(canvas);
 
-        controls.appendChild(el("div", { class:"row2" }, [
-          el("label", {}, [ el("span", { text:"Metric" }), metricSelect ]),
-          el("div", { style:"display:flex; align-items:end; gap:10px; flex-wrap:wrap;" }, [
-            downloadBtn,
-            refreshBtn
+  const downloadBtn = el("button", {
+    class:"btn",
+    onClick: () => {
+      const exName = resolveExerciseName(type, exerciseId, "exercise").replace(/\s+/g,"_");
+      downloadCanvasPNG(canvas, `progress_${type}_${exName}_${fromISO}_to_${toISO}.png`);
+    }
+  }, ["Download PNG"]);
+
+  const refreshBtn = el("button", { class:"btn" }, ["Refresh"]);
+
+  // Layout rows
+  controls.appendChild(el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Type" }), typeSelect ]),
+    el("label", {}, [ el("span", { text:"Routine" }), routineSelect ])
+  ]));
+
+  controls.appendChild(el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Exercise" }), exSelect ]),
+    el("label", {}, [ el("span", { text:"Metric" }), metricSelect ])
+  ]));
+
+  controls.appendChild(el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"From" }), fromInput ]),
+    el("label", {}, [ el("span", { text:"To" }), toInput ])
+  ]));
+
+  controls.appendChild(el("div", { style:"display:flex; align-items:end; gap:10px; flex-wrap:wrap;" }, [
+    downloadBtn,
+    refreshBtn
+  ]));
+
+  // Chart area
+  chartCard.appendChild(chartWrap);
+  const chartNote = el("div", { class:"note", style:"margin-top:10px;" });
+  chartCard.appendChild(chartNote);
+
+  // Table area
+  const tableHost = el("div", { class:"list" });
+  tableCard.appendChild(tableHost);
+
+  // Populate routine dropdown
+  repaintRoutineSelect();
+
+  // Events
+  typeSelect.value = type;
+
+  typeSelect.addEventListener("change", () => {
+    type = typeSelect.value;
+    exerciseId = (state.exerciseLibrary?.[type]?.[0]?.id) || null;
+    metric = defaultMetricForType(type);
+    repaint(true);
+  });
+
+  routineSelect.addEventListener("change", () => {
+    routineId = routineSelect.value || "";
+    repaint(true);
+  });
+
+  exSelect.addEventListener("change", () => {
+    exerciseId = exSelect.value || null;
+    repaint(true);
+  });
+
+  metricSelect.addEventListener("change", () => {
+    metric = metricSelect.value;
+    repaint(true);
+  });
+
+  fromInput.addEventListener("change", () => {
+    fromISO = fromInput.value || fromISO;
+    // keep from <= to
+    if(fromISO > toISO){
+      toISO = fromISO;
+      toInput.value = toISO;
+    }
+    repaint(true);
+  });
+
+  toInput.addEventListener("change", () => {
+    toISO = toInput.value || toISO;
+    if(toISO < fromISO){
+      fromISO = toISO;
+      fromInput.value = fromISO;
+    }
+    repaint(true);
+  });
+
+  refreshBtn.addEventListener("click", () => repaint(true));
+
+  // Initial paint
+  repaint(true);
+  return root;
+
+  // ---- helpers ----
+  function defaultMetricForType(t){
+    if(t === "weightlifting") return "topWeight";
+    if(t === "cardio") return "pace";
+    return "volume";
+  }
+
+  function repaintRoutineSelect(){
+    routineSelect.innerHTML = "";
+    routineSelect.appendChild(el("option", { value:"", text:"All routines" }));
+    const all = Routines.getAll?.() || [];
+    all.forEach(r => routineSelect.appendChild(el("option", { value:r.id, text:r.name })));
+    routineSelect.value = routineId || "";
+  }
+
+  function repaint(forceChart){
+    // Exercise dropdown
+    exSelect.innerHTML = "";
+    const lib = (state.exerciseLibrary?.[type] || []).slice()
+      .sort((a,b) => (a.name||"").localeCompare(b.name||""));
+
+    if(lib.length === 0){
+      exSelect.appendChild(el("option", { value:"", text:"No exercises — create one in Library" }));
+      exerciseId = null;
+    }else{
+      lib.forEach(x => exSelect.appendChild(el("option", { value:x.id, text:x.name })));
+      if(!exerciseId || !lib.some(x => x.id === exerciseId)) exerciseId = lib[0].id;
+      exSelect.value = exerciseId;
+    }
+
+    // Metric dropdown
+    metricSelect.innerHTML = "";
+    if(type === "weightlifting"){
+      metricSelect.appendChild(el("option", { value:"topWeight", text:"Top Weight" }));
+      metricSelect.appendChild(el("option", { value:"est1RM", text:"Estimated 1RM (Epley)" }));
+      metricSelect.appendChild(el("option", { value:"volume", text:"Volume" }));
+    }else if(type === "cardio"){
+      metricSelect.appendChild(el("option", { value:"pace", text:"Pace (lower is better)" }));
+      metricSelect.appendChild(el("option", { value:"distance", text:"Distance" }));
+      metricSelect.appendChild(el("option", { value:"timeSec", text:"Time" }));
+    }else{
+      metricSelect.appendChild(el("option", { value:"volume", text:"Core Volume" }));
+    }
+    const allVals = [...metricSelect.querySelectorAll("option")].map(o => o.value);
+    if(!allVals.includes(metric)) metric = defaultMetricForType(type);
+    metricSelect.value = metric;
+
+    // No exercise selected
+    if(!exerciseId){
+      statsHost.innerHTML = "";
+      tableHost.innerHTML = "";
+      tableHost.appendChild(el("div", { class:"note", text:"Select or create an exercise to view progress." }));
+      destroyProgressChart();
+      chartNote.textContent = "No data.";
+      return;
+    }
+
+    // Pull filtered logs
+    const all = (state.logs?.workouts || []).filter(e => {
+      if(e.type !== type) return false;
+      if(e.exerciseId !== exerciseId) return false;
+      if(routineId && e.routineId !== routineId) return false;
+
+      const d = String(e.dateISO || "");
+      if(d < fromISO || d > toISO) return false;
+      return true;
+    });
+
+    // Sort
+    const desc = all.slice().sort((a,b) => String(b.dateISO).localeCompare(String(a.dateISO)));
+    const asc  = all.slice().sort((a,b) => String(a.dateISO).localeCompare(String(b.dateISO)));
+
+    // Stats
+    statsHost.innerHTML = "";
+    renderStats(statsHost, desc);
+
+    // Table
+    tableHost.innerHTML = "";
+    if(desc.length === 0){
+      tableHost.appendChild(el("div", { class:"note", text:"No logs in this range yet. Log sets from Routine → Log Sets." }));
+    }else{
+      desc.slice(0, 40).forEach(e => {
+        tableHost.appendChild(el("div", { class:"item" }, [
+          el("div", { class:"left" }, [
+            el("div", { class:"name", text: e.dateISO }),
+            el("div", { class:"meta", text: tableLine(e) })
+          ]),
+          el("div", { class:"actions" }, [
+            el("div", { class:"meta", text: prLine(e.pr) })
           ])
         ]));
+      });
+    }
 
-        // Chart area
-        chartCard.appendChild(chartWrap);
-        const chartNote = el("div", { class:"note", style:"margin-top:10px;" });
-        chartCard.appendChild(chartNote);
+    // Chart
+    if(asc.length < 2){
+      destroyProgressChart();
+      chartNote.textContent = "Add at least 2 entries in this date range to see a trend line.";
+      return;
+    }
 
-        // Table area
-        const tableHost = el("div", { class:"list" });
-        tableCard.appendChild(tableHost);
+    const series = buildSeries(type, asc);
+    renderProgressChart(canvas, type, metric, series);
 
-        // Events
-        typeSelect.value = type;
-        typeSelect.addEventListener("change", () => {
-          type = typeSelect.value;
-          exerciseId = (state.exerciseLibrary?.[type]?.[0]?.id) || null;
-          metric = defaultMetricForType(type);
-          repaint(true);
-        });
+    const exName = resolveExerciseName(type, exerciseId, "exercise");
+    chartNote.textContent = `${exName} • ${asc.length} entries • ${fromISO} → ${toISO}`;
 
-        exSelect.addEventListener("change", () => {
-          exerciseId = exSelect.value || null;
-          repaint(true);
-        });
+    function tableLine(e){
+      if(e.type === "weightlifting"){
+        const w = Number.isFinite(e.summary?.bestWeight) ? e.summary.bestWeight : "—";
+        const r = Number.isFinite(e.summary?.best1RM) ? e.summary.best1RM : "—";
+        const v = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
+        return `Top W: ${w} • Est1RM: ${r} • Vol: ${v}`;
+      }
+      if(e.type === "cardio"){
+        const t = Number.isFinite(e.summary?.timeSec) ? formatTime(e.summary.timeSec) : "—";
+        const d = Number.isFinite(e.summary?.distance) ? e.summary.distance : "—";
+        const p = formatPace(e.summary?.paceSecPerUnit);
+        return `Time: ${t} • Dist: ${d} • Pace: ${p}`;
+      }
+      const v = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
+      return `Core Vol: ${v}`;
+    }
 
-        metricSelect.addEventListener("change", () => {
-          metric = metricSelect.value;
-          repaint(true);
-        });
+    function prLine(pr){
+      if(!pr) return "";
+      const b = [];
+      if(pr.isPRWeight) b.push("PR W");
+      if(pr.isPR1RM) b.push("PR 1RM");
+      if(pr.isPRVolume) b.push("PR Vol");
+      if(pr.isPRPace) b.push("PR Pace");
+      return b.join(" • ");
+    }
+  }
 
-        // Initial paint
-        repaint(true);
+  function renderStats(host, desc){
+    const exName = resolveExerciseName(type, exerciseId, "exercise");
+    const count = desc.length;
+    const lastDate = desc[0]?.dateISO || "—";
 
-        // Ensure chart cleaned up if you navigate away later
-        // (Chart.js can leak if you re-enter view repeatedly)
-        setTimeout(() => {
-          // noop — chart exists only for this view lifetime
-        }, 0);
+    let best = "—";
+    let sum = 0;
 
-        return root;
+    if(type === "weightlifting"){
+      const bestW = Math.max(...desc.map(e => Number(e.summary?.bestWeight) || 0), 0);
+      const best1 = Math.max(...desc.map(e => Number(e.summary?.best1RM) || 0), 0);
+      const vol = desc.reduce((a,e) => a + (Number(e.summary?.totalVolume) || 0), 0);
+      sum = vol;
+      best = (metric === "est1RM") ? (best1 || "—") : (bestW || "—");
+    }else if(type === "cardio"){
+      const bestDist = Math.max(...desc.map(e => Number(e.summary?.distance) || 0), 0);
+      const totalTime = desc.reduce((a,e) => a + (Number(e.summary?.timeSec) || 0), 0);
+      sum = totalTime;
+      best = bestDist ? `${bestDist}` : "—";
+    }else{
+      const vol = desc.reduce((a,e) => a + (Number(e.summary?.totalVolume) || 0), 0);
+      sum = vol;
+      best = vol ? `${vol}` : "—";
+    }
 
-        function defaultMetricForType(t){
-          if(t === "weightlifting") return "topWeight";
-          if(t === "cardio") return "pace";
-          return "volume";
-        }
+    host.appendChild(el("div", { class:"k" }, [
+      el("div", { class:"a", text:"Exercise" }),
+      el("div", { class:"b", text: exName })
+    ]));
+    host.appendChild(el("div", { class:"k" }, [
+      el("div", { class:"a", text:"Entries" }),
+      el("div", { class:"b", text: String(count) })
+    ]));
+    host.appendChild(el("div", { class:"k" }, [
+      el("div", { class:"a", text:"Last logged" }),
+      el("div", { class:"b", text: lastDate })
+    ]));
+    host.appendChild(el("div", { class:"k" }, [
+      el("div", { class:"a", text: type === "cardio" ? "Best distance" : "Best" }),
+      el("div", { class:"b", text: String(best) })
+    ]));
+    host.appendChild(el("div", { class:"k" }, [
+      el("div", { class:"a", text: type === "cardio" ? "Total time" : "Total" }),
+      el("div", { class:"b", text: type === "cardio" ? formatTime(sum) : String(sum) })
+    ]));
+  }
+},
 
-        function repaint(forceChart){
-          // Exercise dropdown
-          exSelect.innerHTML = "";
-          const lib = (state.exerciseLibrary?.[type] || []).slice().sort((a,b) => (a.name||"").localeCompare(b.name||""));
-          if(lib.length === 0){
-            exSelect.appendChild(el("option", { value:"", text:"No exercises — create one in Library" }));
-            exerciseId = null;
-          }else{
-            lib.forEach(x => exSelect.appendChild(el("option", { value:x.id, text:x.name })));
-            if(!exerciseId || !lib.some(x => x.id === exerciseId)) exerciseId = lib[0].id;
-            exSelect.value = exerciseId;
-          }
-
-          // Metric dropdown
-          metricSelect.innerHTML = "";
-          if(type === "weightlifting"){
-            metricSelect.appendChild(el("option", { value:"topWeight", text:"Top Weight" }));
-            metricSelect.appendChild(el("option", { value:"est1RM", text:"Estimated 1RM (Epley)" }));
-            metricSelect.appendChild(el("option", { value:"volume", text:"Volume" }));
-          }else if(type === "cardio"){
-            metricSelect.appendChild(el("option", { value:"pace", text:"Pace (lower is better)" }));
-            metricSelect.appendChild(el("option", { value:"distance", text:"Distance" }));
-            metricSelect.appendChild(el("option", { value:"timeSec", text:"Time" }));
-          }else{
-            metricSelect.appendChild(el("option", { value:"volume", text:"Core Volume" }));
-          }
-          // keep selection if possible
-          const allVals = [...metricSelect.querySelectorAll("option")].map(o => o.value);
-          if(!allVals.includes(metric)) metric = defaultMetricForType(type);
-          metricSelect.value = metric;
-
-          // Data
-          if(!exerciseId){
-            tableHost.innerHTML = "";
-            tableHost.appendChild(el("div", { class:"note", text:"Select or create an exercise to view progress." }));
-            destroyProgressChart();
-            chartNote.textContent = "No data.";
-            return;
-          }
-
-          // Get entries for exercise, ascending for chart
-          const desc = LogEngine.entriesForExercise(type, exerciseId); // desc
-          const asc = [...desc].reverse(); // asc
-
-          // Table (most recent first)
-          tableHost.innerHTML = "";
-          if(desc.length === 0){
-            tableHost.appendChild(el("div", { class:"note", text:"No logs yet. Go to Log and save a few entries." }));
-          }else{
-            desc.slice(0, 25).forEach(e => {
-              tableHost.appendChild(el("div", { class:"item" }, [
-                el("div", { class:"left" }, [
-                  el("div", { class:"name", text: e.dateISO }),
-                  el("div", { class:"meta", text: tableLine(e) })
-                ]),
-                el("div", { class:"actions" }, [
-                  el("div", { class:"meta", text: prLine(e.pr) })
-                ])
-              ]));
-            });
-          }
-
-          // Chart
-          if(asc.length < 2){
-            destroyProgressChart();
-            chartNote.textContent = "Add at least 2 entries to see a trend line.";
-            if(asc.length === 1){
-              // Still render a single-point chart if you want; but we’ll keep it simple
-            }
-            return;
-          }
-
-          const series = buildSeries(type, asc);
-          renderProgressChart(canvas, type, metric, series);
-
-          const exName = resolveExerciseName(type, exerciseId, "exercise");
-          chartNote.textContent = `${exName} • ${asc.length} entries`;
-
-          function tableLine(e){
-            if(e.type === "weightlifting"){
-              const w = Number.isFinite(e.summary?.bestWeight) ? e.summary.bestWeight : "—";
-              const r = Number.isFinite(e.summary?.best1RM) ? e.summary.best1RM : "—";
-              const v = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
-              return `Top W: ${w} • Est1RM: ${r} • Vol: ${v}`;
-            }
-            if(e.type === "cardio"){
-              const t = Number.isFinite(e.summary?.timeSec) ? formatTime(e.summary.timeSec) : "—";
-              const d = Number.isFinite(e.summary?.distance) ? e.summary.distance : "—";
-              const p = formatPace(e.summary?.paceSecPerUnit);
-              return `Time: ${t} • Dist: ${d} • Pace: ${p}`;
-            }
-            const v = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
-            return `Core Vol: ${v}`;
-          }
-
-          function prLine(pr){
-            if(!pr) return "";
-            const b = [];
-            if(pr.isPRWeight) b.push("PR W");
-            if(pr.isPR1RM) b.push("PR 1RM");
-            if(pr.isPRVolume) b.push("PR Vol");
-            if(pr.isPRPace) b.push("PR Pace");
-            return b.join(" • ");
-          }
-        }
-      },
-            Weight(){
         WeightEngine.ensure();
 
         const root = el("div", { class:"grid" });
