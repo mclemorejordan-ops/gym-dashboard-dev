@@ -3645,6 +3645,7 @@ const addMultiBtn = el("button", {
 const addedThisSession = new Set();
 
 // Live count UI (only shown in keepOpen mode)
+const addedThisSession = new Set();
 const liveCount = el("div", {
   class:"note",
   style:"margin-top:8px; margin-bottom:10px; display:none;"
@@ -3656,7 +3657,8 @@ function updateLiveCount(){
     return;
   }
   liveCount.style.display = "block";
-  liveCount.textContent = `${addedThisSession.size} exercise${addedThisSession.size === 1 ? "" : "s"} added`;
+  liveCount.textContent =
+    `${addedThisSession.size} exercise${addedThisSession.size === 1 ? "" : "s"} added`;
 }
 
 function getExistingSetForDay(){
@@ -3664,7 +3666,7 @@ function getExistingSetForDay(){
   const day = (r?.days || []).find(d => d.id === dayId);
   const s = new Set();
   (day?.exercises || []).forEach(rx => {
-    // store by type+id to avoid collisions
+    // store by type+id to avoid collisions across categories
     s.add(`${rx.type}:${rx.exerciseId}`);
   });
   return s;
@@ -3679,7 +3681,10 @@ function repaint(){
     .sort((a,b) => (a.name||"").localeCompare(b.name||""));
 
   if(items.length === 0){
-    list.appendChild(el("div", { class:"note", text:"No exercises in this category yet. Add them in Settings later." }));
+    list.appendChild(el("div", {
+      class:"note",
+      text:"No exercises in this category yet. Add them in Settings later."
+    }));
     updateLiveCount();
     return;
   }
@@ -3691,7 +3696,6 @@ function repaint(){
     const row = el("div", { class:"item" });
     const btn = el("button", { class:"mini" }, ["Add"]);
 
-    // Left info
     row.appendChild(
       el("div", { class:"left" }, [
         el("div", { class:"name", text:x.name }),
@@ -3699,12 +3703,9 @@ function repaint(){
       ])
     );
 
-    // Action button
-    row.appendChild(
-      el("div", { class:"actions" }, [ btn ])
-    );
+    row.appendChild(el("div", { class:"actions" }, [ btn ]));
 
-    // If it's already on the day, disable immediately (persist across reopen)
+    // Disable if already in the day (persist across reopen)
     if(alreadyInDay){
       row.classList.add("selected", "disabledRow");
       btn.classList.add("added", "disabledBtn");
@@ -3713,15 +3714,12 @@ function repaint(){
     }
 
     btn.addEventListener("click", () => {
-      // guard: no duplicates
-      if(btn.disabled) return;
+      if(btn.disabled) return; // guard: no duplicates
 
-      // Add
       Routines.addExerciseToDay(routineId, dayId, type, x.id);
       repaintDays();
 
       if(opts.keepOpen){
-        // Visual feedback + session count
         addedThisSession.add(key);
         row.classList.add("selected");
         btn.classList.add("added", "disabledBtn");
@@ -3740,45 +3738,8 @@ function repaint(){
   updateLiveCount();
 }
 
-items.forEach(x => {
-
-  const row = el("div", { class:"item" });
-  const btn = el("button", { class:"mini" }, ["Add"]);
-
-  row.appendChild(
-    el("div", { class:"left" }, [
-      el("div", { class:"name", text:x.name }),
-      el("div", { class:"meta", text: ExerciseLibrary.typeLabel(type) })
-    ])
-  );
-
-  row.appendChild(
-    el("div", { class:"actions" }, [ btn ])
-  );
-
-  btn.addEventListener("click", () => {
-
-    // Prevent duplicate adds in same session
-    if(btn.classList.contains("added")) return;
-
-    Routines.addExerciseToDay(routineId, dayId, type, x.id);
-    repaintDays();
-
-    if(opts.keepOpen){
-      // Visual feedback
-      btn.classList.add("added");
-      btn.textContent = "Added ✓";
-      row.classList.add("selected");
-    }else{
-      Modal.close();
-    }
-  });
-
-  list.appendChild(row);
-});
-    }
-
-    repaint();
+repaint();
+updateLiveCount();
 
 Modal.open({
   title: "Add exercise",
@@ -3790,8 +3751,6 @@ Modal.open({
     el("button", { class:"btn", onClick: Modal.close }, ["Close"])
   ])
 });
-  }
-};
     /********************
      * 8) Boot
      ********************/
