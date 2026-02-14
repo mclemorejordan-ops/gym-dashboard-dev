@@ -773,6 +773,87 @@
   70%{ box-shadow: 0 0 0 10px rgba(124,92,255,0); }
   100%{ box-shadow: 0 0 0 0 rgba(124,92,255,0); }
 }
+    /* Glass dropdown (routine picker) */
+.popHost{
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: none;
+}
+.popHost.show{ display:block; }
+
+.popBackdrop{
+  position:absolute;
+  inset:0;
+  background: rgba(0,0,0,.25);
+  backdrop-filter: blur(6px);
+}
+
+.popPanel{
+  position:absolute;
+  width: min(420px, calc(100vw - 24px));
+  max-height: min(360px, calc(100vh - 140px));
+  overflow:auto;
+
+  background: rgba(16,20,30,.72);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  box-shadow: 0 22px 60px rgba(0,0,0,.65);
+  backdrop-filter: blur(18px);
+
+  padding: 10px;
+}
+
+.popTitle{
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+  letter-spacing: .2px;
+  font-weight: 700;
+  padding: 6px 6px 10px 6px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  margin-bottom: 10px;
+}
+
+.popItem{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+
+  padding: 10px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.05);
+  cursor:pointer;
+  user-select:none;
+}
+.popItem:active{ transform: translateY(1px); }
+
+.popItem .l{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap: 3px;
+}
+.popItem .n{
+  font-weight: 820;
+  overflow:hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 52vw;
+}
+.popItem .m{
+  font-size: 12px;
+  color: rgba(255,255,255,.60);
+}
+.popBadge{
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(124,92,255,.28);
+  background: rgba(124,92,255,.16);
+}
   </style>
 </head>
 
@@ -1801,6 +1882,65 @@ function showToast(message){
   }catch(e){}
 }
     /********************
+ * 4g) Glass Dropdown (Popover) UI
+ ********************/
+let __pop = null;
+
+function PopoverEnsure(){
+  if(__pop) return __pop;
+
+  const host = el("div", { class:"popHost", id:"popHost" }, []);
+  const backdrop = el("div", { class:"popBackdrop", id:"popBackdrop" }, []);
+  const panel = el("div", { class:"popPanel", id:"popPanel" }, []);
+
+  backdrop.addEventListener("click", PopoverClose);
+
+  host.appendChild(backdrop);
+  host.appendChild(panel);
+  document.body.appendChild(host);
+
+  __pop = { host, panel };
+  return __pop;
+}
+
+function PopoverOpen(anchorEl, bodyNode){
+  const { host, panel } = PopoverEnsure();
+
+  panel.innerHTML = "";
+  if(bodyNode) panel.appendChild(bodyNode);
+
+  // Position under anchor, keep within viewport
+  const r = anchorEl.getBoundingClientRect();
+  const pad = 12;
+
+  // default: left aligned to anchor
+  let left = r.left;
+  const maxLeft = window.innerWidth - panel.offsetWidth - pad;
+
+  // temporarily show to compute panel width/height
+  host.classList.add("show");
+  host.style.display = "block";
+  const pw = panel.offsetWidth || Math.min(420, window.innerWidth - 24);
+
+  left = Math.max(pad, Math.min(left, window.innerWidth - pw - pad));
+
+  let top = r.bottom + 10;
+  const ph = panel.offsetHeight || 320;
+
+  // if it would go below, flip above anchor
+  if(top + ph > window.innerHeight - pad){
+    top = Math.max(pad, r.top - ph - 10);
+  }
+
+  panel.style.left = `${Math.round(left)}px`;
+  panel.style.top  = `${Math.round(top)}px`;
+}
+
+function PopoverClose(){
+  const p = PopoverEnsure();
+  p.host.classList.remove("show");
+}
+    /********************
      * 5) Modal
      ********************/
     const Modal = {
@@ -2249,7 +2389,7 @@ else if(currentRoute === "settings") root.appendChild(Views.Settings());
 Routine(){
   const root = el("div", { class:"grid" });
 
-  const routine = Routines.getActive();
+  let routine = Routines.getActive();
   if(!routine){
     root.appendChild(el("div", { class:"card" }, [
       el("h2", { text:"Routine" }),
@@ -2265,10 +2405,52 @@ Routine(){
   let selectedIndex = todayIndex;
 
   function getDay(index){
-    return (routine.days || []).find(d => d.order === index);
+    // always use latest active routine
+    routine = Routines.getActive();
+    return (routine?.days || []).find(d => d.order === index) || null;
+  }
+
+  function openRoutinePicker(anchorBtn){
+    const all = Routines.getAll();
+    if(!all || all.length === 0){
+      // If no routines, just do nothing (or you can route to Settings)
+      showToast("No routines found.");
+      return;
+    }
+
+    const activeId = Routines.getActive()?.id || null;
+
+    const body = el("div", {}, [
+      el("div", { class:"popTitle", text:"Select routine" }),
+      el("div", { style:"display:grid; gap:10px;" }, all.map(r => {
+        const isActive = (r.id === activeId);
+        return el("div", {
+          class:"popItem",
+          onClick: () => {
+            // Set active and repaint immediately (no refresh)
+            Routines.setActive(r.id);
+            routine = Routines.getActive();
+            selectedIndex = todayIndex; // optional: keep user on today after switching
+            PopoverClose();
+            repaint();
+            showToast(`Active routine: ${routine?.name || "Updated"}`);
+          }
+        }, [
+          el("div", { class:"l" }, [
+            el("div", { class:"n", text:r.name }),
+            el("div", { class:"m", text: isActive ? "Currently active" : "Tap to activate" })
+          ]),
+          isActive ? el("div", { class:"popBadge", text:"Active" }) : el("div", { class:"m", text:"" })
+        ]);
+      }))
+    ]);
+
+    PopoverOpen(anchorBtn, body);
   }
 
   function repaint(){
+    // ensure routine is always up to date
+    routine = Routines.getActive();
     root.innerHTML = "";
 
     const day = getDay(selectedIndex);
@@ -2279,7 +2461,11 @@ Routine(){
       el("div", { class:"note", text:`${routine.name} • Mon–Sun` }),
       el("div", { style:"height:10px" }),
       el("div", { class:"btnrow" }, [
-        el("button", { class:"btn ghost", onClick: openRoutinePicker }, [`${routine.name} ▼`]),
+        el("button", {
+          class:"btn ghost",
+          onClick: (e) => openRoutinePicker(e.currentTarget)
+        }, [`${routine.name} ▼`]),
+
         el("button", {
           class:"btn primary",
           onClick: () => {
@@ -2319,7 +2505,6 @@ Routine(){
     }
 
     (day.exercises || []).forEach(rx => {
-
       const exName = resolveExerciseName(rx.type, rx.exerciseId, rx.nameSnap);
       const logged = hasRoutineExerciseLog(todayISO, rx.id);
 
@@ -2331,7 +2516,10 @@ Routine(){
         id:`rx_${rx.id}`,
         "data-unlogged": logged ? "false" : "true"
       }, [
-        el("div", { style:"font-weight:800;" , text: exName }),
+        el("div", { style:"display:flex; justify-content:space-between; gap:10px; align-items:flex-start;" }, [
+          el("div", { style:"font-weight:800;", text: exName }),
+          logged ? el("div", { class:"note", text:"✓ Logged" }) : el("div", { class:"note", text:"" })
+        ]),
         el("div", { class:"note", text:`🏆 Lifetime Max: ${maxText}` }),
         el("div", { style:"height:10px" }),
         el("div", { class:"btnrow" }, [
@@ -2348,47 +2536,10 @@ Routine(){
     });
   }
 
-  function openRoutinePicker(){
-    const all = Routines.getAll();
-    if(!all || all.length === 0){
-      Modal.open({
-        title:"Select routine",
-        bodyNode: el("div", { class:"note", text:"No routines found." })
-      });
-      return;
-    }
-
-    const list = el("div", { class:"list" }, []);
-
-    all.forEach(r=>{
-      const active = (Routines.getActive()?.id === r.id);
-      list.appendChild(el("div", { class:"item" }, [
-        el("div", { class:"left" }, [
-          el("div", { class:"name", text:r.name }),
-          el("div", { class:"meta", text: active ? "Active" : "" })
-        ]),
-        el("div", { class:"actions" }, [
-          el("button", {
-            class:"btn",
-            onClick: ()=>{
-              Routines.setActive(r.id);
-              Modal.close();
-              repaint();
-            }
-          }, [active ? "Selected" : "Select"])
-        ])
-      ]));
-    });
-
-    Modal.open({
-      title:"Select routine",
-      bodyNode: list
-    });
-  }
-
   repaint();
   return root;
 },
+
            Progress(){
         ExerciseLibrary.ensureSeeded();
         LogEngine.ensure();
