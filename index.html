@@ -3408,7 +3408,7 @@ Views.RoutineEditor = function(){
       }, ["Back to Routine"]),
       el("button", {
         class:"btn",
-        onClick: () => renameRoutine(active.id)
+        onClick: (e) => renameRoutine(e.currentTarget, active.id)
       }, ["Rename"]),
       el("button", {
         class:"btn",
@@ -3416,7 +3416,7 @@ Views.RoutineEditor = function(){
       }, ["Duplicate"]),
       el("button", {
         class:"btn danger",
-        onClick: () => confirmDelete(active.id)
+        onClick: (e) => confirmDelete(e.currentTarget, active.id)
       }, ["Delete"])
     ])
   ]);
@@ -3480,53 +3480,69 @@ Views.RoutineEditor = function(){
     });
   }
 
-  function renameRoutine(routineId){
-    const input = el("input", { type:"text", value: Routines.getActive()?.name || "" });
-    const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+function renameRoutine(anchorEl, routineId){
+  const current = Routines.getActive();
+  const input = el("input", {
+    type:"text",
+    value: current?.name || "",
+    style:"width:100%;"
+  });
 
-    Modal.open({
-      title: "Rename routine",
-      bodyNode: el("div", {}, [
-        el("label", {}, [ el("span", { text:"Name" }), input ]),
-        err,
-        el("div", { style:"height:12px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", {
-            class:"btn primary",
-            onClick: () => {
-              const name = (input.value || "").trim();
-              if(!name){ err.textContent="Enter a name."; err.style.display="block"; return; }
-              Routines.rename(routineId, name);
-              Modal.close();
-              renderView();
-            }
-          }, ["Save"]),
-          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-        ])
-      ])
-    });
-  }
+  const err = el("div", {
+    class:"note",
+    style:"display:none; color: rgba(255,92,122,.95); margin-top:8px;"
+  });
 
-  function confirmDelete(routineId){
-    Modal.open({
-      title: "Delete routine?",
-      bodyNode: el("div", {}, [
-        el("div", { class:"note", text:"This deletes the routine. Logs stay, but the routine schedule will be removed." }),
-        el("div", { style:"height:12px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", {
-            class:"btn danger",
-            onClick: () => {
-              Routines.remove(routineId);
-              Modal.close();
-              navigate("routine");
+  const body = el("div", {}, [
+    el("div", { class:"popTitle", text:"Rename routine" }),
+    el("div", { style:"display:grid; gap:10px;" }, [
+      input,
+      err,
+      el("div", { class:"btnrow" }, [
+        el("button", {
+          class:"btn primary",
+          onClick: () => {
+            err.style.display = "none";
+            const name = (input.value || "").trim();
+            if(!name){
+              err.textContent = "Enter a name.";
+              err.style.display = "block";
+              return;
             }
-          }, ["Delete"]),
-          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-        ])
+            Routines.rename(routineId, name);
+            PopoverClose();
+            renderView();
+          }
+        }, ["Save"]),
+        el("button", { class:"btn", onClick: PopoverClose }, ["Cancel"])
       ])
-    });
-  }
+    ])
+  ]);
+
+  PopoverOpen(anchorEl, body);
+  setTimeout(() => input.focus(), 0);
+}
+
+function confirmDelete(anchorEl, routineId){
+  const body = el("div", {}, [
+    el("div", { class:"popTitle", text:"Delete routine?" }),
+    el("div", { class:"note", text:"This deletes the routine. Logs stay, but the routine schedule will be removed." }),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn danger",
+        onClick: () => {
+          Routines.remove(routineId);
+          PopoverClose();
+          navigate("routine");
+        }
+      }, ["Delete"]),
+      el("button", { class:"btn", onClick: PopoverClose }, ["Cancel"])
+    ])
+  ]);
+
+  PopoverOpen(anchorEl, body);
+}
 
   function editDay(day){
     const r = Routines.getActive();
@@ -3539,10 +3555,16 @@ Views.RoutineEditor = function(){
       restSwitch.classList.toggle("on", next);
     });
 
-    const addBtn = el("button", {
-      class:"btn primary",
-      onClick: () => openAddExercise(r.id, day.id)
-    }, ["Add exercise"]);
+const addBtn = el("button", {
+  class:"btn primary",
+  onClick: () => openAddExercise(r.id, day.id, { keepOpen:false })
+}, ["Add exercise"]);
+
+const addMultiBtn = el("button", {
+  class:"btn",
+  onClick: () => openAddExercise(r.id, day.id, { keepOpen:true })
+}, ["Add multiple"]);
+
 
     Modal.open({
       title: "Edit day",
@@ -3557,7 +3579,7 @@ Views.RoutineEditor = function(){
           restSwitch
         ]),
         el("div", { style:"height:12px" }),
-        addBtn,
+        el("div", { class:"btnrow" }, [ addBtn, addMultiBtn ]),
         el("div", { style:"height:12px" }),
         el("div", { class:"btnrow" }, [
           el("button", {
@@ -3577,7 +3599,7 @@ Views.RoutineEditor = function(){
     });
   }
 
-  function openAddExercise(routineId, dayId){
+  function openAddExercise(routineId, dayId, opts={}){
     let type = "weightlifting";
 
     const seg = el("div", { class:"seg" }, [
@@ -3616,11 +3638,17 @@ Views.RoutineEditor = function(){
           el("div", { class:"actions" }, [
             el("button", {
               class:"mini",
-              onClick: () => {
-                Routines.addExerciseToDay(routineId, dayId, type, x.id);
-                Modal.close();
-                repaintDays();
-              }
+            onClick: () => {
+  Routines.addExerciseToDay(routineId, dayId, type, x.id);
+  repaintDays();
+
+  if(opts.keepOpen){
+    showToast("Added");
+  }else{
+    Modal.close();
+  }
+}
+
             }, ["Add"])
           ])
         ]));
