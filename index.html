@@ -854,6 +854,89 @@
   border: 1px solid rgba(124,92,255,.28);
   background: rgba(124,92,255,.16);
 }
+   /* Routine layout refinements (locked design) */
+.rHdrRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.manageLink{
+  margin-top: 10px;
+  font-weight: 750;
+  color: rgba(255,255,255,.72);
+  cursor:pointer;
+  user-select:none;
+}
+.manageLink:active{ transform: translateY(1px); }
+
+.carouselCard{
+  padding: 14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.carouselTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.carouselMid{
+  text-align:center;
+  flex: 1;
+  min-width: 0;
+}
+
+.carouselTitle{
+  font-weight: 860;
+  letter-spacing:.2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.carouselSub{
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.weekRow{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.weekLabel{
+  font-size: 12px;
+  color: rgba(255,255,255,.55);
+  letter-spacing: .35em;
+  text-align:center;
+  user-select:none;
+}
+
+.weekDots{
+  display:flex;
+  justify-content:center;
+  gap: 10px;
+  user-select:none;
+}
+
+.weekDot{
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.06);
+}
+.weekDot.on{
+  background: rgba(124,92,255,.75);
+  border-color: rgba(124,92,255,.55);
+} 
   </style>
 </head>
 
@@ -1939,7 +2022,10 @@ function PopoverOpen(anchorEl, bodyNode){
 function PopoverClose(){
   const p = PopoverEnsure();
   p.host.classList.remove("show");
+  p.host.style.display = "none";   // ✅ actually hide it
+  p.panel.innerHTML = "";          // ✅ clear list so it doesn't linger
 }
+
     /********************
      * 5) Modal
      ********************/
@@ -2399,21 +2485,19 @@ Routine(){
   }
 
   const today = new Date();
-  const todayIndex = today.getDay();
+  const todayIndex = today.getDay();               // 0=Sun..6=Sat
   const todayISO = today.toISOString().slice(0,10);
 
   let selectedIndex = todayIndex;
 
   function getDay(index){
-    // always use latest active routine
-    routine = Routines.getActive();
+    routine = Routines.getActive(); // ✅ always refresh active routine
     return (routine?.days || []).find(d => d.order === index) || null;
   }
 
   function openRoutinePicker(anchorBtn){
     const all = Routines.getAll();
     if(!all || all.length === 0){
-      // If no routines, just do nothing (or you can route to Settings)
       showToast("No routines found.");
       return;
     }
@@ -2427,13 +2511,12 @@ Routine(){
         return el("div", {
           class:"popItem",
           onClick: () => {
-            // Set active and repaint immediately (no refresh)
             Routines.setActive(r.id);
             routine = Routines.getActive();
-            selectedIndex = todayIndex; // optional: keep user on today after switching
-            PopoverClose();
-            repaint();
-            showToast(`Active routine: ${routine?.name || "Updated"}`);
+            selectedIndex = todayIndex;
+
+            PopoverClose();     // ✅ now truly closes
+            repaint();          // ✅ updates immediately
           }
         }, [
           el("div", { class:"l" }, [
@@ -2449,18 +2532,21 @@ Routine(){
   }
 
   function repaint(){
-    // ensure routine is always up to date
     routine = Routines.getActive();
     root.innerHTML = "";
 
     const day = getDay(selectedIndex);
 
-    // Header
+    // ────────────────────────────
+    // Header Card (locked layout)
+    // ────────────────────────────
     root.appendChild(el("div", { class:"card" }, [
       el("h2", { text:"Routine" }),
       el("div", { class:"note", text:`${routine.name} • Mon–Sun` }),
+
       el("div", { style:"height:10px" }),
-      el("div", { class:"btnrow" }, [
+
+      el("div", { class:"rHdrRow" }, [
         el("button", {
           class:"btn ghost",
           onClick: (e) => openRoutinePicker(e.currentTarget)
@@ -2481,7 +2567,12 @@ Routine(){
             },0);
           }
         }, ["▶ Start Today"])
-      ])
+      ]),
+
+      el("div", {
+        class:"manageLink",
+        onClick: () => navigate("routine_editor")
+      }, ["Manage Routine ▾"])
     ]));
 
     if(!day){
@@ -2489,21 +2580,56 @@ Routine(){
       return;
     }
 
-    const dayNames = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+    // ────────────────────────────
+    // 3D Card Carousel (visual container)
+    // ────────────────────────────
+    root.appendChild(el("div", { class:"card carouselCard" }, [
+      el("div", { class:"carouselTop" }, [
+        el("button", {
+          class:"btn",
+          onClick: () => { selectedIndex = (selectedIndex + 6) % 7; repaint(); }
+        }, ["◀"]),
 
-    root.appendChild(el("div", { class:"card" }, [
-      el("div", { class:"note", text:`${dayNames[selectedIndex]} — ${day.label || "Day"}` }),
-      el("div", { class:"note", text: day.isRest ? "Rest Day" : `${(day.exercises||[]).length} exercises` })
+        el("div", { class:"carouselMid" }, [
+          el("div", {
+            class:"carouselTitle",
+            text: `${["SUN","MON","TUE","WED","THU","FRI","SAT"][selectedIndex]} — ${day.label || "Day"}`
+          }),
+          el("div", {
+            class:"carouselSub",
+            text: day.isRest ? "Rest" : `${(day.exercises||[]).length} exercises`
+          })
+        ]),
+
+        el("button", {
+          class:"btn",
+          onClick: () => { selectedIndex = (selectedIndex + 1) % 7; repaint(); }
+        }, ["▶"])
+      ]),
+
+      el("div", { class:"weekRow" }, [
+        el("div", { class:"weekLabel", text:"M   T   W   T   F   S   S" }),
+        el("div", { class:"weekDots" }, [
+          // order = Mon Tue Wed Thu Fri Sat Sun
+          ...[1,2,3,4,5,6,0].map(i => el("div", {
+            class: "weekDot" + (i === selectedIndex ? " on" : "")
+          }))
+        ])
+      ])
     ]));
 
+    // Rest Day
     if(day.isRest){
       root.appendChild(el("div", { class:"card" }, [
-        el("h3", { text:"Rest" }),
+        el("h2", { text:"Rest" }),
         el("div", { class:"note", text:"Today is a scheduled rest day." })
       ]));
       return;
     }
 
+    // ────────────────────────────
+    // Exercise Cards
+    // ────────────────────────────
     (day.exercises || []).forEach(rx => {
       const exName = resolveExerciseName(rx.type, rx.exerciseId, rx.nameSnap);
       const logged = hasRoutineExerciseLog(todayISO, rx.id);
@@ -2516,17 +2642,17 @@ Routine(){
         id:`rx_${rx.id}`,
         "data-unlogged": logged ? "false" : "true"
       }, [
-        el("div", { style:"display:flex; justify-content:space-between; gap:10px; align-items:flex-start;" }, [
-          el("div", { style:"font-weight:800;", text: exName }),
-          logged ? el("div", { class:"note", text:"✓ Logged" }) : el("div", { class:"note", text:"" })
-        ]),
+        el("div", { style:"font-weight:860; letter-spacing:.1px;", text: exName }),
         el("div", { class:"note", text:`🏆 Lifetime Max: ${maxText}` }),
+
         el("div", { style:"height:10px" }),
-        el("div", { class:"btnrow" }, [
+
+        el("div", { class:"rHdrRow" }, [
           el("button", {
             class:"btn primary",
             onClick: () => alert("Workout execution comes next phase.")
           }, ["Log Sets"]),
+
           el("button", {
             class:"btn ghost",
             onClick: () => navigate("progress")
