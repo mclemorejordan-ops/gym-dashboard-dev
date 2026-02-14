@@ -2683,7 +2683,7 @@ Routine(){
     return (routine?.days || []).find(d => d.order === index) || null;
   }
 function openRoutinePicker(anchorBtn){
-let all = Routines.getAll() || [];
+  let all = Routines.getAll() || [];
   const activeId = Routines.getActive()?.id || null;
 
   // Find an existing routine that was created from a template (preferred),
@@ -2709,7 +2709,6 @@ let all = Routines.getAll() || [];
               Routines.setActive(r.id);
               routine = Routines.getActive();
               selectedIndex = todayIndex;
-
               PopoverClose();
               repaint();
             }
@@ -2727,25 +2726,29 @@ let all = Routines.getAll() || [];
     el("div", { class:"popTitle", text:"Default templates" }),
 
     el("div", { style:"display:grid; gap:10px;" }, (RoutineTemplates || []).map(tpl => {
-      const existing = findRoutineForTemplate(tpl);
-      const labelRight = existing ? "Activate" : "Add";
+      // This is only for the label display. The real duplicate protection happens on click.
+      const existingAtRender = findRoutineForTemplate(tpl);
+      const labelRight = existingAtRender ? "Activate" : "Add";
 
       return el("div", {
         class:"popItem",
         onClick: () => {
-          // If the template already exists as a routine, just activate it.
-          if(existing){
-            Routines.setActive(existing.id);
+          // ✅ Re-check at click time (prevents stale state + duplicates)
+          all = Routines.getAll() || [];
+          const existingNow = findRoutineForTemplate(tpl);
+
+          if(existingNow){
+            Routines.setActive(existingNow.id);
             routine = Routines.getActive();
             selectedIndex = todayIndex;
 
             PopoverClose();
             repaint();
-            showToast(`Active: ${existing.name}`);
+            showToast(`Active: ${existingNow.name}`);
             return;
           }
 
-          // Otherwise create ONE routine for that template (no unique renaming here).
+          // Otherwise create ONE routine for that template (includes Blank)
           Routines.addFromTemplate(tpl.key, tpl.name);
 
           routine = Routines.getActive();
@@ -2767,8 +2770,6 @@ let all = Routines.getAll() || [];
 
   PopoverOpen(anchorBtn, body);
 }
-
-
 
   // Phase 3: Per-exercise Workout Execution (logger)
 function openExerciseLogger(rx, day, defaultDateISO){
@@ -4490,7 +4491,7 @@ Views.RoutineEditor = function(){
   daysCard.appendChild(el("div", { style:"height:10px" }));
   daysCard.appendChild(daysGrid);
 
-  rroot.appendChild(header);
+  root.appendChild(header);
   root.appendChild(templatesCard);
   root.appendChild(daysCard);
 
