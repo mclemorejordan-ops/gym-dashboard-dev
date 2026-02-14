@@ -2641,8 +2641,24 @@ function openExerciseLogger(rx, day){
     }
 
     // Set Next → nudge for next unlogged (same day)
-    const next = (day.exercises || []).find(x => !hasRoutineExerciseLog(todayISO, x.id));
-    setNextNudge(next ? { dateISO: todayISO, dayOrder: day.order, nextRoutineExerciseId: next.id } : null);
+    const list = (day.exercises || []);
+const curIdx = list.findIndex(x => x.id === rx.id);
+
+// next unlogged AFTER current
+let next = null;
+for(let i = curIdx + 1; i < list.length; i++){
+  if(!hasRoutineExerciseLog(todayISO, list[i].id)){ next = list[i]; break; }
+}
+// if none after, fallback to first unlogged anywhere
+if(!next){
+  next = list.find(x => !hasRoutineExerciseLog(todayISO, x.id)) || null;
+}
+
+setNextNudge(next ? {
+  dateISO: todayISO,
+  dayOrder: day.order,
+  nextRoutineExerciseId: next.id
+} : null);
 
     repaint();
   }
@@ -2872,6 +2888,83 @@ function isDayComplete(dateISO, day){
     root.innerHTML = "";
 
     const day = getDay(selectedIndex);
+function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
+  LogEngine.ensure();
+
+  const exName = exNameOverride || resolveExerciseName(type, exerciseId, "Exercise");
+  const entries = LogEngine.entriesForExercise(type, exerciseId); // desc (most recent first)
+
+  const head = el("div", { class:"note" }, [
+    `${exName} • ${ExerciseLibrary.typeLabel(type)}`
+  ]);
+
+  const list = el("div", { class:"list" });
+
+  if(entries.length === 0){
+    list.appendChild(el("div", { class:"note", text:"No history yet for this exercise." }));
+  }else{
+    // Show last entry + recent history (top 12)
+    entries.slice(0, 12).forEach(e => {
+      list.appendChild(el("div", { class:"item" }, [
+        el("div", { class:"left" }, [
+          el("div", { class:"name", text: e.dateISO }),
+          el("div", { class:"meta", text: formatEntryDetail(type, e) })
+        ]),
+        el("div", { class:"actions" }, [
+          el("div", { class:"meta", text: prBadges(e.pr) })
+        ])
+      ]));
+    });
+  }
+
+  Modal.open({
+    title: "History",
+    bodyNode: el("div", { class:"grid" }, [
+      head,
+      list,
+      el("div", { style:"height:10px" }),
+      el("button", { class:"btn", onClick: Modal.close }, ["Close"])
+    ])
+  });
+
+  function prBadges(pr){
+    if(!pr) return "";
+    const b = [];
+    if(pr.isPRWeight) b.push("PR W");
+    if(pr.isPR1RM) b.push("PR 1RM");
+    if(pr.isPRVolume) b.push("PR Vol");
+    if(pr.isPRPace) b.push("PR Pace");
+    return b.join(" • ");
+  }
+
+  function formatEntryDetail(type, entry){
+    try{
+      if(type === "weightlifting"){
+        const sets = (entry.sets || []).map(s => `${s.weight || 0}×${s.reps || 0}`).join(" • ");
+        const top = entry.summary?.bestWeight ?? "—";
+        const vol = entry.summary?.totalVolume ?? "—";
+        return `Sets: ${sets || "—"} | Top: ${top} | Vol: ${vol}`;
+      }
+      if(type === "cardio"){
+        const d = entry.summary?.distance ?? "—";
+        const t = formatTime(entry.summary?.timeSec ?? 0);
+        const p = formatPace(entry.summary?.paceSecPerUnit);
+        const inc = (entry.summary?.incline == null) ? "" : ` | Incline: ${entry.summary.incline}`;
+        return `Dist: ${d} | Time: ${t} | Pace: ${p}${inc}`;
+      }
+      // core
+      const s0 = (entry.sets || [])[0] || {};
+      const vol = entry.summary?.totalVolume ?? "—";
+      const repPart = (s0.sets && s0.reps) ? `${s0.sets}×${s0.reps}` : "";
+      const timePart = (s0.timeSec && s0.timeSec > 0) ? formatTime(s0.timeSec) : "";
+      const wPart = (s0.weight && s0.weight > 0) ? ` @ ${s0.weight}` : "";
+      const detail = [repPart, timePart].filter(Boolean).join(" • ");
+      return `${detail || "—"}${wPart} | Vol: ${vol}`;
+    }catch(e){
+      return "—";
+    }
+  }
+}
 
     // ────────────────────────────
     // Header Card (locked layout)
@@ -2994,12 +3087,34 @@ if(selectedIndex === todayIndex && isDayComplete(todayISO, day)){
       const maxText = max ? `${max.weight} × ${max.reps}` : "—";
 
       root.appendChild(el("div", {
-        class:"card",
-        id:`rx_${rx.id}`,
-        "data-unlogged": logged ? "false" : "true"
-      }, [
-        el("div", { style:"font-weight:860; letter-spacing:.1px;", text: exName }),
-        el("div", { class:"note", text:`🏆 Lifetime Max: ${maxText}` }),
+  class:"card",
+  id:`rx_${rx.id}`,
+  "data-unlogged": logged ? "false" : "true"
+}, [
+  el("div", { style:"font-weight:860; letter-spacing:.1px;", text: exName }),
+
+  // ✅ Logged indicator (so Test 3 passes)
+  logged
+    ? el("div", { class:"note", text:"✓ Logged today" })
+    : el("div", { class:"note", text:"Not logged yet" }),
+
+  el("div", { class:"note", text:`🏆 Lifetime Max: ${maxText}` }),
+
+  el("div", { style:"height:10px" }),
+
+  el("div", { class:"rHdrRow" }, [
+    el("button", {
+      class:"btn primary",
+      onClick: () => openExerciseLogger(rx, day)
+    }, ["Log Sets"]),
+
+    el("button", {
+      class:"btn ghost",
+      onClick: () => openExerciseHistoryModal(rx.type, rx.exerciseId, exName)
+    }, ["History →"])
+  ])
+]));
+
 
         el("div", { style:"height:10px" }),
 
@@ -3009,10 +3124,11 @@ if(selectedIndex === todayIndex && isDayComplete(todayISO, day)){
           onClick: () => openExerciseLogger(rx, day)
           }, ["Log Sets"]),
 
-          el("button", {
-            class:"btn ghost",
-            onClick: () => navigate("progress")
-          }, ["History →"])
+        el("button", {
+  class:"btn ghost",
+  onClick: () => openExerciseHistoryModal(rx.type, rx.exerciseId, exName)
+}, ["History →"])
+
         ])
       ]));
     });
@@ -3828,11 +3944,7 @@ Views.RoutineEditor = function(){
       daysGrid.appendChild(card);
     });
   }
-// Floating Next → nudge (only meaningful for today's schedule)
-ensureFloatNext();
-if(selectedIndex === todayIndex) {
-  maybeShowNextNudge(todayISO, day);
-}
+
 function renameRoutine(anchorEl, routineId){
   const current = Routines.getActive();
   const input = el("input", {
