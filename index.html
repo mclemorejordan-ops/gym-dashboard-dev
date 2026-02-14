@@ -2933,10 +2933,26 @@ else root.appendChild(el("div", { class:"card" }, [
           ]),
 
           el("div", { class:"card" }, [
-            el("h2", { text:"Attendance" }),
-            el("div", { class:"note", text: weekLabel }),
+            // Header row + action button
+            el("div", { class:"homeRow" }, [
+              el("div", {}, [
+                el("h2", { text:"Attendance" }),
+                el("div", { class:"note", text: weekLabel })
+              ]),
+              el("button", {
+                class:"btn",
+                onClick: () => navigate("attendance")
+              }, ["View calendar"])
+            ]),
+
             el("div", { style:"height:10px" }),
-            dots,
+
+            // Make the dots preview clickable too
+            el("div", {
+              onClick: () => navigate("attendance"),
+              style:"cursor:pointer;"
+            }, [ dots ]),
+
             el("div", { style:"height:10px" }),
             el("div", { class:"note", text:`This week: ${trainedThisWeek.filter(x => x.trained).length} sessions` })
           ]),
