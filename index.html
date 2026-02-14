@@ -172,6 +172,41 @@
       color: var(--muted);
       line-height: 1.35;
     }
+    /* Progress Overview (stacked like screenshot) */
+    .overviewList{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      padding: 8px 0 0 0;
+    }
+    .overviewRow{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+    .overviewLabel{
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 720;
+      letter-spacing: .22px;
+      text-transform: uppercase;
+    }
+    .overviewValue{
+      font-size: 22px;
+      font-weight: 820;
+      letter-spacing: .2px;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    @media (min-width: 640px){
+      .overviewList{
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      .overviewValue{ font-size: 24px; }
+    }
 
     .form{ display:grid; gap: 10px; }
     .row2{ display:grid; gap: 10px; }
@@ -2372,8 +2407,10 @@ else root.appendChild(el("div", { class:"card" }, [
         ]);
       },
 
-      Home(){
+        Home(){
         ExerciseLibrary.ensureSeeded();
+        WeightEngine.ensure();
+
 
         const todayISO = Dates.todayISO();
         const weekStartsOn = state.profile?.weekStartsOn || "mon";
@@ -2437,6 +2474,16 @@ else root.appendChild(el("div", { class:"card" }, [
 
         const weekLabel = weekStartsOn === "sun" ? "Week (Sun–Sat)" : "Week (Mon–Sun)";
 
+        const wLatest = WeightEngine.latest();
+        const wPrev = WeightEngine.previous();
+        const wDelta = (wLatest && wPrev)
+          ? (Number(wLatest.weight) - Number(wPrev.weight))
+          : null;
+
+        const wDeltaText = (wDelta === null || !Number.isFinite(wDelta))
+          ? "—"
+          : `${wDelta > 0 ? "+" : ""}${wDelta.toFixed(1)}`;
+
         return el("div", { class:"grid cols2" }, [
           el("div", { class:"card" }, [
             el("h2", { text:"Today’s workout" }),
@@ -2486,6 +2533,20 @@ else root.appendChild(el("div", { class:"card" }, [
             el("div", { class:"note", text:`This week: ${trainedThisWeek.filter(x => x.trained).length} sessions` })
           ]),
 
+          // ✅ NEW: Weight card (Weight tab replacement)
+          el("div", { class:"card" }, [
+            el("h2", { text:"Weight" }),
+            el("div", { class:"kpi" }, [
+              el("div", { class:"big", text: wLatest ? `${Number(wLatest.weight).toFixed(1)}` : "—" }),
+              el("div", { class:"small", text: wLatest ? `Latest • ${wLatest.dateISO}` : "No weight entries yet." }),
+              el("div", { class:"small", text: `Delta vs previous: ${wDeltaText}` })
+            ]),
+            el("div", { style:"height:10px" }),
+            el("div", { class:"btnrow" }, [
+              el("button", { class:"btn primary", onClick: () => navigate("weight") }, ["Log weight"])
+            ])
+          ]),
+
           el("div", { class:"card" }, [
             el("h2", { text:"Quick stats" }),
             el("div", { class:"note", text:`Exercises saved: ${
@@ -2497,6 +2558,7 @@ else root.appendChild(el("div", { class:"card" }, [
             el("div", { class:"note", text:`Active routine: ${Routines.getActive()?.name || "—"}` })
           ])
         ]);
+
 
         function buildProteinTodayModal(dateISO, goal){
           const container = el("div", { class:"grid" });
@@ -3246,7 +3308,7 @@ Progress(){
   const statsCard = el("div", { class:"card" }, [
     el("h2", { text:"Overview" })
   ]);
-  const statsHost = el("div", { class:"kpi" });
+  const statsHost = el("div", { class:"overviewList" });
   statsCard.appendChild(statsHost);
   root.appendChild(statsCard);
 
@@ -3523,25 +3585,54 @@ Progress(){
     const count = desc.length;
     const lastDate = desc[0]?.dateISO || "—";
 
-    let best = "—";
-    let sum = 0;
+    let bestLabel = "Best";
+    let bestVal = "—";
+    let totalLabel = "Total";
+    let totalVal = "—";
 
     if(type === "weightlifting"){
       const bestW = Math.max(...desc.map(e => Number(e.summary?.bestWeight) || 0), 0);
       const best1 = Math.max(...desc.map(e => Number(e.summary?.best1RM) || 0), 0);
       const vol = desc.reduce((a,e) => a + (Number(e.summary?.totalVolume) || 0), 0);
-      sum = vol;
-      best = (metric === "est1RM") ? (best1 || "—") : (bestW || "—");
+
+      bestLabel = (metric === "est1RM") ? "Best est 1RM" : "Best weight";
+      bestVal = (metric === "est1RM") ? (best1 ? String(best1) : "—") : (bestW ? String(bestW) : "—");
+
+      totalLabel = "Total volume";
+      totalVal = vol ? String(vol) : "—";
     }else if(type === "cardio"){
       const bestDist = Math.max(...desc.map(e => Number(e.summary?.distance) || 0), 0);
       const totalTime = desc.reduce((a,e) => a + (Number(e.summary?.timeSec) || 0), 0);
-      sum = totalTime;
-      best = bestDist ? `${bestDist}` : "—";
+
+      bestLabel = "Best distance";
+      bestVal = bestDist ? String(bestDist) : "—";
+
+      totalLabel = "Total time";
+      totalVal = totalTime ? formatTime(totalTime) : "—";
     }else{
+      const bestCore = Math.max(...desc.map(e => Number(e.summary?.totalVolume) || 0), 0);
       const vol = desc.reduce((a,e) => a + (Number(e.summary?.totalVolume) || 0), 0);
-      sum = vol;
-      best = vol ? `${vol}` : "—";
+
+      bestLabel = "Best volume";
+      bestVal = bestCore ? String(bestCore) : "—";
+
+      totalLabel = "Total volume";
+      totalVal = vol ? String(vol) : "—";
     }
+
+    function row(label, value){
+      host.appendChild(el("div", { class:"overviewRow" }, [
+        el("div", { class:"overviewLabel", text: label }),
+        el("div", { class:"overviewValue", text: String(value) })
+      ]));
+    }
+
+    row("Exercise", exName);
+    row("Entries", String(count));
+    row("Last logged", lastDate);
+    row(bestLabel, bestVal);
+    row(totalLabel, totalVal);
+  }
 
     host.appendChild(el("div", { class:"k" }, [
       el("div", { class:"a", text:"Exercise" }),
