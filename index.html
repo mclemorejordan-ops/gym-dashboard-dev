@@ -911,7 +911,28 @@ body.modalOpen{
   justify-content:space-between;
   gap:10px;
 }
+/* Routine: fixed header+carousel, scrollable content below */
+.routinePage{
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+  height: calc(100dvh - var(--headerH, 72px) - var(--navH) - env(safe-area-inset-bottom));
+}
 
+.routineFixed{
+  flex: 0 0 auto;
+  display:grid;
+  gap: 12px;
+}
+
+.routineScroll{
+  flex: 1 1 auto;
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
+  display:grid;
+  gap: 12px;
+  padding-bottom: 6px;
+}
 .manageLink{
   margin-top: 10px;
   font-weight: 750;
@@ -3051,7 +3072,7 @@ else root.appendChild(el("div", { class:"card" }, [
       },
 
 Routine(){
-  const root = el("div", { class:"grid" });
+const root = el("div", { class:"routinePage" });
 
   let routine = Routines.getActive();
   if(!routine){
@@ -3542,11 +3563,17 @@ function isDayComplete(dateISO, day){
   return ex.every(rx => hasRoutineExerciseLog(dateISO, rx.id));
 }
   function repaint(){
-    routine = Routines.getActive();
-    root.innerHTML = "";
+  routine = Routines.getActive();
+  root.innerHTML = "";
 
-    const day = getDay(selectedIndex);
-    const selectedDateISO = getSelectedDateISO(selectedIndex);
+  // Fixed (top) vs scrollable (below carousel)
+  const fixedHost = el("div", { class:"routineFixed" });
+  const scrollHost = el("div", { class:"routineScroll" });
+  root.appendChild(fixedHost);
+  root.appendChild(scrollHost);
+
+  const day = getDay(selectedIndex);
+  const selectedDateISO = getSelectedDateISO(selectedIndex);
 
 function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
   LogEngine.ensure();
@@ -3630,7 +3657,7 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
     // ────────────────────────────
     // Header Card (locked layout)
     // ────────────────────────────
-    root.appendChild(el("div", { class:"card" }, [
+fixedHost.appendChild(el("div", { class:"card" }, [
       el("h2", { text:"Routine" }),
       el("div", { class:"note", text:`${routine.name} • ${weekStartsOn === "sun" ? "Sun–Sat" : "Mon–Sun"} • ${weekStartISO} → ${Dates.addDaysISO(weekStartISO, 6)}` }),
 
@@ -3648,7 +3675,7 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
             selectedIndex = todayIndex;
             repaint();
             setTimeout(()=>{
-              const first = root.querySelector("[data-unlogged='true']");
+              const first = scrollHost.querySelector("[data-unlogged='true']");
               if(first){
                 first.scrollIntoView({ behavior:"smooth", block:"center" });
                 first.classList.add("pulse");
@@ -3666,14 +3693,14 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
     ]));
 
     if(!day){
-      root.appendChild(el("div", { class:"card note" }, ["No day found."]));
+      scrollHost.appendChild(el("div", { class:"card note" }, ["No day found."]));
       return;
     }
 
     // ────────────────────────────
     // 3D Card Carousel (visual container)
     // ────────────────────────────
-    root.appendChild(el("div", { class:"card carouselCard" }, [
+fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
       el("div", { class:"carouselTop" }, [
         el("button", {
           class:"btn",
@@ -3710,7 +3737,7 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
 
     // Rest Day
     if(day.isRest){
-      root.appendChild(el("div", { class:"card" }, [
+scrollHost.appendChild(el("div", { class:"card" }, [
         el("h2", { text:"Rest" }),
         el("div", { class:"note", text:`Rest day scheduled for ${selectedDateISO}.` })
       ]));
@@ -3718,7 +3745,7 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
     }
     // Day completion banner
     if(isDayComplete(selectedDateISO, day)){
-      root.appendChild(el("div", { class:"card" }, [
+scrollHost.appendChild(el("div", { class:"card" }, [
         el("h2", { text:"Completed" }),
         el("div", { class:"note", text:`All exercises logged for ${selectedDateISO}.` }),
         el("div", { style:"height:10px" }),
@@ -3748,7 +3775,7 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
       const max = lifetimeMaxSet(rx.type, rx.exerciseId);
       const maxText = max ? `${max.weight} × ${max.reps}` : "—";
 
-      root.appendChild(el("div", {
+scrollHost.appendChild(el("div", {
   class:"card",
   id:`rx_${rx.id}`,
   "data-unlogged": logged ? "false" : "true"
@@ -5630,6 +5657,13 @@ Modal.open({
     if(state.profile) ExerciseLibrary.ensureSeeded();
     // Step 6 safety: ensure logs arrays exist even if older saved state is missing fields
     LogEngine.ensure();
+    // Keep an accurate header height for internal fixed/scroll layouts
+function updateLayoutVars(){
+  const h = document.querySelector("header");
+  if(h) document.documentElement.style.setProperty("--headerH", `${h.offsetHeight}px`);
+}
+updateLayoutVars();
+window.addEventListener("resize", updateLayoutVars);
 ensureFloatNext(); // Phase 3: enable Floating Next → nudge container
 renderNav();
 renderView();
