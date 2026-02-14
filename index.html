@@ -1566,17 +1566,6 @@ const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
           { label:"Day 7", isRest:false }
         ];}}
     ];
-        });}
-      },
-
-      { key:"blank", name:"Blank", desc:"Start from scratch (you’ll edit days + exercises)",
-        buildDays(){ return [
-          { label:"Day 1", isRest:false },{ label:"Day 2", isRest:false },{ label:"Day 3", isRest:false },
-          { label:"Day 4", isRest:false },{ label:"Day 5", isRest:false },{ label:"Day 6", isRest:false },
-          { label:"Day 7", isRest:false }
-        ];}}
-    ];
-
       function createRoutineFromTemplate(templateKey, routineName){
       const tpl = RoutineTemplates.find(t => t.key === templateKey);
       if(!tpl) throw new Error("Invalid template key");
