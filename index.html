@@ -2827,6 +2827,12 @@ setNextNudge(next ? {
         const summary = LogEngine.computeWeightliftingSummary(sets);
         const pr = LogEngine.computePRFlags(type, exerciseId, summary);
 
+        // Prevent duplicate (same date + routineExerciseId)
+state.logs.workouts = state.logs.workouts.filter(e =>
+  !(e.dateISO === entry.dateISO && e.routineExerciseId === entry.routineExerciseId)
+);
+
+        
         LogEngine.addEntry({
           id: uid("w"),
           createdAt: Date.now(),
@@ -3618,7 +3624,101 @@ Progress(){
       totalLabel = "Total volume";
       totalVal = vol ? String(vol) : "—";
     }
+function openLogEntryEditor(entry){
+  const type = entry.type;
+  const body = el("div", { class:"grid" });
 
+  const header = el("div", { class:"note" }, [
+    `${resolveExerciseName(type, entry.exerciseId, "Exercise")} • ${entry.dateISO}`
+  ]);
+  body.appendChild(header);
+
+  const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+  body.appendChild(err);
+
+  function showErr(msg){
+    err.textContent = msg;
+    err.style.display = "block";
+  }
+
+  if(type === "weightlifting"){
+    const rows = el("div", { class:"grid" });
+    const inputs = [];
+
+    (entry.sets || []).forEach(s => {
+      const wInput = el("input", { type:"number", value:String(s.weight || "") });
+      const rInput = el("input", { type:"number", value:String(s.reps || "") });
+      inputs.push({ wInput, rInput });
+
+      rows.appendChild(el("div", { class:"row2" }, [
+        el("label", {}, [ el("span",{text:"Weight"}), wInput ]),
+        el("label", {}, [ el("span",{text:"Reps"}), rInput ])
+      ]));
+    });
+
+    body.appendChild(rows);
+
+    body.appendChild(el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn primary",
+        onClick: () => {
+          const sets = inputs.map(s => ({
+            weight: Number(s.wInput.value) || 0,
+            reps: Number(s.rInput.value) || 0
+          })).filter(s => s.weight > 0 || s.reps > 0);
+
+          if(sets.length === 0){
+            showErr("Enter at least one set.");
+            return;
+          }
+
+          entry.sets = sets;
+          entry.summary = LogEngine.computeWeightliftingSummary(sets);
+          entry.pr = LogEngine.computePRFlags(type, entry.exerciseId, entry.summary);
+
+          Storage.save(state);
+          Modal.close();
+          repaint(true);
+        }
+      }, ["Save"]),
+
+      el("button", {
+        class:"btn danger",
+        onClick: () => {
+          state.logs.workouts = state.logs.workouts.filter(e => e.id !== entry.id);
+          Storage.save(state);
+          Modal.close();
+          repaint(true);
+        }
+      }, ["Delete"]),
+
+      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+    ]));
+
+  } else {
+    // Cardio + Core basic delete support (extend later if needed)
+    body.appendChild(el("div", { class:"note", text:"Editing supported for weightlifting entries. You can delete this entry." }));
+
+    body.appendChild(el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn danger",
+        onClick: () => {
+          state.logs.workouts = state.logs.workouts.filter(e => e.id !== entry.id);
+          Storage.save(state);
+          Modal.close();
+          repaint(true);
+        }
+      }, ["Delete"]),
+      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+    ]));
+  }
+
+  Modal.open({
+    title: "Edit Entry",
+    center: true,
+    bodyNode: body
+  });
+}
     function row(label, value){
       host.appendChild(el("div", { class:"overviewRow" }, [
         el("div", { class:"overviewLabel", text: label }),
@@ -3750,12 +3850,20 @@ Progress(){
       if(desc.length === 0){
         tableHost.appendChild(el("div", { class:"note", text:"No entries yet. Add one above." }));
       }else{
-        desc.slice(0, 45).forEach(row => {
-          tableHost.appendChild(el("div", { class:"item" }, [
-            el("div", { class:"left" }, [
-              el("div", { class:"name", text: row.dateISO }),
-              el("div", { class:"meta", text: `Weight: ${row.weight}` })
-            ]),
+desc.slice(0, 40).forEach(e => {
+  tableHost.appendChild(el("div", {
+    class:"item",
+    onClick: () => openLogEntryEditor(e)
+  }, [
+    el("div", { class:"left" }, [
+      el("div", { class:"name", text: e.dateISO }),
+      el("div", { class:"meta", text: tableLine(e) })
+    ]),
+    el("div", { class:"actions" }, [
+      el("div", { class:"meta", text: prLine(e.pr) })
+    ])
+  ]));
+});
             el("div", { class:"actions" }, [
               el("button", {
                 class:"mini danger",
@@ -4014,6 +4122,32 @@ Progress(){
             ])
           });
         }
+el("div", { class:"card" }, [
+  el("h2", { text:"Data Repair" }),
+  el("div", { class:"note", text:"Removes duplicate log entries (same date + routine exercise). Keeps the most recent." }),
+  el("div", { style:"height:10px" }),
+  el("button", {
+    class:"btn danger",
+    onClick: () => {
+      const seen = new Map();
+      const cleaned = [];
+
+      state.logs.workouts
+        .sort((a,b)=> b.createdAt - a.createdAt)
+        .forEach(e => {
+          const key = `${e.dateISO}_${e.routineExerciseId}`;
+          if(!seen.has(key)){
+            seen.set(key,true);
+            cleaned.push(e);
+          }
+        });
+
+      state.logs.workouts = cleaned;
+      Storage.save(state);
+      showToast("Duplicates removed");
+    }
+  }, ["Repair logs"])
+])
 
         return el("div", { class:"grid" }, [
           // Backup / Import card
