@@ -35,104 +35,19 @@
 
       --navH: 78px;
     }
-/* ✅ iPhone / PWA sizing: one authoritative mobile block */
-@media (max-width: 500px), (hover: none) and (pointer: coarse){
 
-  /* Prevent iOS “text autosizing” from making things feel huge */
-  html{ -webkit-text-size-adjust: 100%; }
-
-  :root{
-    --r: 14px;
-    --navH: 62px;
-  }
-
-  /* Global type scale */
-  body{ font-size: 13px; }
-
-  /* Layout density */
-  .app{
-    padding: env(safe-area-inset-top) 10px calc(var(--navH) + env(safe-area-inset-bottom)) 10px;
-  }
-  header{ padding: 8px 0 6px 0; }
-  main{ padding-top: 8px; }
-  .grid{ gap: 10px; }
-
-  /* Cards + headings */
-  .card{ padding: 10px; }
-  .card h2{
-    font-size: 11px;
-    margin: 0 0 6px 0;
-  }
-
-  /* Brand header */
-  .brand .title{ font-size: 15px; }
-  .brand .subtitle{ font-size: 10.5px; }
-  .chip{
-    padding: 7px 10px;
-    font-size: 12px;
-    max-width: 56vw;
-  }
-
-  /* Buttons + inputs */
-  .btn{
-    padding: 9px 10px;
-    border-radius: 12px;
-    font-size: 13px;
-  }
-  input, select{
-    padding: 9px 10px;
-    border-radius: 12px;
-    font-size: 13px;
-  }
-
-  /* KPI / big numbers (this is a main “too big” culprit) */
-  .kpi .big{ font-size: 18px; }
-  .kpi .small{ font-size: 11.5px; }
-
-  /* Overview stats on Progress */
-  .overviewValue{ font-size: 18px; }
-  .overviewLabel{ font-size: 11px; }
-
-  /* Lists */
-  .list{ gap: 8px; }
-  .item{
-    padding: 10px;
-    border-radius: 14px;
-    gap: 10px;
-  }
-  .item .meta{ font-size: 11.5px; }
-
-  /* Pills / chips used in routine editor etc */
-  .pill, .chip2{
-    padding: 8px 10px;
-    font-size: 11.5px;
-  }
-
-  /* Ring */
-  .ringWrap{ width: 96px; height: 96px; }
-  .ringText .big{ font-size: 14px; }
-  .ringText .small{ font-size: 10.5px; }
-
-  /* Carousel */
-  .carouselCard{ padding: 10px; gap: 8px; }
-  .carouselSub{ font-size: 11.5px; }
-  .weekDots{ gap: 8px; }
-  .weekDot{ width: 10px; height: 10px; }
-
-  /* Chart */
-  canvas{ height: 210px; }
-
-  /* Bottom nav */
-  .nav{ padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) 8px; }
-  .navbar{ padding: 6px; border-radius: 18px; }
-  .navbtn{
-    padding: 7px 6px;
-    font-size: 10.5px;
-    gap: 4px;
-  }
-  .navbtn .dot{ width: 22px; height: 22px; }
-}
-
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 700px at 20% -10%, rgba(124,92,255,.24), transparent 60%),
+                  radial-gradient(900px 600px at 90% 10%, rgba(55,214,122,.14), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     .app{
       min-height: 100%;
@@ -240,9 +155,6 @@
     }
     .btn:active{ transform: translateY(1px); }
 
-   .btn.ghost{
-  background: rgba(255,255,255,.05);
-}
     .muted{ color: var(--muted); }
     .kpi{
       display:flex;
