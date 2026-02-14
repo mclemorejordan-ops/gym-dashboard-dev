@@ -1024,6 +1024,83 @@ button.mini.added{
   pointer-events: auto;
   box-shadow: 0 18px 48px rgba(0,0,0,.55);
 } 
+  /* Settings accordion + search */
+.settingsWrap{ display:flex; flex-direction:column; gap: 10px; }
+.settingsSearch{
+  width: 100%;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+}
+.settingsSearch .ico{ opacity:.75; font-size: 14px; }
+.settingsSearch input{
+  flex:1;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  outline: none !important;
+  color: rgba(255,255,255,.92);
+}
+.settingsSearch input::placeholder{ color: rgba(255,255,255,.45); }
+
+.accList{ display:flex; flex-direction:column; gap: 10px; }
+.accItem{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  overflow: hidden;
+}
+.accHead{
+  display:flex;
+  gap: 12px;
+  align-items:flex-start;
+  justify-content: space-between;
+  padding: 14px 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.accHead:active{ transform: scale(.995); }
+.accTitle{ font-weight: 900; letter-spacing:.1px; }
+.accSub{ font-size: 12px; color: var(--muted); margin-top: 3px; }
+.accCaret{ opacity:.8; font-weight: 900; }
+
+.accBody{
+  padding: 0 14px 14px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.setRow{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+}
+.setRow .meta{ font-size:12px; color: var(--muted); }
+.setRow input, .setRow select{
+  width: 160px;
+  max-width: 44vw;
+}
+
+.setLink{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  cursor:pointer;
+}
+.setLink:active{ transform: scale(.995); }
+.setLink .l{ display:flex; flex-direction:column; gap:2px; }
+.setLink .a{ font-weight: 800; }
+.setLink .b{ font-size: 12px; color: var(--muted); }
   </style>
 </head>
 
@@ -1160,7 +1237,17 @@ button.mini.added{
       Storage.save(state);
     }
     let state = Storage.load();
-
+const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
+  settings: {
+    q: "",
+    open: { "profile": true, "library": false, "backup": false, "data": false, "debug": false }
+  },
+  libraryManage: {
+    q: "",
+    type: "weightlifting",
+    equipment: "all"
+  }
+});
     /********************
      * 2) Helpers
      ********************/
@@ -2196,7 +2283,7 @@ const Modal = {
     /********************
      * 6) Router + Views
      ********************/
-    const Routes = {
+const Routes = {
   // Bottom nav (mobile-first)
   home: { label: "Home", nav:true },
   routine: { label: "Routine", nav:true },
@@ -2206,8 +2293,10 @@ const Modal = {
   // Non-nav routes (opened via buttons/links)
   weight: { label: "Weight", nav:false },
   attendance: { label: "Attendance", nav:false },
-  routine_editor: { label: "Routine Editor", nav:false }
+  routine_editor: { label: "Routine Editor", nav:false },
+  exercise_library: { label: "Exercise Library", nav:false }
 };
+
 
 const NAV_KEYS = Object.entries(Routes)
   .filter(([,v]) => v.nav)
@@ -2269,6 +2358,7 @@ else if(currentRoute === "settings") root.appendChild(Views.Settings());
 else if(currentRoute === "weight") root.appendChild(Views.Weight());
 else if(currentRoute === "attendance") root.appendChild(Views.Attendance());
 else if(currentRoute === "routine_editor") root.appendChild(Views.RoutineEditor());
+else if(currentRoute === "exercise_library") root.appendChild(Views.ExerciseLibraryManager());
 else root.appendChild(el("div", { class:"card" }, [
   el("h2", { text:"Not found" }),
   el("div", { class:"note", text:`Unknown route: ${currentRoute}` })
@@ -4189,6 +4279,68 @@ function openLogEntryEditor(entry){
         }
       },
          Settings(){
+        // Persist across renders (not saved to Storage)
+        const ui = UIState.settings;
+
+        const normalize = (s) => (s||"").toString().trim().toLowerCase();
+
+        // Accordion builder
+        const makeSection = ({ key, title, subtitle, keywords, bodyNode }) => {
+          const q = normalize(ui.q);
+          const hay = normalize([title, subtitle, ...(keywords||[])].join(" "));
+          const match = !q || hay.includes(q);
+
+          // Auto-open if searching and matched
+          const isOpen = !!ui.open?.[key] || (q && match);
+
+          const item = el("div", { class:"accItem", style: match ? "" : "display:none;" });
+
+          const head = el("div", {
+            class:"accHead",
+            onClick: () => {
+              ui.open[key] = !ui.open[key];
+              renderView();
+            }
+          }, [
+            el("div", {}, [
+              el("div", { class:"accTitle", text: title }),
+              el("div", { class:"accSub", text: subtitle })
+            ]),
+            el("div", { class:"accCaret", text: isOpen ? "−" : "+" })
+          ]);
+
+          const body = el("div", { class:"accBody", style: isOpen ? "" : "display:none;" }, [ bodyNode ]);
+
+          item.appendChild(head);
+          item.appendChild(body);
+          return item;
+        };
+
+        // --- Profile controls ---
+        const nameInput = el("input", { type:"text", value: state.profile?.name || "" });
+        const proteinInput = el("input", { type:"number", min:"0", step:"1", value: state.profile?.proteinGoal || 150 });
+
+        const weekSelect = el("select", {});
+        ["Sunday","Monday"].forEach((d,i) => {
+          weekSelect.appendChild(el("option", { value: String(i), text: d }));
+        });
+        weekSelect.value = String(state.profile?.weekStartsOn ?? 1);
+
+        const hideRestSwitch = el("input", { type:"checkbox" });
+        hideRestSwitch.checked = !!state.profile?.hideRestDays;
+
+        function saveProfile(){
+          state.profile = state.profile || {};
+          state.profile.name = (nameInput.value || "").trim();
+          state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
+          state.profile.weekStartsOn = Number(weekSelect.value || 0);
+          state.profile.hideRestDays = !!hideRestSwitch.checked;
+          Storage.save(state);
+          showToast("Saved");
+          renderView();
+        }
+
+        // --- Existing import/export helpers (reuse your current functions) ---
         function openImportPasteModal(){
           const ta = el("textarea", {
             style:"width:100%; min-height: 260px; border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: rgba(255,255,255,.92); font-size: 12px; outline:none; resize: vertical;",
@@ -4261,135 +4413,494 @@ function openLogEntryEditor(entry){
             ])
           });
         }
-el("div", { class:"card" }, [
-  el("h2", { text:"Data Repair" }),
-  el("div", { class:"note", text:"Removes duplicate log entries (same date + routine exercise). Keeps the most recent." }),
-  el("div", { style:"height:10px" }),
-  el("button", {
-    class:"btn danger",
-    onClick: () => {
-      const seen = new Map();
-      const cleaned = [];
 
-      state.logs.workouts
-        .sort((a,b)=> b.createdAt - a.createdAt)
-        .forEach(e => {
-          const key = `${e.dateISO}_${e.routineExerciseId}`;
-          if(!seen.has(key)){
-            seen.set(key,true);
-            cleaned.push(e);
-          }
-        });
-
-      state.logs.workouts = cleaned;
-      Storage.save(state);
-      showToast("Duplicates removed");
-    }
-  }, ["Repair logs"])
-])
-
-        return el("div", { class:"grid" }, [
-          // Backup / Import card
-          el("div", { class:"card" }, [
-            el("h2", { text:"Backup / Import" }),
-            el("div", { class:"note", text:"Export your full app data as JSON. Import will overwrite your current data in this browser." }),
-            el("div", { style:"height:10px" }),
-
-            el("div", { class:"btnrow" }, [
-              el("button", {
-                class:"btn primary",
-                onClick: () => {
-                  try{
-                    const txt = exportBackupJSON();
-                    const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
-                    downloadTextFile(`gym-dashboard-backup_${stamp}.json`, txt);
-                  }catch(e){
-                    Modal.open({
-                      title:"Export failed",
-                      bodyNode: el("div", {}, [
-                        el("div", { class:"note", text: e.message || "Could not export backup." }),
-                        el("div", { style:"height:12px" }),
-                        el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
-                      ])
-                    });
-                  }
-                }
-              }, ["Export JSON backup"]),
-
-              el("button", {
-                class:"btn",
-                onClick: () => {
-                  Modal.open({
-                    title: "Copy backup JSON",
-                    bodyNode: el("div", {}, [
-                      el("div", { class:"note", text:"Copy/paste this JSON anywhere safe." }),
-                      el("div", { style:"height:10px" }),
-                      el("textarea", {
-                        style:"width:100%; min-height: 260px; border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: rgba(255,255,255,.92); font-size: 12px; outline:none; resize: vertical;",
-                      }, [exportBackupJSON()]),
-                      el("div", { style:"height:12px" }),
-                      el("button", { class:"btn primary", onClick: Modal.close }, ["Done"])
-                    ])
-                  });
-                }
-              }, ["View JSON"])
+        // --- Section bodies ---
+        const profileBody = el("div", {}, [
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Name" }),
+              el("div", { class:"meta", text:"Shown on Home" })
             ]),
-
-            el("div", { style:"height:14px" }),
-            el("div", { class:"note", text:"Import options:" }),
-            el("div", { style:"height:8px" }),
-
-            el("div", { class:"btnrow" }, [
-              el("button", { class:"btn danger", onClick: openImportPasteModal }, ["Import (paste JSON)"]),
-              el("button", { class:"btn danger", onClick: openImportFileModal }, ["Import (upload file)"])
-            ]),
-
-            el("div", { style:"height:10px" }),
-            el("div", { class:"note", text:"Tip: Export a backup before you import." })
+            nameInput
           ]),
-
-          // Debug card (keep your existing debug tools)
-          el("div", { class:"card" }, [
-            el("h2", { text:"Debug" }),
-            el("div", { class:"btnrow" }, [
-              el("button", {
-                class:"btn",
-                onClick: () => Modal.open({
-                  title: "Current State (JSON)",
-                  bodyNode: el("pre", { style:"white-space:pre-wrap; font-size:12px; color: rgba(255,255,255,.85);" }, [
-                    JSON.stringify(state, null, 2)
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Daily protein goal" }),
+              el("div", { class:"meta", text:"grams/day" })
+            ]),
+            proteinInput
+          ]),
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Week starts on" }),
+              el("div", { class:"meta", text:"Affects Home week view" })
+            ]),
+            weekSelect
+          ]),
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"Hide rest days" }),
+              el("div", { class:"meta", text:"Keep Home focused on training days" })
+            ]),
+            hideRestSwitch
+          ]),
+          el("div", { style:"height:12px" }),
+          el("div", { class:"btnrow" }, [
+            el("button", { class:"btn primary", onClick: () => {
+              try{ saveProfile(); }
+              catch(e){
+                Modal.open({
+                  title:"Save failed",
+                  bodyNode: el("div", {}, [
+                    el("div", { class:"note", text: e?.message || "Could not save settings." }),
+                    el("div", { style:"height:12px" }),
+                    el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
                   ])
-                })
-              }, ["View state JSON"]),
-              el("button", {
-                class:"btn danger",
-                onClick: () => {
-                  Modal.open({
-                    title: "Reset local data",
-                    bodyNode: el("div", {}, [
-                      el("div", { class:"note", text:"This clears everything saved in this browser for the app." }),
-                      el("div", { style:"height:12px" }),
-                      el("div", { class:"btnrow" }, [
-                        el("button", {
-                          class:"btn danger",
-                          onClick: () => {
-                            Storage.reset();
-                            state = Storage.load();
-                            Modal.close();
-                            navigate("home");
-                          }
-                        }, ["Reset"]),
-                        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-                      ])
-                    ])
-                  });
-                }
-              }, ["Reset local data"])
-            ])
+                });
+              }
+            }}, ["Save changes"])
           ])
         ]);
+
+        const libraryBody = el("div", {}, [
+          el("div", { class:"setLink", onClick: () => navigate("exercise_library") }, [
+            el("div", { class:"l" }, [
+              el("div", { class:"a", text:"Open Exercise Library Manager" }),
+              el("div", { class:"b", text:"Add, edit, and delete exercises" })
+            ]),
+            el("div", { style:"opacity:.8", text:"→" })
+          ]),
+          el("div", { style:"height:10px" }),
+          el("div", { class:"note", text:"Tip: Exercises removed from the library will still display in old logs using the saved name snapshot." })
+        ]);
+
+        const backupBody = el("div", {}, [
+          el("div", { class:"note", text:"Export your full app data as JSON. Import will overwrite your current data in this browser." }),
+          el("div", { style:"height:10px" }),
+          el("div", { class:"btnrow" }, [
+            el("button", {
+              class:"btn primary",
+              onClick: () => {
+                try{
+                  const txt = exportBackupJSON();
+                  const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
+                  downloadTextFile(`gym-dashboard-backup_${stamp}.json`, txt);
+                }catch(e){
+                  Modal.open({
+                    title:"Export failed",
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"note", text: e.message || "Could not export backup." }),
+                      el("div", { style:"height:12px" }),
+                      el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+                    ])
+                  });
+                }
+              }
+            }, ["Export JSON backup"]),
+            el("button", {
+              class:"btn",
+              onClick: () => {
+                Modal.open({
+                  title: "Copy backup JSON",
+                  bodyNode: el("div", {}, [
+                    el("div", { class:"note", text:"Copy/paste this JSON anywhere safe." }),
+                    el("div", { style:"height:10px" }),
+                    el("textarea", {
+                      style:"width:100%; min-height: 260px; border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: rgba(255,255,255,.92); font-size: 12px; outline:none; resize: vertical;",
+                    }, [exportBackupJSON()]),
+                    el("div", { style:"height:12px" }),
+                    el("button", { class:"btn primary", onClick: Modal.close }, ["Done"])
+                  ])
+                });
+              }
+            }, ["View JSON"])
+          ]),
+          el("div", { style:"height:14px" }),
+          el("div", { class:"note", text:"Import options:" }),
+          el("div", { style:"height:8px" }),
+          el("div", { class:"btnrow" }, [
+            el("button", { class:"btn danger", onClick: openImportPasteModal }, ["Import (paste JSON)"]),
+            el("button", { class:"btn danger", onClick: openImportFileModal }, ["Import (upload file)"])
+          ]),
+          el("div", { style:"height:10px" }),
+          el("div", { class:"note", text:"Tip: Export a backup before you import." })
+        ]);
+
+        const dataBody = el("div", {}, [
+          el("div", { class:"note", text:"Repair tools and targeted clears." }),
+          el("div", { style:"height:10px" }),
+
+          el("div", { class:"setLink", onClick: () => {
+            confirmModal({
+              title: "Repair workout logs",
+              note: "Removes duplicate log entries (same date + routine exercise). Keeps the most recent.",
+              confirmText: "Repair logs",
+              danger: true,
+              onConfirm: () => {
+                const seen = new Map();
+                const cleaned = [];
+                (state.logs?.workouts || [])
+                  .slice()
+                  .sort((a,b)=> (b.createdAt||0) - (a.createdAt||0))
+                  .forEach(e => {
+                    const key = `${e.dateISO}_${e.routineExerciseId}`;
+                    if(!seen.has(key)){
+                      seen.set(key,true);
+                      cleaned.push(e);
+                    }
+                  });
+                state.logs.workouts = cleaned;
+                Storage.save(state);
+                showToast("Duplicates removed");
+              }
+            });
+          }}, [
+            el("div", { class:"l" }, [
+              el("div", { class:"a", text:"Repair workout logs" }),
+              el("div", { class:"b", text:"Remove duplicates (keeps most recent)" })
+            ]),
+            el("div", { style:"opacity:.8", text:"→" })
+          ]),
+
+          el("div", { style:"height:10px" }),
+          el("div", { class:"note", text:"Clear specific data:" }),
+          el("div", { style:"height:8px" }),
+
+          el("div", { class:"btnrow" }, [
+            el("button", {
+              class:"btn danger",
+              onClick: () => confirmModal({
+                title: "Clear workout logs",
+                note: "Deletes all workout logs. This cannot be undone.",
+                confirmText: "Clear workouts",
+                danger: true,
+                onConfirm: () => { state.logs.workouts = []; Storage.save(state); showToast("Workout logs cleared"); }
+              })
+            }, ["Clear workouts"]),
+            el("button", {
+              class:"btn danger",
+              onClick: () => confirmModal({
+                title: "Clear weight logs",
+                note: "Deletes all weigh-ins. This cannot be undone.",
+                confirmText: "Clear weight",
+                danger: true,
+                onConfirm: () => { state.logs.weight = []; Storage.save(state); showToast("Weight logs cleared"); }
+              })
+            }, ["Clear weight"])
+          ]),
+          el("div", { style:"height:10px" }),
+          el("div", { class:"btnrow" }, [
+            el("button", {
+              class:"btn danger",
+              onClick: () => confirmModal({
+                title: "Clear protein logs",
+                note: "Deletes all protein entries. This cannot be undone.",
+                confirmText: "Clear protein",
+                danger: true,
+                onConfirm: () => { state.logs.protein = []; Storage.save(state); showToast("Protein logs cleared"); }
+              })
+            }, ["Clear protein"]),
+            el("button", {
+              class:"btn danger",
+              onClick: () => confirmModal({
+                title: "Clear attendance",
+                note: "Deletes attendance history. This cannot be undone.",
+                confirmText: "Clear attendance",
+                danger: true,
+                onConfirm: () => { state.attendance = []; Storage.save(state); showToast("Attendance cleared"); }
+              })
+            }, ["Clear attendance"])
+          ])
+        ]);
+
+        const debugBody = el("div", {}, [
+          el("div", { class:"note", text:`Schema v${state.schemaVersion} • Approx storage: ${bytesToNice(appStorageBytes())}` }),
+          el("div", { style:"height:10px" }),
+          el("div", { class:"btnrow" }, [
+            el("button", {
+              class:"btn",
+              onClick: () => Modal.open({
+                title: "Current State (JSON)",
+                bodyNode: el("pre", { style:"white-space:pre-wrap; font-size:12px; color: rgba(255,255,255,.85);" }, [
+                  JSON.stringify(state, null, 2)
+                ])
+              })
+            }, ["View state JSON"]),
+            el("button", {
+              class:"btn danger",
+              onClick: () => {
+                Modal.open({
+                  title: "Reset local data",
+                  bodyNode: el("div", {}, [
+                    el("div", { class:"note", text:"This clears everything saved in this browser for the app." }),
+                    el("div", { style:"height:12px" }),
+                    el("div", { class:"btnrow" }, [
+                      el("button", {
+                        class:"btn danger",
+                        onClick: () => {
+                          Storage.reset();
+                          state = Storage.load();
+                          Modal.close();
+                          navigate("home");
+                        }
+                      }, ["Reset"]),
+                      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                    ])
+                  ])
+                });
+              }
+            }, ["Reset local data"])
+          ])
+        ]);
+
+        // --- Search Bar ---
+        const searchInput = el("input", {
+          type:"text",
+          placeholder:"Search settings…",
+          value: ui.q || ""
+        });
+        searchInput.addEventListener("input", (e) => {
+          ui.q = e.target.value || "";
+          renderView();
+        });
+
+        const root = el("div", { class:"settingsWrap" }, [
+          el("div", { class:"settingsSearch" }, [
+            el("div", { class:"ico", text:"🔎" }),
+            searchInput
+          ]),
+          el("div", { class:"accList" }, [
+            makeSection({
+              key:"profile",
+              title:"Profile & Preferences",
+              subtitle:"Name, protein goal, week start, rest days",
+              keywords:["name","protein","week","rest","goal"],
+              bodyNode: profileBody
+            }),
+            makeSection({
+              key:"library",
+              title:"Exercise Library",
+              subtitle:"Manage exercises (add/edit/delete)",
+              keywords:["exercise","library","weightlifting","cardio","core"],
+              bodyNode: libraryBody
+            }),
+            makeSection({
+              key:"backup",
+              title:"Backup & Restore",
+              subtitle:"Export/import JSON backups",
+              keywords:["backup","import","export","json","restore"],
+              bodyNode: backupBody
+            }),
+            makeSection({
+              key:"data",
+              title:"Data Tools",
+              subtitle:"Repair duplicates + clear specific data",
+              keywords:["repair","duplicates","clear","logs","attendance"],
+              bodyNode: dataBody
+            }),
+            makeSection({
+              key:"debug",
+              title:"Debug / About",
+              subtitle:"View raw state + reset local data",
+              keywords:["debug","reset","state","storage"],
+              bodyNode: debugBody
+            })
+          ])
+        ]);
+
+        return root;
       }
     }; // ✅ end Views object
+    Views.ExerciseLibraryManager = function(){
+  ExerciseLibrary.ensureSeeded();
+
+  const ui = UIState.libraryManage;
+  const root = el("div", { class:"grid" });
+
+  // Header
+  root.appendChild(el("div", { class:"card" }, [
+    el("div", { class:"kpi" }, [
+      el("div", { class:"big", text:"Exercise Library" }),
+      el("div", { class:"small", text:"Search, add, edit, or delete exercises." })
+    ]),
+    el("div", { style:"height:10px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", { class:"btn", onClick: () => navigate("settings") }, ["← Settings"]),
+      el("button", { class:"btn primary", onClick: () => openAddEditModal(null) }, ["+ Add Exercise"])
+    ])
+  ]));
+
+  // Controls
+  const controls = el("div", { class:"card" }, [ el("h2", { text:"Filters" }) ]);
+
+  const typeChips = el("div", { class:"chips" });
+  ExerciseLibrary.typeKeys.forEach(t => {
+    typeChips.appendChild(el("div", {
+      class:"chip" + (ui.type === t ? " on" : ""),
+      onClick: () => { ui.type = t; ui.equipment = "all"; renderView(); }
+    }, [ExerciseLibrary.typeLabel(t)]));
+  });
+
+  const search = el("input", { type:"text", placeholder:"Search exercises…", value: ui.q || "" });
+  search.addEventListener("input", (e) => { ui.q = e.target.value || ""; renderView(); });
+
+  const equipSelect = el("select", {});
+  equipSelect.appendChild(el("option", { value:"all", text:"All equipment" }));
+  const equipSet = new Set();
+  ExerciseLibrary.list(ui.type).forEach(x => { if(x.equipment) equipSet.add(x.equipment); });
+  Array.from(equipSet).sort().forEach(eq => equipSelect.appendChild(el("option", { value:eq, text:eq })));
+  equipSelect.value = ui.equipment || "all";
+  equipSelect.addEventListener("change", (e) => { ui.equipment = e.target.value || "all"; renderView(); });
+
+  controls.appendChild(el("div", { class:"note", text:"Type" }));
+  controls.appendChild(typeChips);
+  controls.appendChild(el("div", { style:"height:10px" }));
+  controls.appendChild(el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Search" }), search ]),
+    el("label", {}, [ el("span", { text:"Equipment" }), equipSelect ])
+  ]));
+
+  root.appendChild(controls);
+
+  // List
+  const listCard = el("div", { class:"card" }, [
+    el("h2", { text:"Exercises" }),
+    el("div", { class:"note", text:"Tip: Deleting an exercise will not erase old logs (they use the saved name snapshot)." })
+  ]);
+
+  const listHost = el("div", { style:"display:flex; flex-direction:column; gap:10px; margin-top:10px;" });
+
+  const q = (ui.q || "").trim().toLowerCase();
+  const eq = ui.equipment || "all";
+
+  const items = ExerciseLibrary.list(ui.type)
+    .filter(x => !q || (x.name || "").toLowerCase().includes(q))
+    .filter(x => eq === "all" || (x.equipment || "") === eq)
+    .sort((a,b) => (a.name || "").localeCompare(b.name || ""));
+
+  if(items.length === 0){
+    listHost.appendChild(el("div", { class:"note", text:"No exercises match your filters." }));
+  } else {
+    items.forEach(ex => {
+      const sub = (() => {
+        if(ui.type === "weightlifting"){
+          const parts = [];
+          if(ex.primaryMuscle) parts.push(ex.primaryMuscle);
+          if(ex.equipment) parts.push(ex.equipment);
+          if(typeof ex.isCompound === "boolean") parts.push(ex.isCompound ? "compound" : "isolation");
+          return parts.join(" • ") || "—";
+        }
+        if(ui.type === "cardio"){
+          const parts = [];
+          if(ex.modality) parts.push(ex.modality);
+          if(ex.supportsIncline) parts.push("incline");
+          return parts.join(" • ") || "—";
+        }
+        const parts = [];
+        if(ex.equipment) parts.push(ex.equipment);
+        return parts.join(" • ") || "—";
+      })();
+
+      listHost.appendChild(el("div", { class:"item" }, [
+        el("div", { style:"font-weight:860; letter-spacing:.1px;", text: ex.name }),
+        el("div", { class:"meta", text: sub }),
+        el("div", { style:"height:10px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", { class:"btn", onClick: () => openAddEditModal(ex) }, ["Edit"]),
+          el("button", { class:"btn danger", onClick: () => attemptDelete(ex) }, ["Delete"])
+        ])
+      ]));
+    });
+  }
+
+  listCard.appendChild(listHost);
+  root.appendChild(listCard);
+
+  function countRoutineRefs(type, exerciseId){
+    let count = 0;
+    (state.routines || []).forEach(r => {
+      (r.days || []).forEach(d => {
+        (d.exercises || []).forEach(rx => {
+          if(rx.type === type && rx.exerciseId === exerciseId) count++;
+        });
+      });
+    });
+    return count;
+  }
+
+  function attemptDelete(ex){
+    const refs = countRoutineRefs(ui.type, ex.id);
+    const note = refs
+      ? `This exercise is currently used in ${refs} routine slot(s). Deleting it will remove it from those routines.`
+      : "Delete this exercise from your library?";
+
+    confirmModal({
+      title: "Delete exercise",
+      note,
+      confirmText: "Delete",
+      danger: true,
+      onConfirm: () => {
+        ExerciseLibrary.remove(ui.type, ex.id);
+        Storage.save(state);
+        showToast("Deleted");
+        renderView();
+      }
+    });
+  }
+
+  function openAddEditModal(existing){
+    const isEdit = !!existing;
+    const name = el("input", { type:"text", value: existing?.name || "", placeholder:"Exercise name" });
+
+    // Lightweight per-type optional fields
+    const equip = el("input", { type:"text", value: existing?.equipment || "", placeholder:"e.g., Dumbbell, Barbell, Machine" });
+    const primary = el("input", { type:"text", value: existing?.primaryMuscle || "", placeholder:"e.g., Chest, Back, Legs" });
+
+    Modal.open({
+      title: isEdit ? "Edit exercise" : "Add exercise",
+      bodyNode: el("div", {}, [
+        el("div", { class:"note", text:`Type: ${ExerciseLibrary.typeLabel(ui.type)}` }),
+        el("div", { style:"height:10px" }),
+        el("div", { class:"row2" }, [
+          el("label", {}, [ el("span", { text:"Name" }), name ]),
+          el("label", {}, [ el("span", { text:"Equipment" }), equip ])
+        ]),
+        ui.type === "weightlifting"
+          ? el("div", { style:"margin-top:10px" }, [
+              el("label", {}, [ el("span", { text:"Primary muscle" }), primary ])
+            ])
+          : el("div", { style:"height:0px" }),
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn primary",
+            onClick: () => {
+              const nm = (name.value || "").trim();
+              if(!nm) return showToast("Name is required");
+              const payload = {
+                id: existing?.id || uid("ex"),
+                name: nm,
+                equipment: (equip.value || "").trim()
+              };
+              if(ui.type === "weightlifting"){
+                payload.primaryMuscle = (primary.value || "").trim();
+              }
+              if(isEdit) ExerciseLibrary.update(ui.type, payload);
+              else ExerciseLibrary.add(ui.type, payload);
+              Storage.save(state);
+              Modal.close();
+              showToast(isEdit ? "Updated" : "Added");
+              renderView();
+            }
+          }, [isEdit ? "Save" : "Add"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  }
+
+  return root;
+};
 Views.RoutineEditor = function(){
   ExerciseLibrary.ensureSeeded();
 
