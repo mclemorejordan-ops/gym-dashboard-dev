@@ -2686,22 +2686,18 @@ function openRoutinePicker(anchorBtn){
   const all = Routines.getAll() || [];
   const activeId = Routines.getActive()?.id || null;
 
-  // Pick the "main" routine for a template:
-  // 1) prefer exact name match to template name, else
-  // 2) first routine with that templateKey, else null
+  // Find an existing routine that was created from a template (preferred),
+  // otherwise fall back to name match (for older saved data).
   function findRoutineForTemplate(tpl){
-    const byKey = all.filter(r => r.templateKey === tpl.key);
-    if(byKey.length === 0) return null;
+    const byKey = all.find(r => String(r.templateKey || "") === String(tpl.key || ""));
+    if(byKey) return byKey;
 
-    const exact = byKey.find(r => normName(r.name) === normName(tpl.name));
-    if(exact) return exact;
-
-    // fallback: oldest created (stable pick)
-    return byKey.slice().sort((a,b) => (a.createdAt||0) - (b.createdAt||0))[0];
+    const byName = all.find(r => normName(r.name) === normName(tpl.name));
+    return byName || null;
   }
 
-  const body = el("div", {}, [
-    // Existing routines (always shown)
+  const body = el("div", { style:"max-height:70vh; overflow:auto; padding-right:4px;" }, [
+    // Existing routines (if any)
     el("div", { class:"popTitle", text:"Select routine" }),
     (all.length === 0)
       ? el("div", { class:"note", text:"No routines yet. Choose a template below to create one." })
@@ -2726,53 +2722,52 @@ function openRoutinePicker(anchorBtn){
           ]);
         })),
 
-    // Default templates (always shown, never duplicated)
+    // Default templates (always shown)
     el("div", { style:"height:10px" }),
     el("div", { class:"popTitle", text:"Default templates" }),
-    el("div", { style:"display:grid; gap:10px;" }, (RoutineTemplates || [])
-      // IMPORTANT: only show the 4 templates you listed (plus whatever else you keep intentionally, like Blank)
-      .filter(t => ["ppl","full_body_3","upper_lower","body_part_split","blank"].includes(t.key))
-      .map(tpl => {
-        const linked = findRoutineForTemplate(tpl);
-        const isActive = linked && linked.id === activeId;
 
-        return el("div", {
-          class:"popItem",
-          onClick: () => {
-            // If template already has a routine, activate it.
-            // If not, create ONE routine for that template (named exactly like the template).
-            if(linked){
-              Routines.setActive(linked.id);
-              routine = Routines.getActive();
-              selectedIndex = todayIndex;
+    el("div", { style:"display:grid; gap:10px;" }, (RoutineTemplates || []).map(tpl => {
+      const existing = findRoutineForTemplate(tpl);
+      const labelRight = existing ? "Activate" : "Add";
 
-              PopoverClose();
-              repaint();
-              showToast(`Activated: ${tpl.name}`);
-              return;
-            }
-
-            Routines.addFromTemplate(tpl.key, tpl.name); // nameOverride = tpl.name
+      return el("div", {
+        class:"popItem",
+        onClick: () => {
+          // If the template already exists as a routine, just activate it.
+          if(existing){
+            Routines.setActive(existing.id);
             routine = Routines.getActive();
             selectedIndex = todayIndex;
 
             PopoverClose();
             repaint();
-            showToast(`Created & activated: ${tpl.name}`);
+            showToast(`Active: ${existing.name}`);
+            return;
           }
-        }, [
-          el("div", { class:"l" }, [
-            el("div", { class:"n", text: tpl.name }),
-            el("div", { class:"m", text: tpl.desc || "Template" })
-          ]),
-          el("div", { class:"m", text: isActive ? "Active" : (linked ? "Activate" : "Create") })
-        ]);
-      })
-    )
+
+          // Otherwise create ONE routine for that template (no unique renaming here).
+          Routines.addFromTemplate(tpl.key, tpl.name);
+
+          routine = Routines.getActive();
+          selectedIndex = todayIndex;
+
+          PopoverClose();
+          repaint();
+          showToast(`Created: ${tpl.name}`);
+        }
+      }, [
+        el("div", { class:"l" }, [
+          el("div", { class:"n", text: tpl.name }),
+          el("div", { class:"m", text: tpl.desc || "Template" })
+        ]),
+        el("div", { class:"m", text: labelRight })
+      ]);
+    }))
   ]);
 
   PopoverOpen(anchorBtn, body);
 }
+
 
 
   // Phase 3: Per-exercise Workout Execution (logger)
