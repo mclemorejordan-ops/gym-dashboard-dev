@@ -740,6 +740,14 @@
       padding: 14px;
       transform: translateY(10px);
     }
+        .modalHost.center{
+      align-items:center;          /* center vertically */
+      padding: 14px 10px;          /* breathing room */
+    }
+    .modalHost.center .sheet{
+      border-radius: 22px;         /* full rounded card (not bottom sheet) */
+      transform: translateY(0);    /* remove bottom-sheet lift */
+    }
     .sheetHeader{
       display:flex;
       align-items:center;
@@ -2077,19 +2085,25 @@ function removeWorkoutEntriesForRoutineDay(dateISO, routineId, dayId){
     /********************
      * 5) Modal
      ********************/
-    const Modal = {
-      open({ title, bodyNode }){
+        const Modal = {
+      open({ title, bodyNode, center=false }){
         $("#modalTitle").textContent = title || "Modal";
         const host = $("#modalHost");
         const body = $("#modalBody");
+
+        // position mode
+        host.classList.toggle("center", !!center);
+
         body.innerHTML = "";
         if(bodyNode) body.appendChild(bodyNode);
+
         host.classList.add("show");
         host.setAttribute("aria-hidden","false");
       },
       close(){
         const host = $("#modalHost");
         host.classList.remove("show");
+        host.classList.remove("center");
         host.setAttribute("aria-hidden","true");
         $("#modalBody").innerHTML = "";
       }
@@ -2541,7 +2555,7 @@ Routine(){
 
   const today = new Date();
   const todayIndex = today.getDay();               // 0=Sun..6=Sat
-  const todayISO = today.toISOString().slice(0,10);
+  const todayISO = Dates.todayISO(); // local date (fixes Feb 14 UTC bug)
 
   let selectedIndex = todayIndex;
 
@@ -2593,6 +2607,12 @@ function openExerciseLogger(rx, day){
   const type = rx.type;
   const exerciseId = rx.exerciseId;
   const exName = resolveExerciseName(type, exerciseId, rx.nameSnap);
+
+    // Existing log for this routine-exercise on this date (so inputs persist)
+  const existingEntry = (state.logs?.workouts || []).find(e =>
+    e.dateISO === todayISO && e.routineExerciseId === rx.id
+  ) || null;
+
 
   const header = el("div", { class:"note" }, [
     `${exName} • ${ExerciseLibrary.typeLabel(type)} • ${todayISO}`
@@ -2678,7 +2698,15 @@ setNextNudge(next ? {
       ]));
     };
 
-    for(let i=0;i<4;i++) addRow();
+    const existingSets = (existingEntry?.sets || []);
+    const rowsToShow = Math.max(4, existingSets.length || 0);
+    for(let i=0; i<rowsToShow; i++){
+      const s = existingSets[i] || {};
+      addRow(
+        (s.weight ?? "") === 0 ? "" : String(s.weight ?? ""),
+        (s.reps ?? "") === 0 ? "" : String(s.reps ?? "")
+      );
+    }
 
     const addBtn = el("button", { class:"btn", onClick: () => addRow() }, ["+ Add set"]);
 
@@ -2735,6 +2763,16 @@ setNextNudge(next ? {
     const distInput = el("input", { type:"number", inputmode:"decimal", placeholder:"Distance", value:"" });
     const inclInput = el("input", { type:"number", inputmode:"decimal", placeholder:"Incline (optional)", value:"" });
 
+    // Prefill if already logged today
+    if(existingEntry?.sets?.[0]){
+      const s = existingEntry.sets[0];
+      const t = Math.max(0, Math.floor(Number(s.timeSec) || 0));
+      minInput.value = String(Math.floor(t / 60) || "");
+      secInput.value = String((t % 60) || "");
+      distInput.value = (s.distance != null && Number(s.distance) !== 0) ? String(s.distance) : "";
+      inclInput.value = (s.incline != null && String(s.incline) !== "0") ? String(s.incline) : "";
+    }
+    
     const saveBtn = el("button", {
       class:"btn primary",
       onClick: () => {
@@ -2799,6 +2837,18 @@ setNextNudge(next ? {
     const timeSecInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Sec", value:"" });
     const weightInput = el("input", { type:"number", inputmode:"decimal", placeholder:"Weight (optional)", value:"" });
 
+        // Prefill if already logged today
+    if(existingEntry?.sets?.[0]){
+      const s = existingEntry.sets[0];
+      setsInput.value = (s.sets != null && Number(s.sets) !== 0) ? String(s.sets) : "";
+      repsInput.value = (s.reps != null && Number(s.reps) !== 0) ? String(s.reps) : "";
+      const t = Math.max(0, Math.floor(Number(s.timeSec) || 0));
+      timeMinInput.value = String(Math.floor(t / 60) || "");
+      timeSecInput.value = String((t % 60) || "");
+      weightInput.value = (s.weight != null && Number(s.weight) !== 0) ? String(s.weight) : "";
+    }
+
+    
     const saveBtn = el("button", {
       class:"btn primary",
       onClick: () => {
@@ -2820,6 +2870,12 @@ setNextNudge(next ? {
         const summary = LogEngine.computeCoreSummary(sets);
         const pr = LogEngine.computePRFlags(type, exerciseId, summary);
 
+                // Replace existing entry for this date + routineExerciseId (upsert behavior)
+        state.logs.workouts = state.logs.workouts.filter(e =>
+          !(e.dateISO === todayISO && e.routineExerciseId === rx.id)
+        );
+
+        
         LogEngine.addEntry({
           id: uid("k"),
           createdAt: Date.now(),
@@ -2917,8 +2973,9 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
     });
   }
 
-  Modal.open({
+   Modal.open({
     title: "History",
+    center: true,
     bodyNode: el("div", { class:"grid" }, [
       head,
       list,
