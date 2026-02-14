@@ -2941,7 +2941,7 @@ else root.appendChild(el("div", { class:"card" }, [
             el("div", { class:"note", text:`This week: ${trainedThisWeek.filter(x => x.trained).length} sessions` })
           ]),
 
-          // ✅ NEW: Weight card (Weight tab replacement)
+// ✅ NEW: Weight card (Weight tab replacement)
           el("div", { class:"card" }, [
             el("h2", { text:"Weight" }),
             el("div", { class:"kpi" }, [
@@ -2953,21 +2953,8 @@ else root.appendChild(el("div", { class:"card" }, [
             el("div", { class:"btnrow" }, [
               el("button", { class:"btn primary", onClick: () => navigate("weight") }, ["Log weight"])
             ])
-          ]),
-
-          el("div", { class:"card" }, [
-            el("h2", { text:"Quick stats" }),
-            el("div", { class:"note", text:`Exercises saved: ${
-              (state.exerciseLibrary.weightlifting?.length||0) +
-              (state.exerciseLibrary.cardio?.length||0) +
-              (state.exerciseLibrary.core?.length||0)
-            }` }),
-            el("div", { style:"height:10px" }),
-            el("div", { class:"note", text:`Active routine: ${Routines.getActive()?.name || "—"}` })
           ])
         ]);
-
-
         function buildProteinTodayModal(dateISO, goal){
           const container = el("div", { class:"grid" });
 
