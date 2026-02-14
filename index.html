@@ -3381,7 +3381,7 @@ Routine(){
         ]);
       }
     }; // ✅ end Views object
-    RoutineEditor(){
+Views.RoutineEditor = function(){
   ExerciseLibrary.ensureSeeded();
 
   const root = el("div", { class:"grid" });
@@ -3640,7 +3640,7 @@ Routine(){
       ])
     });
   }
-}
+};
     /********************
      * 8) Boot
      ********************/
