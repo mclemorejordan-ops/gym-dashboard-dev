@@ -2239,173 +2239,135 @@ else if(currentRoute === "settings") root.appendChild(Views.Settings());
       },
 
 Routine(){
-  ExerciseLibrary.ensureSeeded();
-
   const root = el("div", { class:"grid" });
 
+  if(!state.profile){
+    root.appendChild(el("div", { class:"card note" }, ["Create a profile on Home first."]));
+    return root;
+  }
+
+  // ✅ Use the real routines engine (supports multiple routines + active switching)
   const routine = Routines.getActive();
   if(!routine){
+    root.appendChild(el("div", { class:"card note" }, ["No active routine. Create one in Settings."]));
+    return root;
+  }
+
+  const today = new Date();
+  const todayIndex = today.getDay(); // 0–6 (Sun–Sat)
+
+  // routine.days are stored in 0..6 order; also some versions include day.order
+  const day =
+    (routine.days || []).find(d => d.order === todayIndex) ||
+    (routine.days || [])[todayIndex] ||
+    null;
+
+  function openRoutinePicker(){
+    const all = Routines.getAll();
+
+    const body = el("div", { class:"grid" }, [
+      el("div", { class:"note" }, ["Select an active routine:"]),
+      el("div", { class:"list" }, all.map(r => {
+        const isActive = r.id === state.activeRoutineId;
+        return el("div", { class:"item" }, [
+          el("div", { class:"left" }, [
+            el("div", { class:"name", text: r.name || "Routine" }),
+            el("div", { class:"meta", text: isActive ? "Active" : "" })
+          ]),
+          el("div", { class:"actions" }, [
+            el("button", {
+              class:"mini" + (isActive ? " primary" : ""),
+              onClick: () => {
+                Routines.setActive(r.id);
+                Modal.close();
+                renderView();
+              }
+            }, [isActive ? "Active" : "Use"])
+          ])
+        ]);
+      }))
+    ]);
+
+    Modal.open({ title: "Routines", bodyNode: body });
+  }
+
+  root.appendChild(el("div", { class:"card" }, [
+    el("h2", {}, ["Routine"]),
+    el("div", { class:"note" }, [`${routine.name} • Mon–Sun`]),
+
+    el("div", { class:"btnrow", style:"margin-top:10px;" }, [
+      // ✅ This is now the dropdown/picker (NOT settings)
+      el("button", {
+        class:"btn ghost",
+        onClick: openRoutinePicker
+      }, [routine.name + " ▼"]),
+
+      el("button", {
+        class:"btn",
+        onClick: () => {
+          const first = document.querySelector("[data-unlogged='true']");
+          if(first){
+            first.scrollIntoView({ behavior:"smooth", block:"center" });
+            first.classList.add("pulse");
+            setTimeout(()=>first.classList.remove("pulse"),1200);
+          }
+        }
+      }, ["▶ Start Today"])
+    ])
+  ]));
+
+  // ✅ Rest day handling (you asked to still show today but mark Rest)
+  if(!day || day.isRest){
     root.appendChild(el("div", { class:"card" }, [
-      el("h2", { text:"Routine" }),
-      el("div", { class:"note", text:"No active routine found. Create one in Settings." }),
-      el("div", { style:"height:10px" }),
-      el("button", { class:"btn primary", onClick: () => navigate("settings") }, ["Go to Settings"])
+      el("h3", {}, ["Rest Day"]),
+      el("div", { class:"note" }, ["Today is a scheduled rest day."]),
+      el("div", { class:"note" }, ["(You can still log a workout manually if you want.)"])
     ]));
     return root;
   }
 
-  // Day selection state (local to this view render)
-  const today = new Date();
-  const todayIndex = today.getDay(); // 0=Sun..6=Sat
-  let selectedIndex = todayIndex;
+  // Active Day Header
+  root.appendChild(el("div", { class:"card" }, [
+    el("div", { class:"note" }, [`${["SUN","MON","TUE","WED","THU","FRI","SAT"][todayIndex]} — ${day.label || day.name || "Training"}`]),
+    el("div", { class:"note" }, [`${(day.exercises || []).length} exercises`])
+  ]));
 
-  const dayByIndex = (i) => (routine.days || []).find(d => d.order === i) || (routine.days || [])[i] || null;
+  // Weekly indicator
+  root.appendChild(el("div", { class:"card" }, [
+    el("div", { class:"note" }, ["S M T W T F S"]),
+    el("div", { class:"note" }, [
+      ["SUN","MON","TUE","WED","THU","FRI","SAT"]
+        .map((_,i)=> i===todayIndex ? "●" : "○")
+        .join(" ")
+    ])
+  ]));
 
-  const headerCard = el("div", { class:"card" }, []);
-  const dayHeaderCard = el("div", { class:"card" }, []);
-  const weekCard = el("div", { class:"card" }, []);
-  const exercisesHost = el("div", { class:"grid" }, []);
+  // Exercises
+  (day.exercises || []).forEach((rx)=>{
+    const ex = ExerciseStore.findById(rx.exerciseId);
+    if(!ex) return;
 
-  root.appendChild(headerCard);
-  root.appendChild(dayHeaderCard);
-  root.appendChild(weekCard);
-  root.appendChild(exercisesHost);
+    const logged = false; // logging logic comes next phase
 
-  // Header (Routine name + Start Today)
-  const routineNameBtn = el("button", {
-    class:"btn",
-    onClick: () => {
-      // For Phase 2 (visual only): send them to editor/settings
-      navigate("settings");
-    }
-  }, [`${routine.name} ▼`]);
+    const card = el("div", {
+      class:"card",
+      "data-unlogged": logged ? "false" : "true"
+    }, [
+      el("h3", {}, [ex.name]),
+      el("div", { class:"note" }, [`${rx.sets} × ${rx.reps}`]),
+      el("div", { class:"note" }, ["🏆 Lifetime Max: —"]),
+      el("div", { class:"btnrow" }, [
+        el("button", {
+          class:"btn",
+          onClick: ()=> alert("Log screen coming next phase")
+        }, ["Log Sets"]),
+        el("button", { class:"btn ghost" }, ["History →"])
+      ])
+    ]);
 
-  const startTodayBtn = el("button", {
-    class:"btn primary",
-    onClick: () => {
-      selectedIndex = todayIndex;
-      repaint();
-      // Phase 2: jump to first exercise card if present
-      setTimeout(() => {
-        const first = exercisesHost.querySelector("[data-unlogged='true']");
-        if(first) first.scrollIntoView({ behavior:"smooth", block:"center" });
-      }, 0);
-    }
-  }, ["▶ Start Today"]);
+    root.appendChild(card);
+  });
 
-  headerCard.appendChild(el("h2", { text:"Routine" }));
-  headerCard.appendChild(el("div", { class:"note", text:`${routine.name} • Mon–Sun` }));
-  headerCard.appendChild(el("div", { style:"height:10px" }));
-  headerCard.appendChild(el("div", { class:"btnrow" }, [ routineNameBtn, startTodayBtn ]));
-
-  // Day navigation
-  const prevBtn = el("button", {
-    class:"btn",
-    onClick: () => {
-      selectedIndex = (selectedIndex + 6) % 7;
-      repaint();
-    }
-  }, ["◀"]);
-
-  const nextBtn = el("button", {
-    class:"btn",
-    onClick: () => {
-      selectedIndex = (selectedIndex + 1) % 7;
-      repaint();
-    }
-  }, ["▶"]);
-
-  const dayTitle = el("div", { class:"note" });
-  const daySub = el("div", { class:"note" });
-
-  dayHeaderCard.appendChild(el("h2", { text:"Day" }));
-  dayHeaderCard.appendChild(el("div", { class:"btnrow" }, [prevBtn, dayTitle, nextBtn]));
-  dayHeaderCard.appendChild(daySub);
-
-  // Week indicator (dots)
-  const weekLabel = el("div", { class:"note", text:"S M T W T F S" });
-  const weekDots = el("div", { class:"note" });
-  weekCard.appendChild(el("h2", { text:"Week" }));
-  weekCard.appendChild(weekLabel);
-  weekCard.appendChild(weekDots);
-
-  function repaint(){
-    const day = dayByIndex(selectedIndex);
-
-    // Day header text
-    const dayNames = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
-    const label = day?.label || "Day";
-    dayTitle.textContent = `${dayNames[selectedIndex]} — ${label}`;
-    const exCount = (day?.exercises || []).length;
-    daySub.textContent = day?.isRest ? "Rest day" : `${exCount} exercises`;
-
-    // Week dots (today highlighted)
-    weekDots.textContent = ["SUN","MON","TUE","WED","THU","FRI","SAT"]
-      .map((_,i)=> i === todayIndex ? "●" : "○")
-      .join(" ");
-
-    // Exercises list
-    exercisesHost.innerHTML = "";
-
-    if(!day){
-      exercisesHost.appendChild(el("div", { class:"card" }, [
-        el("div", { class:"note", text:"No day found for this index. Open Settings → Routine Editor to fix mapping." }),
-        el("div", { style:"height:10px" }),
-        el("button", { class:"btn", onClick: () => navigate("settings") }, ["Open Settings"])
-      ]));
-      return;
-    }
-
-    if(day.isRest){
-      exercisesHost.appendChild(el("div", { class:"card" }, [
-        el("h2", { text:"Rest" }),
-        el("div", { class:"note", text:"Today is a scheduled rest day. (You can still train — logging comes next phase.)" })
-      ]));
-      return;
-    }
-
-    if((day.exercises || []).length === 0){
-      exercisesHost.appendChild(el("div", { class:"card" }, [
-        el("div", { class:"note", text:"No exercises on this day yet. Add exercises in Settings → Routine Editor." }),
-        el("div", { style:"height:10px" }),
-        el("button", { class:"btn primary", onClick: () => navigate("settings") }, ["Go to Settings"])
-      ]));
-      return;
-    }
-
-    day.exercises.forEach((rx) => {
-      const exName = resolveExerciseName(rx.type, rx.exerciseId, rx.nameSnap);
-
-      // Phase 2: no real logging yet, so all appear unlogged
-      const logged = false;
-
-      const max = lifetimeMaxSet(rx.type, rx.exerciseId);
-      const maxText = max ? `${max.weight} × ${max.reps}` : "—";
-
-      exercisesHost.appendChild(el("div", {
-        class:"card",
-        id: `rx_${rx.id}`,
-        "data-unlogged": logged ? "false" : "true"
-      }, [
-        el("div", { style:"display:flex; justify-content:space-between; gap:10px; align-items:flex-start;" }, [
-          el("div", {}, [
-            el("div", { style:"font-weight:820; letter-spacing:.15px;" , text: exName }),
-            el("div", { class:"note", text: `Type: ${ExerciseLibrary.typeLabel(rx.type)}` })
-          ]),
-          el("div", { class:"note", text: logged ? "✓ Logged" : "" })
-        ]),
-        el("div", { style:"height:8px" }),
-        el("div", { class:"note", text: `🏆 Lifetime Max: ${maxText}` }),
-        el("div", { style:"height:10px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", { class:"btn primary", onClick: () => alert("Workout Execution screen comes next phase.") }, ["Log Sets"]),
-          el("button", { class:"btn", onClick: () => navigate("progress") }, ["Exercise History →"])
-        ])
-      ]));
-    });
-  }
-
-  repaint();
   return root;
 },
 
