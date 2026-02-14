@@ -1296,6 +1296,60 @@ const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
       },
       sameISO(a,b){ return String(a) === String(b); }
     };
+        /********************
+     * Settings helpers (added)
+     ********************/
+    function bytesToNice(bytes){
+      const n = Number(bytes || 0);
+      if(!isFinite(n) || n <= 0) return "0 B";
+      const units = ["B","KB","MB","GB","TB"];
+      let v = n;
+      let i = 0;
+      while(v >= 1024 && i < units.length-1){
+        v /= 1024;
+        i++;
+      }
+      const dp = (i === 0) ? 0 : (v >= 10 ? 1 : 2);
+      return `${v.toFixed(dp)} ${units[i]}`;
+    }
+
+    function appStorageBytes(){
+      // Approximate localStorage usage for this origin
+      let total = 0;
+      try{
+        for(let i=0; i<localStorage.length; i++){
+          const k = localStorage.key(i);
+          const v = localStorage.getItem(k) || "";
+          total += (k ? k.length : 0) + v.length;
+        }
+      }catch(e){
+        // If storage is blocked, just report 0
+        total = 0;
+      }
+      // JS strings are ~2 bytes/char in UTF-16
+      return total * 2;
+    }
+
+    function confirmModal({ title="Confirm", message="Are you sure?", confirmText="Confirm", danger=false, onConfirm }){
+      const btnClass = danger ? "btn danger" : "btn primary";
+      Modal.open({
+        title,
+        bodyNode: el("div", {}, [
+          el("div", { class:"note", text: message }),
+          el("div", { style:"height:12px" }),
+          el("div", { class:"btnrow" }, [
+            el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]),
+            el("button", {
+              class: btnClass,
+              onClick: () => {
+                try{ if(typeof onConfirm === "function") onConfirm(); }
+                finally{ Modal.close(); }
+              }
+            }, [confirmText])
+          ])
+        ])
+      });
+    }
 
     function getTodayWorkout(){
       const routine = Routines.getActive();
@@ -4320,11 +4374,18 @@ function openLogEntryEditor(entry){
         const nameInput = el("input", { type:"text", value: state.profile?.name || "" });
         const proteinInput = el("input", { type:"number", min:"0", step:"1", value: state.profile?.proteinGoal || 150 });
 
-        const weekSelect = el("select", {});
-        ["Sunday","Monday"].forEach((d,i) => {
-          weekSelect.appendChild(el("option", { value: String(i), text: d }));
-        });
-        weekSelect.value = String(state.profile?.weekStartsOn ?? 1);
+               const weekSelect = el("select", {});
+        weekSelect.appendChild(el("option", { value:"sun", text:"Sunday" }));
+        weekSelect.appendChild(el("option", { value:"mon", text:"Monday" }));
+
+        // Backward compatible: accept older numeric values (0/1) if they exist
+        const ws = state.profile?.weekStartsOn;
+        const normalized =
+          (ws === 0 || ws === "0" || ws === "sun") ? "sun" :
+          (ws === 1 || ws === "1" || ws === "mon") ? "mon" :
+          "mon";
+        weekSelect.value = normalized;
+
 
         const hideRestSwitch = el("input", { type:"checkbox" });
         hideRestSwitch.checked = !!state.profile?.hideRestDays;
@@ -4333,7 +4394,7 @@ function openLogEntryEditor(entry){
           state.profile = state.profile || {};
           state.profile.name = (nameInput.value || "").trim();
           state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
-          state.profile.weekStartsOn = Number(weekSelect.value || 0);
+          state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
           state.profile.hideRestDays = !!hideRestSwitch.checked;
           Storage.save(state);
           showToast("Saved");
