@@ -3631,29 +3631,48 @@ Progress(){
     renderStats(statsHost, desc);
 
     // Table
-    tableHost.innerHTML = "";
-    if(desc.length === 0){
-      tableHost.appendChild(el("div", { class:"note", text:"No logs in this range yet. Log sets from Routine → Log Sets." }));
-    }else{
-      desc.slice(0, 40).forEach(e => {
-        tableHost.appendChild(el("div", { class:"item" }, [
-          el("div", { class:"left" }, [
-            el("div", { class:"name", text: e.dateISO }),
-            el("div", { class:"meta", text: tableLine(e) })
-          ]),
-          el("div", { class:"actions" }, [
-            el("div", { class:"meta", text: prLine(e.pr) }),
-            el("div", { style:"height:8px" }),
-            el("button", {
-              class:"btn danger",
-              onClick: () => confirmDeleteLog(e)
-            }, ["Delete"])
-          ])
-        ]));
-
-      });
-    }
-
+// Table
+tableHost.innerHTML = "";
+if(desc.length === 0){
+  tableHost.appendChild(el("div", { class:"note", text:"No logs in this range yet. Log sets from Routine → Log Sets." }));
+}else{
+  desc.slice(0, 40).forEach(e => {
+    tableHost.appendChild(el("div", { class:"item" }, [
+      el("div", { class:"left" }, [
+        el("div", { class:"name", text: e.dateISO }),
+        el("div", { class:"meta", text: tableLine(e) })
+      ]),
+      el("div", { class:"actions" }, [
+        el("div", { class:"meta", text: prLine(e.pr) }),
+        el("button", {
+          class:"btn danger",
+          onClick: () => {
+            Modal.open({
+              title: "Delete entry?",
+              center: true,
+              bodyNode: el("div", {}, [
+                el("div", { class:"note", text:`Delete this log from ${e.dateISO}? This can’t be undone.` }),
+                el("div", { style:"height:12px" }),
+                el("div", { class:"btnrow" }, [
+                  el("button", {
+                    class:"btn danger",
+                    onClick: () => {
+                      state.logs.workouts = (state.logs.workouts || []).filter(x => x.id !== e.id);
+                      Storage.save(state);
+                      Modal.close();
+                      repaint(true);
+                    }
+                  }, ["Delete"]),
+                  el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                ])
+              ])
+            });
+          }
+        }, ["Delete"])
+      ])
+    ]));
+  });
+}
     // Chart
     if(asc.length < 2){
       destroyProgressChart();
