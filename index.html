@@ -1149,25 +1149,52 @@ button.mini.added{
 .setLink .a{ font-weight: 800; }
 .setLink .b{ font-size: 12px; color: var(--muted); }
   
-  /* iPhone / touch devices: tighten spacing + typography without affecting desktop */
-@media (hover:none) and (pointer:coarse){
-  :root{ --navH: 70px; }
+/* ✅ iPhone sizing scale (shrinks Home cards, text, buttons, nav) */
+@media (max-width: 500px){
+  :root{
+    --r: 16px;
+    --navH: 66px;
+  }
 
-  .title{ font-size: 16px; }
-  .subtitle{ font-size: 11px; }
+  /* overall spacing */
+  .app{
+    padding: 0 12px calc(var(--navH) + env(safe-area-inset-bottom)) 12px;
+  }
+  main{ padding-top: 8px; }
 
-  header{ padding: calc(env(safe-area-inset-top) + 10px) 0 8px 0; }
+  /* header typography */
+  .brand .title{ font-size: 16px; }
+  .brand .subtitle{ font-size: 11px; }
+  .chip{ padding: 8px 10px; font-size: 12px; }
 
-  .chip{
+  /* cards + headings (BIGGEST home shrink impact) */
+  .card{ padding: 12px; }
+  .card h2{
+    font-size: 12px;
+    margin: 0 0 8px 0;
+  }
+
+  /* buttons */
+  .btn{
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  /* KPI typography (your “08:05 PM”, numbers, etc.) */
+  .kpi .big{ font-size: 20px; }
+  .kpi .small{ font-size: 12px; }
+
+  /* pills / segmented controls */
+  .pill{
     padding: 8px 10px;
     font-size: 12px;
   }
 
+  /* bottom nav */
   .navbar{
     padding: 6px;
     border-radius: 20px;
   }
-
   .navbtn{
     padding: 8px 6px;
     font-size: 11px;
@@ -1179,15 +1206,8 @@ button.mini.added{
     border-radius: 9px;
   }
 
-  .pill{
-    padding: 8px 10px;
-    font-size: 12px;
-  }
-
-  .sheet{
-    border-radius: 20px 20px 0 0;
-    padding: 12px;
-  }
+  /* charts */
+  canvas{ height: 220px; }
 }
   </style>
 </head>
