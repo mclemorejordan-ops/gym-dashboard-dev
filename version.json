@@ -1,1 +1,9 @@
-{ "version": "1.1" }
+{
+  "version": "1.1",
+  "buildDate": "2026-02-15",
+  "notes": [
+    "Added release notes to About modal",
+    "Update system now shows Downloading… while the new build installs",
+    "Reload to update applies the new build without clearing your profile"
+  ]
+}
