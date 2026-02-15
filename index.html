@@ -3431,7 +3431,14 @@ const root = el("div", { class:"routinePage" });
       : ((index - 1 + 7) % 7); // Mon=0 ... Sun=6
     return Dates.addDaysISO(weekStartISO, offset);
   }
+  // Label date as Today / Tomorrow / "Feb 15"
+  function prettyDayTag(dateISO){
+    if(dateISO === todayISO) return "Today";
+    if(dateISO === Dates.addDaysISO(todayISO, 1)) return "Tomorrow";
 
+    const d = new Date(dateISO + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month:"short", day:"numeric" }); // e.g., "Feb 15"
+  }
 
   function getDay(index){
     routine = Routines.getActive(); // ✅ always refresh active routine
@@ -4042,7 +4049,7 @@ fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
         el("div", { class:"carouselMid" }, [
           el("div", {
             class:"carouselTitle",
-            text: `${["SUN","MON","TUE","WED","THU","FRI","SAT"][selectedIndex]} — ${day.label || "Day"} • ${selectedDateISO}`
+            text: `${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][selectedIndex]} • ${day.label || "Day"} • ${prettyDayTag(selectedDateISO)}`
           }),
           el("div", {
             class:"carouselSub",
