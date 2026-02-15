@@ -4191,7 +4191,7 @@ Progress(){
   const metricRow = el("div", { class:"segRow" });
 
   // Overview host (compact KPIs)
-  const statsHost = el("div", { class:"overviewList", style:"margin-top:8px;" });
+const statsHost = el("div", { class:"pillRow", style:"margin-top:8px;" });
 
   topCard.appendChild(el("div", { class:"note", text:"Type + search to select an exercise." }));
   topCard.appendChild(typeRow);
@@ -4202,15 +4202,16 @@ Progress(){
 
   topCard.appendChild(el("div", { style:"height:10px" }));
 
-  topCard.appendChild(el("div", { class:"row2" }, [
-    el("label", {}, [ el("span", { text:"Routine" }), routineSelect ]),
-    el("label", {}, [ el("span", { text:"Range" }), el("div", { style:"display:flex; gap:8px; flex-wrap:wrap;" }, [ rangeRow ]) ])
-  ]));
-
-  topCard.appendChild(el("div", { class:"row2" }, [
-    el("label", {}, [ el("span", { text:"From" }), fromInput ]),
-    el("label", {}, [ el("span", { text:"To" }), toInput ])
-  ]));
+// Dates (single-line)
+topCard.appendChild(el("div", {
+  style:"display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:2px;"
+}, [
+  el("div", { class:"note", text:"From:" }),
+  fromInput,
+  el("div", { class:"note", text:"|" }),
+  el("div", { class:"note", text:"To:" }),
+  toInput
+]));
 
   topCard.appendChild(el("div", { style:"height:8px" }));
   topCard.appendChild(el("div", { class:"note", text:"Metric" }));
@@ -4441,12 +4442,12 @@ Progress(){
     }
 
     // Filter entries for selected exercise
-    const all = (state.logs?.workouts || []).filter(e =>
-      e.type === type &&
-      e.exerciseId === exerciseId &&
-      (!routineId || e.routineId === routineId) &&
-      (e.dateISO >= fromISO && e.dateISO <= toISO)
-    );
+const all = (state.logs?.workouts || []).filter(e =>
+  e.type === type &&
+  e.exerciseId === exerciseId &&
+  (e.dateISO >= fromISO && e.dateISO <= toISO)
+);
+
 
     // Overview KPIs
     const desc = all.slice().sort((a,b) => (b.dateISO||"").localeCompare(a.dateISO||"") || (b.createdAt||0)-(a.createdAt||0));
@@ -4455,18 +4456,13 @@ Progress(){
     const bests = LogEngine.lifetimeBests(type, exerciseId);
     const bestText = bestsText(type, bests);
 
-    statsHost.appendChild(el("div", { class:"ovItem" }, [
-      el("div", { class:"ovA", text:"Sessions" }),
-      el("div", { class:"ovB", text:String(all.length) })
-    ]));
-    statsHost.appendChild(el("div", { class:"ovItem" }, [
-      el("div", { class:"ovA", text:"Lifetime best" }),
-      el("div", { class:"ovB", text: bestText || "—" })
-    ]));
-    statsHost.appendChild(el("div", { class:"ovItem" }, [
-      el("div", { class:"ovA", text:"Latest" }),
-      el("div", { class:"ovB", text: latest ? tableLine(latest) : "—" })
-    ]));
+    // Overview (single pill): { PR: xxx | Last: xxx }
+const prVal = formatMetricValue(type, metric, prForMetric(type, metric, bests));
+const lastVal = latest ? formatMetricValue(type, metric, metricValue(type, metric, latest)) : "—";
+
+statsHost.appendChild(el("div", { class:"pill" }, [
+  el("div", { class:"t", text:`{ PR: ${prVal} | Last: ${lastVal} }` })
+]));
 
     // Chart (ascending for series builder)
     const asc = all.slice().sort((a,b) => (a.dateISO||"").localeCompare(b.dateISO||"") || (a.createdAt||0)-(b.createdAt||0));
@@ -4476,7 +4472,7 @@ Progress(){
     }else{
       const series = buildSeries(type, asc);
       renderProgressChart(canvas, type, metric, series);
-      chartNote.textContent = `${asc.length} points • ${fromISO} → ${toISO}${routineId ? " • Filtered by routine" : ""}`;
+      chartNote.textContent = `${asc.length} points • ${fromISO} → ${toISO}`;
     }
 
     // History table
@@ -4519,7 +4515,72 @@ Progress(){
     return bv || "";
   }
 },
+function metricValue(type, metric, entry){
+  try{
+    if(!entry) return null;
 
+    if(type === "weightlifting"){
+      if(metric === "topWeight") return entry.summary?.bestWeight ?? entry.summary?.topWeight ?? null;
+      if(metric === "est1RM")    return entry.summary?.est1RM ?? null;
+      if(metric === "volume")    return entry.summary?.totalVolume ?? null;
+      return entry.summary?.bestWeight ?? null;
+    }
+
+    if(type === "cardio"){
+      if(metric === "pace")     return entry.summary?.paceSecPerUnit ?? null;
+      if(metric === "distance") return entry.summary?.distance ?? null;
+      if(metric === "timeSec")  return entry.summary?.timeSec ?? null;
+      return entry.summary?.paceSecPerUnit ?? null;
+    }
+
+    // core
+    if(metric === "volume") return entry.summary?.totalVolume ?? null;
+    return entry.summary?.totalVolume ?? null;
+  }catch(e){
+    return null;
+  }
+}
+
+function prForMetric(type, metric, bests){
+  try{
+    if(!bests) return null;
+
+    if(type === "weightlifting"){
+      if(metric === "topWeight") return bests.bestWeight ?? null;
+      if(metric === "est1RM")    return bests.best1RM ?? null;
+      if(metric === "volume")    return bests.bestVolume ?? null;
+      return bests.bestWeight ?? null;
+    }
+
+    if(type === "cardio"){
+      if(metric === "pace")     return bests.bestPace ?? null;
+      if(metric === "distance") return bests.bestDistance ?? null;
+      if(metric === "timeSec")  return bests.bestTime ?? null;
+      return bests.bestPace ?? null;
+    }
+
+    // core
+    if(metric === "volume") return bests.bestVolume ?? null;
+    return bests.bestVolume ?? null;
+  }catch(e){
+    return null;
+  }
+}
+
+function formatMetricValue(type, metric, v){
+  if(v == null) return "—";
+
+  // cardio formatting
+  if(type === "cardio" && metric === "pace") return formatPace(v);
+  if(type === "cardio" && metric === "timeSec") return formatTime(v);
+
+  // numeric formatting
+  if(typeof v === "number"){
+    const n = Math.round(v * 10) / 10;
+    return String(n);
+  }
+  return String(v);
+}
   
   Weight(){
   WeightEngine.ensure();
