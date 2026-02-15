@@ -799,6 +799,16 @@ body.modalOpen{
       padding: 14px;
       transform: translateY(10px);
     }
+    /* Modal size variants */
+.sheet.md{
+  width: min(780px, 100%);
+}
+
+.sheet.sm{
+  width: min(520px, 100%);
+  max-height: min(520px, calc(100dvh - 32px));
+}
+
     /* iOS: prevent input focus zoom inside modals (keep inputs at 16px on iPhone) */
 @media (hover:none) and (pointer:coarse){
   .modalHost .sheet input,
@@ -2688,34 +2698,76 @@ function unlockBodyScroll(){
 }
 
 const Modal = {
-  open({ title, bodyNode, center=true }){
-    $("#modalTitle").textContent = title || "Modal";
+  open({ title, bodyNode, center = true, size = "md" }){
     const host = $("#modalHost");
     const body = $("#modalBody");
+    const sheet = host.querySelector(".sheet");
 
-    // position mode
+    $("#modalTitle").textContent = title || "Modal";
+
+    // Position mode
     host.classList.toggle("center", !!center);
+
+    // Size mode
+    if(sheet){
+      sheet.classList.remove("sm", "md", "lg");
+      sheet.classList.add(size);
+    }
 
     body.innerHTML = "";
     if(bodyNode) body.appendChild(bodyNode);
 
     host.classList.add("show");
-    host.setAttribute("aria-hidden","false");
+    host.setAttribute("aria-hidden", "false");
 
-    // ✅ lock background scroll for every modal
     lockBodyScroll();
   },
+
   close(){
     const host = $("#modalHost");
+    const sheet = host.querySelector(".sheet");
+
     host.classList.remove("show");
     host.classList.remove("center");
-    host.setAttribute("aria-hidden","true");
+    host.setAttribute("aria-hidden", "true");
+
     $("#modalBody").innerHTML = "";
 
-    // ✅ unlock background scroll
+    // Reset size classes
+    if(sheet){
+      sheet.classList.remove("sm", "md", "lg");
+    }
+
     unlockBodyScroll();
   }
 };
+    (function bindModalControls(){
+  const closeBtn = $("#modalClose");
+  const backdrop = $("#modalBackdrop");
+
+  if(closeBtn){
+    closeBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      Modal.close();
+    });
+  }
+
+  if(backdrop){
+    backdrop.addEventListener("click", (e) => {
+      e.preventDefault();
+      Modal.close();
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "Escape"){
+      const host = $("#modalHost");
+      if(host && host.classList.contains("show")){
+        Modal.close();
+      }
+    }
+  });
+})();
 
     /********************
      * 6) Router + Views
@@ -3139,32 +3191,35 @@ else root.appendChild(el("div", { class:"card" }, [
             const gramsInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Protein grams", min:"0", value: meal?.grams ?? "" });
             const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
 
-            Modal.open({
-              title: meal ? "Edit meal" : "Add meal",
-              bodyNode: el("div", {}, [
-                el("label", {}, [ el("span", { text:"Label" }), labelInput ]),
-                el("label", {}, [ el("span", { text:"Protein (grams)" }), gramsInput ]),
-                err,
-                el("div", { style:"height:12px" }),
-                el("div", { class:"btnrow" }, [
-                  el("button", {
-                    class:"btn primary",
-                    onClick: () => {
-                      err.style.display = "none";
-                      const label = (labelInput.value || "").trim();
-                      const grams = Number(gramsInput.value);
-                      if(!label){ err.textContent="Label required."; err.style.display="block"; return; }
-                      if(!Number.isFinite(grams) || grams < 0){ err.textContent="Enter valid grams."; err.style.display="block"; return; }
-                      upsertMeal(dateISO, meal?.id || null, label, grams);
-                      Modal.close();
-                      repaint();
-                      renderView(); // update ring live
-                    }
-                  }, ["Save"]),
-                  el("button", { class:"btn", onClick: () => { Modal.close(); } }, ["Cancel"])
-                ])
-              ])
-            });
+      Modal.open({
+  title: meal ? "Edit meal" : "Add meal",
+  size: "sm",
+  center: true,
+  bodyNode: el("div", {}, [
+    el("label", {}, [ el("span", { text:"Label" }), labelInput ]),
+    el("label", {}, [ el("span", { text:"Protein (grams)" }), gramsInput ]),
+    err,
+    el("div", { style:"height:12px" }),
+    el("div", { class:"btnrow" }, [
+      el("button", {
+        class:"btn primary",
+        onClick: () => {
+          err.style.display = "none";
+          const label = (labelInput.value || "").trim();
+          const grams = Number(gramsInput.value);
+          if(!label){ err.textContent="Label required."; err.style.display="block"; return; }
+          if(!Number.isFinite(grams) || grams < 0){ err.textContent="Enter valid grams."; err.style.display="block"; return; }
+          upsertMeal(dateISO, meal?.id || null, label, grams);
+          Modal.close();
+          repaint();
+          renderView(); // update ring live
+        }
+      }, ["Save"]),
+      el("button", { class:"btn", onClick: () => { Modal.close(); } }, ["Cancel"])
+    ])
+  ])
+});
+
           }
 
           const addBtn = el("button", { class:"btn primary", onClick: () => openMealEditor(null) }, ["Add meal"]);
