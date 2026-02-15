@@ -3192,19 +3192,25 @@ function openVersionModal(){
 }
 
 function bindHeaderPills(){
+  // Prevent double-binding if navigate/renderView calls this more than once
+  if(window.__headerPillsBound) return;
+  window.__headerPillsBound = true;
+
   const verPill  = $("#verPill");
   const syncPill = $("#syncPill");
 
   if(verPill) verPill.addEventListener("click", openVersionModal);
+
   if(syncPill) syncPill.addEventListener("click", async () => {
-    // Tapping status pill checks updates when online
+    // Always show the modal so the user sees status + actions
     await checkForUpdates();
-    if(__updateAvailable) openVersionModal();
+    openVersionModal();
   });
 
   window.addEventListener("online",  () => { setHeaderPills(); checkForUpdates(); });
   window.addEventListener("offline", () => setHeaderPills());
 }
+
     let __headerPillsBound = false;
 
 function bindHeaderPills(){
@@ -6343,6 +6349,9 @@ window.addEventListener("resize", updateLayoutVars);
 ensureFloatNext(); // Phase 3: enable Floating Next → nudge container
 renderNav();
 renderView();
+bindHeaderPills();
+setHeaderPills();
+checkForUpdates();
   </script>
 </body>
 </html>
