@@ -3935,7 +3935,7 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
     // ────────────────────────────
 fixedHost.appendChild(el("div", { class:"card" }, [
       el("h2", { text:"Routine" }),
-      el("div", { class:"note", text:`${routine.name} • ${weekStartsOn === "sun" ? "Sun–Sat" : "Mon–Sun"} • ${weekStartISO} → ${Dates.addDaysISO(weekStartISO, 6)}` }),
+      el("div", { class:"note", text:`${routine.name} • ${weekStartsOn === "sun" ? "Sun–Sat" : "Mon–Sun"}` }),
 
       el("div", { style:"height:10px" }),
 
