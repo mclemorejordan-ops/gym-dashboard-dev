@@ -512,7 +512,39 @@ header{
       background: rgba(124,92,255,.14);
       border-color: rgba(124,92,255,.22);
     }
-
+/* Header: Synced/Offline + Version pills */
+.subPills{
+  display:flex;
+  gap: 8px;
+  align-items:center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.subPill{
+  appearance:none;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.86);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  cursor: pointer;
+}
+.subPill:active{ transform: scale(.98); }
+.subPill.warn{
+  border-color: rgba(255,180,0,.35);
+  background: rgba(255,180,0,.14);
+}
+.subPill.ok{
+  border-color: rgba(124,92,255,.40);
+  background: rgba(124,92,255,.16);
+}
+.subPill.off{
+  border-color: rgba(255,255,255,.16);
+  background: rgba(255,255,255,.06);
+}
     .dayGrid{
       display:grid;
       gap:10px;
@@ -1436,10 +1468,12 @@ button.mini.added{
       <div class="topbar">
         <div class="brand">
           <div class="title" id="appTitle">Gym Dashboard</div>
-          <div class="subtitle" id="appSubtitle">Offline • Add to Home Screen • Local data</div>
-        </div>
-        <div class="chip" id="chipStatus">Not set up</div>
-      </div>
+      <div class="subtitle" id="appSubtitle">
+  <div class="subPills">
+    <button class="subPill" id="syncPill" type="button">Offline</button>
+    <button class="subPill" id="verPill" type="button">v0.0.0</button>
+  </div>
+</div>
     </header>
 
     <main id="viewRoot"></main>
@@ -1465,7 +1499,16 @@ button.mini.added{
     /********************
      * 1) State + Storage
      ********************/
-    const STORAGE_KEY = "gymdash:v1";
+const STORAGE_KEY = "gymdash:v1";
+
+// Manual version (YOU bump this when you commit/publish)
+const APP_VERSION = "0.7.2";
+
+// Remote version file (YOU create/maintain this in GitHub)
+const REMOTE_VERSION_URL = "./version.json"; 
+
+// Version shown in header (update this when you publish a new build)
+const APP_VERSION = "1.1";
 
     const DefaultState = () => ({
       schemaVersion: 1,
@@ -3039,11 +3082,121 @@ function renderNav(){
 
     let currentRoute = "home";
 
-    function setChip(){
-      const chip = $("#chipStatus");
-      if(state.profile?.name) chip.textContent = `Hi, ${state.profile.name}`;
-      else chip.textContent = "Not set up";
-    }
+function setChip(){
+  const chip = $("#chipStatus");
+  if(!chip) return;
+
+  if(state.profile?.name) chip.textContent = `Hi, ${state.profile.name}`;
+  else chip.textContent = "Not set up";
+}
+let __remoteVersion = null;
+let __updateAvailable = false;
+
+function setHeaderPills(){
+  const syncPill = $("#syncPill");
+  const verPill  = $("#verPill");
+  if(!syncPill || !verPill) return;
+
+  // Version pill text
+  verPill.textContent = `v${APP_VERSION}`;
+
+  // Sync pill state
+  if(!navigator.onLine){
+    syncPill.textContent = "Offline";
+    syncPill.classList.remove("ok","warn");
+    syncPill.classList.add("off");
+    return;
+  }
+
+  if(__updateAvailable){
+    syncPill.textContent = "Update Available";
+    syncPill.classList.remove("ok","off");
+    syncPill.classList.add("warn");
+  }else{
+    syncPill.textContent = "Synced";
+    syncPill.classList.remove("warn","off");
+    syncPill.classList.add("ok");
+  }
+}
+
+async function checkForUpdates(){
+  __updateAvailable = false;
+  __remoteVersion = null;
+
+  if(!navigator.onLine){
+    setHeaderPills();
+    return { ok:false, reason:"offline" };
+  }
+
+  try{
+    // cache-bust so GitHub Pages doesn't serve stale JSON
+    const url = `${REMOTE_VERSION_URL}?t=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const remote = String(data?.version || "").trim();
+    if(remote) __remoteVersion = remote;
+
+    // If remote version differs, user needs refresh
+    __updateAvailable = !!(remote && remote !== String(APP_VERSION));
+    setHeaderPills();
+    return { ok:true, remoteVersion: remote, updateAvailable: __updateAvailable };
+  }catch(e){
+    // If fetch fails, just fall back to "Synced" when online
+    __updateAvailable = false;
+    setHeaderPills();
+    return { ok:false, reason:"fetch_failed" };
+  }
+}
+
+function openVersionModal(){
+  const lines = [];
+  lines.push(el("div", { class:"note", text:`Version: v${APP_VERSION}` }));
+  lines.push(el("div", { class:"note", text:`Remote: ${__remoteVersion ? "v"+__remoteVersion : "—"}` }));
+  lines.push(el("div", { style:"height:10px" }));
+
+  const msg = __updateAvailable
+    ? "A newer version is available. Reload to apply the update."
+    : (navigator.onLine ? "You’re up to date." : "You’re offline. Updates can’t be checked right now.");
+
+  lines.push(el("div", { class:"note", text: msg }));
+  lines.push(el("div", { style:"height:12px" }));
+
+  lines.push(el("div", { class:"btnrow" }, [
+    el("button", {
+      class:"btn",
+      onClick: async () => {
+        const r = await checkForUpdates();
+        showToast(r.ok ? (r.updateAvailable ? "Update available" : "Up to date") : "Couldn’t check updates");
+      }
+    }, ["Check for updates"]),
+    el("button", {
+      class:"btn primary",
+      onClick: () => location.reload()
+    }, [__updateAvailable ? "Reload to update" : "Reload"])
+  ]));
+
+  Modal.open({
+    title: "About",
+    bodyNode: el("div", { class:"grid" }, lines)
+  });
+}
+
+function bindHeaderPills(){
+  const verPill  = $("#verPill");
+  const syncPill = $("#syncPill");
+
+  if(verPill) verPill.addEventListener("click", openVersionModal);
+  if(syncPill) syncPill.addEventListener("click", async () => {
+    // Tapping status pill checks updates when online
+    await checkForUpdates();
+    if(__updateAvailable) openVersionModal();
+  });
+
+  window.addEventListener("online",  () => { setHeaderPills(); checkForUpdates(); });
+  window.addEventListener("offline", () => setHeaderPills());
+}
+    
 
     function navigate(routeKey){
       destroyProgressChart();
@@ -3051,11 +3204,15 @@ function renderNav(){
       currentRoute = routeKey;
       renderNav();
       renderView();
+      bindHeaderPills();
+      checkForUpdates();
+
     }
 
 
     function renderView(){
-      setChip();
+setChip();
+setHeaderPills();
       const root = $("#viewRoot");
       root.innerHTML = "";
 
