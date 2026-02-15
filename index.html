@@ -3136,7 +3136,28 @@ async function checkForUpdates(){
     setHeaderPills();
     return { ok:false, reason:"offline" };
   }
+async function hardReloadToUpdate(){
+  try{
+    // If a service worker exists, unregister it so it can't keep serving cached assets
+    if("serviceWorker" in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
 
+    // Clear Cache Storage if available (covers SW + fetch caches)
+    if(window.caches){
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  }catch(e){
+    // ignore and still reload
+  }
+
+  // Cache-bust the URL to force a fresh fetch (works on GitHub Pages)
+  const url = new URL(location.href);
+  url.searchParams.set("r", String(Date.now()));
+  location.replace(url.toString());
+}
   try{
     // cache-bust so GitHub Pages doesn't serve stale JSON
     const url = `${REMOTE_VERSION_URL}?t=${Date.now()}`;
@@ -3181,7 +3202,7 @@ function openVersionModal(){
     }, ["Check for updates"]),
     el("button", {
       class:"btn primary",
-      onClick: () => location.reload()
+      onClick: () => hardReloadToUpdate()
     }, [__updateAvailable ? "Reload to update" : "Reload"])
   ]));
 
