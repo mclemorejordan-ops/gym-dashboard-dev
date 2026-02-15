@@ -1040,7 +1040,25 @@ body.modalOpen{
   flex-direction:column;
   gap:10px;
 }
+/* ✅ Routine carousel: compact Rest days */
+.carouselCard.isRest{
+  padding: 10px;
+  gap: 6px;
+}
+.carouselCard.isRest .carouselMid{
+  flex: 0;          /* prevents the card from feeling “tall/empty” */
+}
+.carouselCard.isRest .carouselSub{
+  display: none;    /* removes redundant “Rest” subline */
+}
 
+/* ✅ Rest day content card (below carousel) */
+.restCard{
+  padding: 10px;
+}
+.restCard h2{
+  margin: 0 0 6px 0;
+}
 .carouselTop{
   display:flex;
   align-items:center;
@@ -4087,7 +4105,7 @@ fixedHost.appendChild(el("div", { class:"card" }, [
     // ────────────────────────────
     // 3D Card Carousel (visual container)
     // ────────────────────────────
-fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
+fixedHost.appendChild(el("div", { class:"card carouselCard" + (day.isRest ? " isRest" : "") }, [
       el("div", { class:"carouselTop" }, [
         el("button", {
           class:"btn",
@@ -4124,7 +4142,7 @@ fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
 
     // Rest Day
     if(day.isRest){
-scrollHost.appendChild(el("div", { class:"card" }, [
+scrollHost.appendChild(el("div", { class:"card restCard" }, [
         el("h2", { text:"Rest" }),
         el("div", { class:"note", text:`Rest day scheduled for ${selectedDateISO}.` })
       ]));
