@@ -1176,129 +1176,137 @@ body.modalOpen{
 .manageLink:active{ transform: translateY(1px); }
 
 /* ─────────────────────────────
-   Routine — 3D Square Carousel + Day Strip (Option C - compact)
-   (visual-only)
+   Routine: Square 3D Carousel (Compact) + Tap Day Strip
+   Visual-only (no data/logic changes)
    ───────────────────────────── */
 
 .carouselCard{
-  padding: 12px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+  padding: 10px;      /* slightly tighter */
+  gap: 10px;
 }
 
-/* 3D stage (cards area) */
-.c3d{
+/* 3D stage container */
+.r3dStage{
   position: relative;
-  height: 160px;                 /* ✅ more compact */
+  height: 148px;                  /* ✅ compact height */
   display:flex;
   align-items:center;
   justify-content:center;
-  perspective: 1000px;
+  perspective: 1100px;
   transform-style: preserve-3d;
-  touch-action: pan-y;
+  touch-action: pan-y;            /* allow vertical scroll; we handle horizontal */
   user-select:none;
 }
 
-/* Square “3D” card */
-.c3dCard{
+/* Square 3D cards */
+.r3dCard{
   position:absolute;
-  width: min(58vw, 190px);       /* ✅ smaller cards */
+  width: min(44vw, 170px);        /* ✅ smaller cards */
   aspect-ratio: 1 / 1;
   border-radius: 18px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.12);
-  box-shadow: 0 18px 55px rgba(0,0,0,.55);
+
+  /* ✅ barely transparent glass */
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(10px);
+
+  box-shadow: 0 14px 44px rgba(0,0,0,.55);
   padding: 12px;
+
   display:flex;
   flex-direction:column;
   justify-content:space-between;
+
   will-change: transform, opacity, filter;
 }
 
-.c3dCard.sel{
-  border-color: rgba(55,214,122,.45); /* ✅ subtle neon accent */
+.r3dCard.sel{
+  /* ✅ subtle neon accent border + slightly brighter surface */
+  border-color: rgba(55,214,122,.52);
+  background: rgba(255,255,255,.035);
   box-shadow:
-    0 22px 70px rgba(0,0,0,.65),
-    0 0 0 1px rgba(55,214,122,.18) inset;
+    0 18px 60px rgba(0,0,0,.65),
+    0 0 0 1px rgba(55,214,122,.16) inset;
 }
 
-.c3dDay{
+.r3dDay{
   font-size: 22px;
   font-weight: 950;
   letter-spacing: .8px;
 }
 
-.c3dLabel{
-  font-size: 15px;
+.r3dLabel{
+  margin-top: 4px;
+  font-size: 14px;
   font-weight: 850;
   color: rgba(255,255,255,.78);
-  margin-top: 4px;
 }
 
-.c3dMeta{
-  font-size: 12px;
-  color: rgba(255,255,255,.60);
-  font-weight: 750;
+.r3dMeta{
   margin-top: 8px;
+  font-size: 12px;
+  font-weight: 750;
+  color: rgba(255,255,255,.58);
 }
 
-.c3dChips{
+.r3dChips{
   display:flex;
   gap: 8px;
   justify-content:flex-end;
 }
 
-.c3dChip{
-  padding: 8px 10px;
+.r3dChip{
+  padding: 7px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.05);
-  color: rgba(255,255,255,.82);
+  color: rgba(255,255,255,.78);
   font-weight: 850;
   font-size: 12px;
   letter-spacing: .2px;
   white-space: nowrap;
 }
 
-.c3dChip.active{
-  border-color: rgba(55,214,122,.45);
-  box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
+.r3dChip.active{
+  border-color: rgba(55,214,122,.52);
+  box-shadow: 0 0 0 1px rgba(55,214,122,.14) inset;
 }
 
-/* Day strip (fixed under carousel) */
+/* Fixed day strip under carousel */
 .routineDayStrip{
   display:flex;
   gap: 8px;
   justify-content:space-between;
-  margin-top: 10px;
 }
 
 .routineDayBtn{
   flex: 1 1 0;
   min-width: 0;
-  height: 58px;                  /* ✅ more compact */
+  height: 56px;                  /* ✅ compact */
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.03);
+
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap: 8px;
-  color: rgba(255,255,255,.60);
+  gap: 7px;
+
+  color: rgba(255,255,255,.55);
   font-weight: 950;
   letter-spacing: .6px;
 }
 
 .routineDayBtn .dot{
-  width: 8px; height: 8px; border-radius: 999px;
-  background: rgba(255,255,255,.22);
+  width: 8px; height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.20);
 }
 
 .routineDayBtn.sel{
-  border-color: rgba(55,214,122,.45);
-  box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
+  border-color: rgba(55,214,122,.52);
+  box-shadow: 0 0 0 1px rgba(55,214,122,.14) inset;
   color: rgba(255,255,255,.92);
 }
 
@@ -1306,6 +1314,7 @@ body.modalOpen{
   background: rgba(55,214,122,1);
   box-shadow: 0 0 0 3px rgba(55,214,122,.12);
 }
+
   /* Add Multiple visual feedback */
 .item.selected{
   border-color: rgba(124,92,255,.55);
@@ -4563,101 +4572,110 @@ fixedHost.appendChild(el("div", { class:"card" }, [
     // 3D Card Carousel (visual container)
     // ────────────────────────────
 fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
-  (() => {
-    let down = false;
-    let startX = 0;
-    let dx = 0;
-    const THRESH = 55;
+ (() => {
+    let down = false, startX = 0, dx = 0;
+    const THRESH = 50;
 
-    function onDown(e){
-      down = true;
-      startX = e.clientX;
-      dx = 0;
-      try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
-    }
-    function onMove(e){
-      if(!down) return;
-      dx = e.clientX - startX;
-      // (visual-only: we keep drag simple; snap happens on release)
-    }
-    function onEnd(){
-      if(!down) return;
-      down = false;
+    const stage = el("div", {
+      class:"r3dStage",
+      onPointerDown: (e) => {
+        down = true;
+        startX = e.clientX;
+        dx = 0;
+        try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+      },
+      onPointerMove: (e) => {
+        if(!down) return;
+        dx = e.clientX - startX;
+      },
+      onPointerUp: () => {
+        if(!down) return;
+        down = false;
 
-      if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
-      else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
+        if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
+        else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
 
-      repaint();
-    }
-
-    const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-    const c3d = el("div", {
-      class:"c3d",
-      onPointerDown: onDown,
-      onPointerMove: onMove,
-      onPointerUp: onEnd,
-      onPointerCancel: onEnd,
-      onLostPointerCapture: onEnd
+        repaint();
+      },
+      onPointerCancel: () => {
+        if(!down) return;
+        down = false;
+        repaint();
+      },
+      onLostPointerCapture: () => {
+        if(!down) return;
+        down = false;
+        repaint();
+      }
     }, []);
 
-    // Show selected ±2
+    const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const offsets = [-2,-1,0,1,2];
+
     offsets.forEach(off => {
       const idx = (selectedIndex + off + 7) % 7;
       const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
 
       const abs = Math.abs(off);
-      const scale = (off === 0) ? 1 : (1 - abs * 0.10);
-      const x = off * 92;              // ✅ tighter spacing (more compact)
-      const z = -(abs * 95);           // ✅ less depth than before
-      const y = abs * 6;
-      const rot = off * -22;           // ✅ slightly tighter rotation
-      const op = (off === 0) ? 1 : (abs === 1 ? .70 : .36);
 
-      const chips = [];
-      chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
-      if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
+      // ✅ Smaller + stronger dimming for non-active cards
+      const scale = (off === 0) ? 1 : (1 - abs * 0.12);
+      const x = off * 78;                // ✅ tighter spacing
+      const z = -(abs * 92);             // ✅ depth, still strong but compact
+      const y = abs * 6;
+      const rot = off * -24;             // ✅ strong cover-flow angle
+
+      // ✅ Active card pops; others are dim + slightly blurred
+      const op = (off === 0) ? 1 : (abs === 1 ? .22 : .12);
+      const blur = (off === 0) ? 0 : (abs === 1 ? 1.2 : 2.0);
+      const sat = (off === 0) ? 1 : 0.85;
+
+      const chips = [
+        el("div", { class:"r3dChip", text: d.isRest ? "Rest Day" : "Training Day" })
+      ];
+      if(idx === selectedIndex) chips.push(el("div", { class:"r3dChip active", text:"Active" }));
 
       const card = el("div", {
-        class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
-        style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+        class: "r3dCard" + (idx === selectedIndex ? " sel" : ""),
+        style: [
+          `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale});`,
+          `opacity:${op};`,
+          `filter: blur(${blur}px) saturate(${sat});`
+        ].join(" ")
       }, [
         el("div", {}, [
-          el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
-          el("div", { class:"c3dLabel", text: d.label || "Day" }),
-          el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
+          el("div", { class:"r3dDay", text: names[idx].toUpperCase() }),
+          el("div", { class:"r3dLabel", text: d.label || "Day" }),
+          el("div", { class:"r3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
         ]),
-        el("div", { class:"c3dChips" }, chips)
+        el("div", { class:"r3dChips" }, chips)
       ]);
 
-      // Tap any card to jump (visual-only)
+      // Tap card to jump (visual-only navigation)
       card.addEventListener("click", () => {
         selectedIndex = idx;
         repaint();
       });
 
-      c3d.appendChild(card);
+      stage.appendChild(card);
     });
 
-    return c3d;
+    return stage;
   })(),
 
-  // Fixed day strip under carousel (tap to jump)
+  // ────────────────────────────
+  // Fixed day strip under carousel (tap)
+  // ────────────────────────────
   el("div", { class:"routineDayStrip" }, [
-    ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
-      const label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
-      return el("button", {
-        class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
-        onClick: () => { selectedIndex = i; repaint(); }
-      }, [
-        el("div", { text: label }),
-        el("div", { class:"dot" })
-      ]);
-    })
+    ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => el("button", {
+      class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
+      onClick: () => { selectedIndex = i; repaint(); }
+    }, [
+      el("div", { text: ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase() }),
+      el("div", { class:"dot" })
+    ]))
   ])
 ]));
-
 
     // Rest Day
     if(day.isRest){
