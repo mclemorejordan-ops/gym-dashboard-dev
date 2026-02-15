@@ -236,6 +236,115 @@ header{
     .row2{ display:grid; gap: 10px; }
     @media (min-width: 640px){ .row2{ grid-template-columns: 1fr 1fr; } }
 
+    /* ─────────────────────────────
+   Log Sets (Modal) — Compact + Sticky + Scroll
+   ───────────────────────────── */
+
+.logsetShell{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+  min-height: 0; /* important for nested scrolling */
+}
+
+.logsetHead{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(10px);
+}
+
+.logsetHead .note{ margin: 0; }
+
+.logsetScroll{
+  min-height: 0;
+  max-height: 52vh;              /* keeps it compact inside the modal */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+  padding-bottom: 12px;          /* prevents last row from hiding under sticky bar */
+  -webkit-overflow-scrolling: touch; /* smooth scroll on iOS */
+}
+
+.logsetWLCard{
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.logsetGridHead{
+  display:grid;
+  grid-template-columns: 40px 1fr 1fr;
+  gap: 10px;
+  align-items:center;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 740;
+  letter-spacing: .22px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.logsetRow{
+  display:grid;
+  grid-template-columns: 40px 1fr 1fr;
+  gap: 10px;
+  align-items:center;
+  padding: 8px 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.03);
+}
+
+.logsetRow + .logsetRow{ margin-top: 8px; }
+
+/* Active row highlight — Medium (background + border) */
+.logsetRow.active{
+  background: rgba(255,255,255,.08);
+  border-color: rgba(124,92,255,.35);
+  box-shadow: 0 0 0 1px rgba(124,92,255,.15) inset;
+}
+
+.logsetSetPill{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height: 34px;
+  border-radius: 12px;
+  font-weight: 820;
+  font-size: 12px;
+  color: rgba(255,255,255,.85);
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.logsetRow input{
+  width: 100%;
+}
+
+/* Sticky bottom bar INSIDE the scroll area */
+.logsetStickyBar{
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display:flex;
+  gap: 10px;
+  padding-top: 10px;
+  margin-top: 10px;
+  background: linear-gradient(180deg, rgba(16,20,30,0), rgba(16,20,30,.75) 30%, rgba(16,20,30,.92));
+  backdrop-filter: blur(10px);
+}
+
+.logsetStickyBar .btn{
+  flex: 1;
+}
+
     label{
       display:flex;
       flex-direction:column;
@@ -3851,39 +3960,47 @@ function openExerciseLogger(rx, day, defaultDateISO){
     e.dateISO === initialDateISO && e.routineExerciseId === rx.id
   ) || null;
 
-  const headerText = el("div", { class:"note" }, [
-    `${exName} • ${ExerciseLibrary.typeLabel(type)} • `,
-    dateInput
-  ]);
+const headerText = el("div", { class:"note" }, [
+  `${exName} • ${ExerciseLibrary.typeLabel(type)} • `,
+  dateInput
+]);
 
-  const hint = el("div", { class:"note", text:"Tip: Change the date above to log for a different day (manual override)." });
+const hint = el("div", { class:"note", text:"Tip: Change the date above to log for a different day (manual override)." });
 
-  // Show plan snapshot (optional)
-  const plan = rx.plan || null;
-  const planLine = el("div", { class:"note" }, [
-    plan
-      ? `Plan: ${String(plan.sets ?? "—")} × ${String(plan.reps ?? "—")}${plan.restSec ? ` • Rest ${plan.restSec}s` : ""}`
-      : "Plan: —"
-  ]);
+// Show plan snapshot (optional)
+const plan = rx.plan || null;
+const planLine = el("div", { class:"note" }, [
+  plan
+    ? `Plan: ${String(plan.sets ?? "—")} × ${String(plan.reps ?? "—")}${plan.restSec ? ` • Rest ${plan.restSec}s` : ""}`
+    : "Plan: —"
+]);
 
-  // Show last entry snapshot (optional)
-  const last = LogEngine.entriesForExercise(type, exerciseId)[0] || null;
-  const lastLine = el("div", { class:"note" }, [
-    last ? `Last: ${formatEntryOneLine(type, last)}` : "Last: —"
-  ]);
+// Show last entry snapshot (optional)
+const last = LogEngine.entriesForExercise(type, exerciseId)[0] || null;
+const lastLine = el("div", { class:"note" }, [
+  last ? `Last: ${formatEntryOneLine(type, last)}` : "Last: —"
+]);
 
-  const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
+const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
 
-  const body = el("div", { class:"grid" }, [ headerText, hint, planLine, lastLine, err ]);
+/* NEW layout shell:
+   - header stays fixed (sticky)
+   - form area scrolls
+*/
+const head = el("div", { class:"logsetHead" }, [ headerText, hint, planLine, lastLine, err ]);
+const scroll = el("div", { class:"logsetScroll" }, []);
+const body = el("div", { class:"logsetShell" }, [ head, scroll ]);
 
 
-  if(type === "weightlifting"){
-    body.appendChild(buildWeightliftingForm());
-  }else if(type === "cardio"){
-    body.appendChild(buildCardioForm());
-  }else{
-    body.appendChild(buildCoreForm());
-  }
+
+if(type === "weightlifting"){
+  scroll.appendChild(buildWeightliftingForm());
+}else if(type === "cardio"){
+  scroll.appendChild(buildCardioForm());
+}else{
+  scroll.appendChild(buildCoreForm());
+}
+
 
   Modal.open({
     title: "Log Sets",
@@ -3933,90 +4050,136 @@ function openExerciseLogger(rx, day, defaultDateISO){
     repaint();
   }
 
-  function buildWeightliftingForm(){
-    const rows = el("div", { class:"grid" }, []);
-    const setInputs = [];
+function buildWeightliftingForm(){
+  const rowsHost = el("div", { class:"logsetWLCard" }, []);
+  const setInputs = [];
 
-    const addRow = (w="", r="") => {
-      const wInput = el("input", { type:"number", inputmode:"decimal", placeholder:"Weight", value: w });
-      const rInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Reps", value: r });
-      setInputs.push({ wInput, rInput });
+  const head = el("div", { class:"logsetGridHead" }, [
+    el("div", { text:"Set" }),
+    el("div", { text:"Weight" }),
+    el("div", { text:"Reps" })
+  ]);
 
-      rows.appendChild(el("div", { class:"row2" }, [
-        el("label", {}, [ el("span", { text:"Weight" }), wInput ]),
-        el("label", {}, [ el("span", { text:"Reps" }), rInput ])
-      ]));
-    };
+  const rows = el("div", {}, []);
 
-    const existingSets = (existingEntry?.sets || []);
-    const plannedSets = Math.max(1, Math.min(12, Math.floor(Number(rx.plan?.sets) || 0))) || 0;
-    const baseRows = plannedSets || 4;
-    const rowsToShow = Math.max(baseRows, existingSets.length || 0);
-    for(let i=0; i<rowsToShow; i++){
-      const s = existingSets[i] || {};
-      addRow(
-        (s.weight ?? "") === 0 ? "" : String(s.weight ?? ""),
-        (s.reps ?? "") === 0 ? "" : String(s.reps ?? "")
-      );
-    }
-
-    const addBtn = el("button", { class:"btn", onClick: () => addRow() }, ["+ Add set"]);
-
-    const saveBtn = el("button", {
-      class:"btn primary",
-      onClick: () => {
-        clearErr();
-
-        const dateISO = String(dateInput.value || initialDateISO);
-
-        const sets = setInputs.map(s => ({
-          weight: Number(s.wInput.value) || 0,
-          reps: Math.max(0, Math.floor(Number(s.rInput.value) || 0))
-        })).filter(s => s.weight > 0 || s.reps > 0);
-
-        if(sets.length === 0){
-          showErr("Enter at least one set.");
-          return;
-        }
-
-        const summary = LogEngine.computeWeightliftingSummary(sets);
-        const pr = LogEngine.computePRFlags(type, exerciseId, summary);
-
-        // Upsert: replace existing entry for this date + routineExerciseId
-        LogEngine.ensure();
-        state.logs.workouts = (state.logs.workouts || []).filter(e =>
-          !(e.dateISO === dateISO && e.routineExerciseId === rx.id)
-        );
-        Storage.save(state);
-
-        LogEngine.addEntry({
-          id: uid("w"),
-          createdAt: Date.now(),
-          dateISO,
-          type,
-          exerciseId,
-          routineExerciseId: rx.id,
-          routineId: routine.id,
-          dayId: day.id,
-          dayOrder: day.order,
-          sets,
-          summary,
-          pr
-        });
-
-        afterSave(dateISO);
-      }
-    }, ["Save"]);
-
-    const cancelBtn = el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]);
-
-    return el("div", { class:"card" }, [
-      el("h2", { text:"Sets" }),
-      rows,
-      el("div", { style:"height:10px" }),
-      el("div", { class:"btnrow" }, [ addBtn, saveBtn, cancelBtn ])
-    ]);
+  function clearActive(){
+    rows.querySelectorAll(".logsetRow.active").forEach(n => n.classList.remove("active"));
   }
+  function setActiveRow(rowEl){
+    clearActive();
+    rowEl.classList.add("active");
+  }
+  function refreshSetNumbers(){
+    const pills = rows.querySelectorAll(".logsetSetPill");
+    pills.forEach((p, i) => p.textContent = String(i + 1));
+  }
+
+  const addRow = (w="", r="") => {
+    const wInput = el("input", { type:"number", inputmode:"decimal", placeholder:"", value: w });
+    const rInput = el("input", { type:"number", inputmode:"numeric", placeholder:"", value: r });
+
+    setInputs.push({ wInput, rInput });
+
+    const setPill = el("div", { class:"logsetSetPill", text: String(setInputs.length) });
+
+    const row = el("div", { class:"logsetRow" }, [
+      setPill,
+      wInput,
+      rInput
+    ]);
+
+    // Active row highlight when editing (focus/click)
+    row.addEventListener("click", () => setActiveRow(row));
+    row.addEventListener("focusin", () => setActiveRow(row));
+
+    rows.appendChild(row);
+    refreshSetNumbers();
+  };
+
+  // ✅ KEEP EXISTING FUNCTIONALITY:
+  // planned sets still drive the defaults exactly like before
+  const existingSets = (existingEntry?.sets || []);
+  const plannedSets = Math.max(1, Math.min(12, Math.floor(Number(rx.plan?.sets) || 0))) || 0;
+  const baseRows = plannedSets || 4;
+  const rowsToShow = Math.max(baseRows, existingSets.length || 0);
+
+  for(let i=0; i<rowsToShow; i++){
+    const s = existingSets[i] || {};
+    addRow(
+      (s.weight ?? "") === 0 ? "" : String(s.weight ?? ""),
+      (s.reps ?? "") === 0 ? "" : String(s.reps ?? "")
+    );
+  }
+
+  // Buttons
+  const addBtn = el("button", { class:"btn", onClick: () => {
+    addRow();
+    // focus weight input of the new row
+    const last = setInputs[setInputs.length - 1];
+    if(last?.wInput) last.wInput.focus();
+  }}, ["+ Add Set"]);
+
+  const saveBtn = el("button", {
+    class:"btn primary",
+    onClick: () => {
+      clearErr();
+
+      const dateISO = String(dateInput.value || initialDateISO);
+
+      const sets = setInputs.map(s => ({
+        weight: Number(s.wInput.value) || 0,
+        reps: Math.max(0, Math.floor(Number(s.rInput.value) || 0))
+      })).filter(s => s.weight > 0 || s.reps > 0);
+
+      if(sets.length === 0){
+        showErr("Enter at least one set.");
+        return;
+      }
+
+      const summary = LogEngine.computeWeightliftingSummary(sets);
+      const pr = LogEngine.computePRFlags(type, exerciseId, summary);
+
+      // Upsert: replace existing entry for this date + routineExerciseId
+      LogEngine.ensure();
+      state.logs.workouts = (state.logs.workouts || []).filter(e =>
+        !(e.dateISO === dateISO && e.routineExerciseId === rx.id)
+      );
+      Storage.save(state);
+
+      LogEngine.addEntry({
+        id: uid("w"),
+        createdAt: Date.now(),
+        dateISO,
+        type,
+        exerciseId,
+        routineExerciseId: rx.id,
+        routineId: routine.id,
+        dayId: day.id,
+        dayOrder: day.order,
+        sets,
+        summary,
+        pr
+      });
+
+      afterSave(dateISO);
+    }
+  }, ["Save"]);
+
+  // Sticky bar (two buttons only)
+  const sticky = el("div", { class:"logsetStickyBar" }, [ addBtn, saveBtn ]);
+
+  rowsHost.appendChild(head);
+  rowsHost.appendChild(rows);
+  rowsHost.appendChild(sticky);
+
+  // Make the first row “active” by default (if any)
+  setTimeout(() => {
+    const firstRow = rows.querySelector(".logsetRow");
+    if(firstRow) firstRow.classList.add("active");
+  }, 0);
+
+  return rowsHost;
+}
 
   function buildCardioForm(){
     const minInput = el("input", { type:"number", inputmode:"numeric", placeholder:"Min", value:"" });
@@ -4083,21 +4246,22 @@ function openExerciseLogger(rx, day, defaultDateISO){
       }
     }, ["Save"]);
 
-    const cancelBtn = el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]);
+const cancelBtn = el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]);
 
-    return el("div", { class:"card" }, [
-      el("h2", { text:"Session" }),
-      el("div", { class:"row2" }, [
-        el("label", {}, [ el("span", { text:"Minutes" }), minInput ]),
-        el("label", {}, [ el("span", { text:"Seconds" }), secInput ])
-      ]),
-      el("div", { class:"row2" }, [
-        el("label", {}, [ el("span", { text:"Distance" }), distInput ]),
-        el("label", {}, [ el("span", { text:"Incline" }), inclInput ])
-      ]),
-      el("div", { style:"height:10px" }),
-      el("div", { class:"btnrow" }, [ saveBtn, cancelBtn ])
-    ]);
+const sticky = el("div", { class:"logsetStickyBar" }, [ cancelBtn, saveBtn ]);
+
+return el("div", { class:"card" }, [
+  el("h2", { text:"Session" }),
+  el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Minutes" }), minInput ]),
+    el("label", {}, [ el("span", { text:"Seconds" }), secInput ])
+  ]),
+  el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Distance" }), distInput ]),
+    el("label", {}, [ el("span", { text:"Incline" }), inclInput ])
+  ]),
+  sticky
+]);
   }
 
   function buildCoreForm(){
@@ -4167,22 +4331,24 @@ function openExerciseLogger(rx, day, defaultDateISO){
       }
     }, ["Save"]);
 
-    const cancelBtn = el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]);
+const cancelBtn = el("button", { class:"btn", onClick: Modal.close }, ["Cancel"]);
 
-    return el("div", { class:"card" }, [
-      el("h2", { text:"Core" }),
-      el("div", { class:"row2" }, [
-        el("label", {}, [ el("span", { text:"Sets" }), setsInput ]),
-        el("label", {}, [ el("span", { text:"Reps" }), repsInput ])
-      ]),
-      el("div", { class:"row2" }, [
-        el("label", {}, [ el("span", { text:"Time (min)" }), timeMinInput ]),
-        el("label", {}, [ el("span", { text:"Time (sec)" }), timeSecInput ])
-      ]),
-      el("label", {}, [ el("span", { text:"Weight" }), weightInput ]),
-      el("div", { style:"height:10px" }),
-      el("div", { class:"btnrow" }, [ saveBtn, cancelBtn ])
-    ]);
+const sticky = el("div", { class:"logsetStickyBar" }, [ cancelBtn, saveBtn ]);
+
+return el("div", { class:"card" }, [
+  el("h2", { text:"Core" }),
+  el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Sets" }), setsInput ]),
+    el("label", {}, [ el("span", { text:"Reps" }), repsInput ])
+  ]),
+  el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Time (min)" }), timeMinInput ]),
+    el("label", {}, [ el("span", { text:"Time (sec)" }), timeSecInput ])
+  ]),
+  el("label", {}, [ el("span", { text:"Weight" }), weightInput ]),
+  sticky
+]);
+
   }
 
   function formatEntryOneLine(type, entry){
