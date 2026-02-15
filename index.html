@@ -1505,13 +1505,18 @@ button.mini.added{
     /********************
      * 1) State + Storage
      ********************/
+// ─────────────────────────────
+// App Version + Remote Version
+// ─────────────────────────────
 const STORAGE_KEY = "gymdash:v1";
 
-// Manual version (YOU bump this when you commit/publish)
+// YOU bump this when you publish a new build
+// (needed so we can compare to the remote version)
 const APP_VERSION = "1.1";
 
-// Remote version file (YOU create/maintain this in GitHub)
+// Remote version file (you maintain this in GitHub)
 const REMOTE_VERSION_URL = "./version.json";
+
 
 
     const DefaultState = () => ({
@@ -3200,7 +3205,33 @@ function bindHeaderPills(){
   window.addEventListener("online",  () => { setHeaderPills(); checkForUpdates(); });
   window.addEventListener("offline", () => setHeaderPills());
 }
-    
+    let __headerPillsBound = false;
+
+function bindHeaderPills(){
+  if(__headerPillsBound) return;
+  __headerPillsBound = true;
+
+  const syncPill = $("#syncPill");
+  const verPill  = $("#verPill");
+
+  if(syncPill){
+    syncPill.addEventListener("click", async () => {
+      await checkForUpdates();   // refresh remote version + updateAvailable
+      openVersionModal();        // show the modal so user sees details
+    });
+  }
+
+  if(verPill){
+    verPill.addEventListener("click", () => {
+      openVersionModal();
+    });
+  }
+
+  // Keep pill text correct if connectivity changes
+  window.addEventListener("online",  () => { setHeaderPills(); checkForUpdates(); });
+  window.addEventListener("offline", () => { setHeaderPills(); });
+}
+
 
     function navigate(routeKey){
       destroyProgressChart();
@@ -3316,6 +3347,10 @@ else root.appendChild(el("div", { class:"card" }, [
 
           Storage.save(state);
           navigate("home");
+          bindHeaderPills();
+          setHeaderPills();
+          checkForUpdates();
+
         };
 
         return el("div", { class:"grid" }, [
