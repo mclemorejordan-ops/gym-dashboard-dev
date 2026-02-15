@@ -984,7 +984,104 @@ body.modalOpen{
   flex-direction:column;
   gap:10px;
 }
+/* ───────────────────────────────
+   Routine — Option 3 Week Timeline Bar
+   ─────────────────────────────── */
+.weekStripCard{
+  padding: 14px;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
 
+.weekStripTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.weekStripMid{
+  text-align:center;
+  flex: 1;
+  min-width: 0;
+}
+
+.weekStripTitle{
+  font-weight: 860;
+  letter-spacing:.2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.weekStripSub{
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.weekStrip{
+  display:flex;
+  gap: 10px;
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 2px 6px 2px;
+  scroll-snap-type: x mandatory;
+}
+
+.dayChip{
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+  min-width: 76px;
+  padding: 10px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  text-align:left;
+  position:relative;
+}
+
+.dayChip:active{ transform: translateY(1px); }
+
+.dayChip.on{
+  border-color: rgba(124,92,255,.55);
+  box-shadow: 0 0 0 2px rgba(124,92,255,.22);
+  background: rgba(124,92,255,.12);
+}
+
+.dayChip.rest{
+  opacity: .78;
+}
+
+.dayChip.done{
+  border-color: rgba(55,214,122,.45);
+}
+
+.dayChipTop{
+  font-weight: 860;
+  letter-spacing: .12em;
+  font-size: 12px;
+}
+
+.dayChipBot{
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(255,255,255,.62);
+}
+
+.dayChipBadge{
+  position:absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 4px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(55,214,122,.35);
+  background: rgba(55,214,122,.16);
+}
 .carouselTop{
   display:flex;
   align-items:center;
@@ -3974,72 +4071,68 @@ fixedHost.appendChild(el("div", { class:"card" }, [
     }
 
     // ────────────────────────────
-    // 3D Card Carousel (visual container)
+    // Option 3 — Week Timeline Bar (replaces 3D carousel)
     // ────────────────────────────
-fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
-      el("div", { class:"carouselTop" }, [
-        el("button", {
-          class:"btn",
-          onClick: () => { selectedIndex = (selectedIndex + 6) % 7; repaint(); }
-        }, ["◀"]),
+    (function(){
+      const order = (weekStartsOn === "sun")
+        ? [0,1,2,3,4,5,6]   // Sun..Sat
+        : [1,2,3,4,5,6,0];  // Mon..Sun
 
-        el("div", { class:"carouselMid" }, [
-          el("div", {
-            class:"carouselTitle",
-            text: `${["SUN","MON","TUE","WED","THU","FRI","SAT"][selectedIndex]} — ${day.label || "Day"} • ${selectedDateISO}`
-          }),
-          el("div", {
-            class:"carouselSub",
-            text: day.isRest ? "Rest" : `${(day.exercises||[]).length} exercises`
-          })
+      const dayNames = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+
+      fixedHost.appendChild(el("div", { class:"card weekStripCard" }, [
+        // top row: arrows + title
+        el("div", { class:"weekStripTop" }, [
+          el("button", {
+            class:"btn",
+            onClick: () => { selectedIndex = (selectedIndex + 6) % 7; repaint(); }
+          }, ["◀"]),
+
+          el("div", { class:"weekStripMid" }, [
+            el("div", {
+              class:"weekStripTitle",
+              text: `${dayNames[selectedIndex]} — ${day.label || "Day"} • ${selectedDateISO}`
+            }),
+            el("div", {
+              class:"weekStripSub",
+              text: day.isRest ? "Rest" : `${(day.exercises||[]).length} exercises`
+            })
+          ]),
+
+          el("button", {
+            class:"btn",
+            onClick: () => { selectedIndex = (selectedIndex + 1) % 7; repaint(); }
+          }, ["▶"])
         ]),
 
-        el("button", {
-          class:"btn",
-          onClick: () => { selectedIndex = (selectedIndex + 1) % 7; repaint(); }
-        }, ["▶"])
-      ]),
+        // timeline chips
+        el("div", { class:"weekStrip" }, [
+          ...order.map(i => {
+            const iso = getSelectedDateISO(i);
+            const d = routine.days?.find(x => x.id === i) || null;
+            const isRest = !!d?.isRest;
 
-      el("div", { class:"weekRow" }, [
-        el("div", { class:"weekLabel", text: (weekStartsOn === "sun" ? "S   M   T   W   T   F   S" : "M   T   W   T   F   S   S") }),
-        el("div", { class:"weekDots" }, [
-          // order = Mon Tue Wed Thu Fri Sat Sun
-          ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => el("div", {
-            class: "weekDot" + (i === selectedIndex ? " on" : "")
-          }))
-        ])
-      ])
-    ]));
+            const done = (!isRest && d) ? isDayComplete(iso, d) : false;
 
-    // Rest Day
-    if(day.isRest){
-scrollHost.appendChild(el("div", { class:"card" }, [
-        el("h2", { text:"Rest" }),
-        el("div", { class:"note", text:`Rest day scheduled for ${selectedDateISO}.` })
-      ]));
-      return;
-    }
-    // Day completion banner
-    if(isDayComplete(selectedDateISO, day)){
-scrollHost.appendChild(el("div", { class:"card" }, [
-        el("h2", { text:"Completed" }),
-        el("div", { class:"note", text:`All exercises logged for ${selectedDateISO}.` }),
-        el("div", { style:"height:10px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", {
-            class:"btn danger",
-            onClick: () => {
-              removeWorkoutEntriesForRoutineDay(selectedDateISO, routine.id, day.id);
-              attendanceRemove(selectedDateISO);
-              setNextNudge(null);
-              repaint();
-              showToast("Marked incomplete");
-            }
-          }, ["Mark incomplete"])
+            const cls =
+              "dayChip"
+              + (i === selectedIndex ? " on" : "")
+              + (isRest ? " rest" : "")
+              + (done ? " done" : "");
+
+            return el("button", {
+              class: cls,
+              onClick: () => { selectedIndex = i; repaint(); },
+              title: iso
+            }, [
+              el("div", { class:"dayChipTop", text: dayNames[i] }),
+              el("div", { class:"dayChipBot", text: iso.slice(5) }),
+              done ? el("div", { class:"dayChipBadge", text:"✓" }) : null
+            ].filter(Boolean));
+          })
         ])
       ]));
-    }
-
+    })();
 
     // ────────────────────────────
     // Exercise Cards
