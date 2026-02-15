@@ -1722,16 +1722,16 @@ button.mini.added{
      * 1) State + Storage
      ********************/
 // ─────────────────────────────
-// App Version + Remote Version
+// Storage + Versioning
 // ─────────────────────────────
 const STORAGE_KEY = "gymdash:v1";
 
-// YOU bump this when you publish a new build
-// (needed so we can compare to the remote version)
-const APP_VERSION = "1.1";
-
-// Remote version file (you maintain this in GitHub)
+// version.json is the single source of truth for version display
 const REMOTE_VERSION_URL = "./version.json";
+
+// Version metadata only (does NOT affect user profile/state)
+const VERSION_LATEST_KEY  = "gymdash:latestVersion";   // last fetched version.json value
+const VERSION_APPLIED_KEY = "gymdash:appliedVersion";  // last version we successfully applied on this device
 
 
 
@@ -3318,18 +3318,31 @@ function setChip(){
   if(state.profile?.name) chip.textContent = `Hi, ${state.profile.name}`;
   else chip.textContent = "Not set up";
 }
-let __remoteVersion = null;
-let __updateAvailable = false;
+// ─────────────────────────────
+// Version + Sync Pills (Service Worker powered updates)
+// - vX pill comes ONLY from version.json
+// - "Update Available" is TRUE when a new service worker is waiting
+// - Reload to update activates the waiting SW and reloads without clearing user profile
+// ─────────────────────────────
+let __latestVersion  = (localStorage.getItem(VERSION_LATEST_KEY)  || "").trim() || null;
+let __appliedVersion = (localStorage.getItem(VERSION_APPLIED_KEY) || "").trim() || null;
+
+let __swReg = null;
+let __swUpdateReady = false;
+
+function __hasSwUpdateWaiting(){
+  return !!(__swReg && __swReg.waiting) || __swUpdateReady;
+}
 
 function setHeaderPills(){
   const syncPill = $("#syncPill");
   const verPill  = $("#verPill");
   if(!syncPill || !verPill) return;
 
-  // Version pill text
-  verPill.textContent = `v${APP_VERSION}`;
+  // Version pill comes ONLY from version.json (fallback to applied/offline)
+  const shown = __latestVersion || __appliedVersion || "—";
+  verPill.textContent = `v${shown}`;
 
-  // Sync pill state
   if(!navigator.onLine){
     syncPill.textContent = "Offline";
     syncPill.classList.remove("ok","warn");
@@ -3337,7 +3350,7 @@ function setHeaderPills(){
     return;
   }
 
-  if(__updateAvailable){
+  if(__hasSwUpdateWaiting()){
     syncPill.textContent = "Update Available";
     syncPill.classList.remove("ok","off");
     syncPill.classList.add("warn");
@@ -3349,65 +3362,150 @@ function setHeaderPills(){
 }
 
 async function checkForUpdates(){
-  __updateAvailable = false;
-  __remoteVersion = null;
-
+  // Only fetch version.json to drive display + modal info
   if(!navigator.onLine){
     setHeaderPills();
     return { ok:false, reason:"offline" };
   }
   try{
-    // cache-bust so GitHub Pages doesn't serve stale JSON
     const url = `${REMOTE_VERSION_URL}?t=${Date.now()}`;
     const res = await fetch(url, { cache: "no-store" });
     if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    const remote = String(data?.version || "").trim();
-    if(remote) __remoteVersion = remote;
 
-    // If remote version differs, user needs refresh
-    __updateAvailable = !!(remote && remote !== String(APP_VERSION));
+    const latest = String(data?.version || "").trim() || null;
+    if(latest){
+      __latestVersion = latest;
+      localStorage.setItem(VERSION_LATEST_KEY, latest);
+
+      // First run: initialize applied version so modal has a baseline
+      if(!__appliedVersion){
+        __appliedVersion = latest;
+        localStorage.setItem(VERSION_APPLIED_KEY, latest);
+      }
+    }
+
     setHeaderPills();
-    return { ok:true, remoteVersion: remote, updateAvailable: __updateAvailable };
+    return {
+      ok:true,
+      latestVersion: __latestVersion,
+      appliedVersion: __appliedVersion,
+      swUpdateWaiting: __hasSwUpdateWaiting()
+    };
   }catch(e){
-    // If fetch fails, just fall back to "Synced" when online
-    __updateAvailable = false;
     setHeaderPills();
     return { ok:false, reason:"fetch_failed" };
   }
 }
 
-function openVersionModal(){
-  const lines = [];
-  lines.push(el("div", { class:"note", text:`Version: v${APP_VERSION}` }));
-  lines.push(el("div", { class:"note", text:`Remote: ${__remoteVersion ? "v"+__remoteVersion : "—"}` }));
-  lines.push(el("div", { style:"height:10px" }));
+async function registerServiceWorker(){
+  if(!("serviceWorker" in navigator)) return;
 
-  const msg = __updateAvailable
-    ? "A newer version is available. Reload to apply the update."
-    : (navigator.onLine ? "You’re up to date." : "You’re offline. Updates can’t be checked right now.");
+  try{
+    __swReg = await navigator.serviceWorker.register("./sw.js");
 
-  lines.push(el("div", { class:"note", text: msg }));
-  lines.push(el("div", { style:"height:12px" }));
+    // If an update is already waiting
+    if(__swReg.waiting){
+      __swUpdateReady = true;
+      setHeaderPills();
+    }
 
-  lines.push(el("div", { class:"btnrow" }, [
-    el("button", {
-      class:"btn",
-      onClick: async () => {
-        const r = await checkForUpdates();
-        showToast(r.ok ? (r.updateAvailable ? "Update available" : "Up to date") : "Couldn’t check updates");
+    __swReg.addEventListener("updatefound", () => {
+      const installing = __swReg.installing;
+      if(!installing) return;
+
+      installing.addEventListener("statechange", () => {
+        // Installed + existing controller => update is ready and waiting
+        if(installing.state === "installed" && navigator.serviceWorker.controller){
+          __swUpdateReady = true;
+          setHeaderPills();
+        }
+      });
+    });
+
+    // When new SW takes control, mark applied version (metadata only) and reload once
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if(reloaded) return;
+      reloaded = true;
+
+      if(__latestVersion){
+        __appliedVersion = __latestVersion;
+        localStorage.setItem(VERSION_APPLIED_KEY, __latestVersion);
       }
-    }, ["Check for updates"]),
-    el("button", {
-      class:"btn primary",
-      onClick: () => location.reload()
-    }, [__updateAvailable ? "Reload to update" : "Reload"])
-  ]));
+
+      // Reload under the new build; does NOT clear user profile/localStorage
+      location.reload();
+    });
+
+  }catch(e){
+    console.warn("Service worker registration failed:", e);
+  }
+}
+
+function applyUpdateNow(){
+  // If an update is waiting, activate it (skip waiting).
+  // Otherwise, just reload.
+  if(__swReg && __swReg.waiting){
+    __swReg.waiting.postMessage({ type:"SKIP_WAITING" });
+    return;
+  }
+  location.reload();
+}
+
+function openVersionModal(){
+  const msg = !navigator.onLine
+    ? "You’re offline. Updates can’t be checked right now."
+    : (__hasSwUpdateWaiting()
+        ? "A newer version is ready. Reload to apply the update."
+        : "You’re up to date.");
 
   Modal.open({
     title: "About",
-    bodyNode: el("div", { class:"grid" }, lines)
+    bodyNode: el("div", { class:"grid" }, [
+      el("div", { class:"note", text:`Version (version.json): ${__latestVersion ? "v"+__latestVersion : "—"}` }),
+      el("div", { class:"note", text:`Applied on device: ${__appliedVersion ? "v"+__appliedVersion : "—"}` }),
+      el("div", { style:"height:10px" }),
+      el("div", { class:"note", text: msg }),
+      el("div", { style:"height:12px" }),
+      el("div", { class:"btnrow" }, [
+        el("button", {
+          class:"btn",
+          onClick: async () => {
+            const r = await checkForUpdates();
+            showToast(r.ok ? "Checked version.json" : "Couldn’t check updates");
+          }
+        }, ["Check for updates"]),
+        el("button", {
+          class:"btn primary",
+          onClick: () => applyUpdateNow()
+        }, [__hasSwUpdateWaiting() ? "Reload to update" : "Reload"])
+      ])
+    ])
   });
+}
+
+let __headerPillsBound = false;
+function bindHeaderPills(){
+  if(__headerPillsBound) return;
+  __headerPillsBound = true;
+
+  const syncPill = $("#syncPill");
+  const verPill  = $("#verPill");
+
+  if(syncPill){
+    syncPill.addEventListener("click", async () => {
+      await checkForUpdates();
+      openVersionModal();
+    });
+  }
+
+  if(verPill){
+    verPill.addEventListener("click", () => openVersionModal());
+  }
+
+  window.addEventListener("online",  () => { setHeaderPills(); checkForUpdates(); });
+  window.addEventListener("offline", () => { setHeaderPills(); });
 }
 
 function bindHeaderPills(){
@@ -6780,6 +6878,11 @@ renderNav();
 renderView();
 bindHeaderPills();
 setHeaderPills();
+
+// Enable true "Reload to update"
+registerServiceWorker();
+
+// Fetch version.json so the version pill reflects it
 checkForUpdates();
   </script>
 </body>
