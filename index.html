@@ -1151,6 +1151,9 @@ button.mini.added{
   
 /* ✅ iPhone sizing scale (shrinks Home cards, text, buttons, nav) */
 @media (max-width: 500px){
+  html{ font-size: 14px; }
+  body{ font-size: 14px; }
+
   :root{
     --r: 16px;
     --navH: 66px;
@@ -1167,12 +1170,21 @@ button.mini.added{
   .brand .subtitle{ font-size: 11px; }
   .chip{ padding: 8px 10px; font-size: 12px; }
 
-  /* cards + headings (BIGGEST home shrink impact) */
-  .card{ padding: 12px; }
+  /* tighten vertical rhythm */
+  .stack{ gap: 10px; }  /* ok if class doesn't exist */
+  .grid{ gap: 10px; }   /* ok if class doesn't exist */
+
+  /* cards + headings */
+  .card{ padding: 10px; border-radius: 16px; }
   .card h2{
-    font-size: 12px;
-    margin: 0 0 8px 0;
+    font-size: 11.5px;
+    margin: 0 0 6px 0;
+    letter-spacing: .06em;
   }
+
+  /* list density (Today workout bullets) */
+  .card ul{ margin: 8px 0 0 0; }
+  .card li{ margin: 6px 0; line-height: 1.25; }
 
   /* buttons */
   .btn{
@@ -1180,9 +1192,9 @@ button.mini.added{
     border-radius: 12px;
   }
 
-  /* KPI typography (your “08:05 PM”, numbers, etc.) */
-  .kpi .big{ font-size: 20px; }
-  .kpi .small{ font-size: 12px; }
+  /* KPI typography (time + numbers) */
+  .kpi .big{ font-size: 18px; }
+  .kpi .small{ font-size: 11px; }
 
   /* pills / segmented controls */
   .pill{
