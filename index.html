@@ -1206,8 +1206,8 @@ body.modalOpen{
   width: min(58vw, 190px);       /* ✅ smaller cards */
   aspect-ratio: 1 / 1;
   border-radius: 18px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.085);   /* less transparent */
+  border: 1px solid rgba(255,255,255,.16);
   box-shadow: 0 18px 55px rgba(0,0,0,.55);
   padding: 12px;
   display:flex;
@@ -1215,7 +1215,13 @@ body.modalOpen{
   justify-content:space-between;
   will-change: transform, opacity, filter;
 }
-
+.c3dCard:not(.sel){
+  filter: saturate(.75) brightness(.75);
+}
+.c3dCard:not(.sel){
+  /* optional: subtle softness */
+  /* filter: saturate(.75) brightness(.75) blur(.3px); */
+}
 .c3dCard.sel{
   border-color: rgba(55,214,122,.45); /* ✅ subtle neon accent */
   box-shadow:
@@ -1271,7 +1277,7 @@ body.modalOpen{
   display:flex;
   gap: 8px;
   justify-content:space-between;
-  margin-top: 15px; 
+  margin-top: 20px; 
 }
 
 .routineDayBtn{
