@@ -1151,9 +1151,8 @@ button.mini.added{
   
 /* ✅ iPhone sizing scale (shrinks Home cards, text, buttons, nav) */
 @media (max-width: 500px){
-  html{ font-size: 14px; }
-  body{ font-size: 14px; }
-
+html{ font-size: 12.5px; }
+body{ font-size: 12.5px; }
   :root{
     --r: 16px;
     --navH: 66px;
@@ -1197,11 +1196,19 @@ button.mini.added{
   .kpi .small{ font-size: 11px; }
 
   /* pills / segmented controls */
-  .pill{
-    padding: 8px 10px;
-    font-size: 12px;
+   .pill{
+    padding: 6px 8px;
+    font-size: 11px;
+    border-radius: 999px;
+    line-height: 1.15;
   }
-
+  /* tighten pill row spacing (common culprit) */
+  .pillRow,
+  .pills,
+  .tabs,
+  .segmented{
+    gap: 6px !important;
+  }
   /* bottom nav */
   .navbar{
     padding: 6px;
