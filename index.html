@@ -1302,6 +1302,56 @@ button.mini.added{
   display:none;
   padding-top: 8px;
 }
+ /* Progress — search + pills */
+.progSearch{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 12px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+}
+.progSearch .ico{ opacity:.75; font-size: 14px; }
+.progSearch input{
+  flex:1;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  outline: none !important;
+  color: rgba(255,255,255,.92);
+}
+.progSearch input::placeholder{ color: rgba(255,255,255,.45); }
+
+.segRow{
+  display:flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pillRow{ margin-top: 10px; }
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(124,92,255,.14);
+}
+.pill .t{ font-weight: 850; font-size: 12px; }
+.pill .x{
+  appearance:none;
+  border:none;
+  background: rgba(255,255,255,.10);
+  color: rgba(255,255,255,.9);
+  border-radius: 999px;
+  padding: 2px 8px;
+  cursor:pointer;
+}
+.pill .x:active{ transform: scale(.98); }
+
+.progResults{ margin-top: 10px; }
   </style>
 </head>
 
@@ -4051,135 +4101,76 @@ Progress(){
   let toISO = todayISO;
 
   // Metric default per type
-  let metric = defaultMetricForType(type); // weightlifting: topWeight|est1RM|volume ; cardio: pace|distance|timeSec ; core: volume
+  let metric = defaultMetricForType(type);
+
+  // Search state
+  let query = "";
 
   const root = el("div", { class:"grid" });
 
   // Header
   root.appendChild(el("div", { class:"card" }, [
     el("h2", { text:"Progress" }),
-    el("div", { class:"note", text:"Filter by date/routine and view your trends per exercise. Table shows the most recent logs." })
+    el("div", { class:"note", text:"Search an exercise, then view trends + history. Keep the graph front-and-center." })
   ]));
 
-  // Quick stats
-  const statsCard = el("div", { class:"card" }, [
-    el("h2", { text:"Overview" })
+  // ────────────────────────────
+  // Compact Controls + Overview (single card)
+  // ────────────────────────────
+  const topCard = el("div", { class:"card" }, [
+    el("h2", { text:"Find exercise" })
   ]);
-  const statsHost = el("div", { class:"overviewList" });
-  statsCard.appendChild(statsHost);
-  root.appendChild(statsCard);
 
-  // Controls
-  const controls = el("div", { class:"card" }, [
-    el("h2", { text:"Filters" })
+  // Type segmented
+  const typeRow = el("div", { class:"segRow" });
+  const typeBtns = {
+    weightlifting: el("button", { class:"seg", onClick: () => setType("weightlifting") }, ["Weightlifting"]),
+    cardio:        el("button", { class:"seg", onClick: () => setType("cardio") }, ["Cardio"]),
+    core:          el("button", { class:"seg", onClick: () => setType("core") }, ["Core"])
+  };
+  typeRow.appendChild(typeBtns.weightlifting);
+  typeRow.appendChild(typeBtns.cardio);
+  typeRow.appendChild(typeBtns.core);
+
+  // Search bar + selected pill
+  const searchWrap = el("div", { class:"progSearch" }, [
+    el("div", { class:"ico", text:"🔎" }),
+    el("input", {
+      type:"text",
+      value:"",
+      placeholder:"Search exercise (e.g., Bench, Squat, Treadmill)…",
+      onInput: (e) => {
+        query = String(e.target.value || "");
+        repaint(false);
+      }
+    })
   ]);
-  root.appendChild(controls);
 
-  // Chart
-  const chartCard = el("div", { class:"card" }, [
-    el("h2", { text:"Graph" })
-  ]);
-  root.appendChild(chartCard);
+  const selectedRow = el("div", { class:"pillRow" });
+  const resultsHost = el("div", { class:"progResults" });
 
-  // Table
-  const tableCard = el("div", { class:"card" }, [
-    el("h2", { text:"History" })
-  ]);
-  root.appendChild(tableCard);
-
-  // Controls UI
-  const typeSelect = el("select", {});
-  ["weightlifting","cardio","core"].forEach(t => {
-    typeSelect.appendChild(el("option", {
-      value:t,
-      text: t === "weightlifting" ? "Weightlifting" : (t === "cardio" ? "Cardio" : "Core")
-    }));
-  });
-
+  // Routine select (kept, but compact)
   const routineSelect = el("select", {});
   routineSelect.appendChild(el("option", { value:"", text:"All routines" }));
-
-  const exSelect = el("select", {});
-  const metricSelect = el("select", {});
-
-  const fromInput = el("input", { type:"date", value: fromISO });
-  const toInput   = el("input", { type:"date", value: toISO });
-
-  const chartWrap = el("div", { class:"chartWrap" });
-  const canvas = el("canvas", {});
-  chartWrap.appendChild(canvas);
-
-  const downloadBtn = el("button", {
-    class:"btn",
-    onClick: () => {
-      const exName = resolveExerciseName(type, exerciseId, "exercise").replace(/\s+/g,"_");
-      downloadCanvasPNG(canvas, `progress_${type}_${exName}_${fromISO}_to_${toISO}.png`);
-    }
-  }, ["Download PNG"]);
-
-  const refreshBtn = el("button", { class:"btn" }, ["Refresh"]);
-
-  // Layout rows
-  controls.appendChild(el("div", { class:"row2" }, [
-    el("label", {}, [ el("span", { text:"Type" }), typeSelect ]),
-    el("label", {}, [ el("span", { text:"Routine" }), routineSelect ])
-  ]));
-
-  controls.appendChild(el("div", { class:"row2" }, [
-    el("label", {}, [ el("span", { text:"Exercise" }), exSelect ]),
-    el("label", {}, [ el("span", { text:"Metric" }), metricSelect ])
-  ]));
-
-  controls.appendChild(el("div", { class:"row2" }, [
-    el("label", {}, [ el("span", { text:"From" }), fromInput ]),
-    el("label", {}, [ el("span", { text:"To" }), toInput ])
-  ]));
-
-  controls.appendChild(el("div", { style:"display:flex; align-items:end; gap:10px; flex-wrap:wrap;" }, [
-    downloadBtn,
-    refreshBtn
-  ]));
-
-  // Chart area
-  chartCard.appendChild(chartWrap);
-  const chartNote = el("div", { class:"note", style:"margin-top:10px;" });
-  chartCard.appendChild(chartNote);
-
-  // Table area
-  const tableHost = el("div", { class:"list" });
-  tableCard.appendChild(tableHost);
-
-  // Populate routine dropdown
-  repaintRoutineSelect();
-
-  // Events
-  typeSelect.value = type;
-
-  typeSelect.addEventListener("change", () => {
-    type = typeSelect.value;
-    exerciseId = (state.exerciseLibrary?.[type]?.[0]?.id) || null;
-    metric = defaultMetricForType(type);
-    repaint(true);
-  });
-
   routineSelect.addEventListener("change", () => {
     routineId = routineSelect.value || "";
     repaint(true);
   });
 
-  exSelect.addEventListener("change", () => {
-    exerciseId = exSelect.value || null;
-    repaint(true);
-  });
+  // Date range chips
+  const rangeRow = el("div", { class:"segRow" });
+  const r7  = el("button", { class:"seg", onClick: () => { setRange(7); } }, ["7D"]);
+  const r30 = el("button", { class:"seg", onClick: () => { setRange(30); } }, ["30D"]);
+  const r90 = el("button", { class:"seg", onClick: () => { setRange(90); } }, ["90D"]);
+  const r1y = el("button", { class:"seg", onClick: () => { setRange(365); } }, ["1Y"]);
+  rangeRow.appendChild(r7); rangeRow.appendChild(r30); rangeRow.appendChild(r90); rangeRow.appendChild(r1y);
 
-  metricSelect.addEventListener("change", () => {
-    metric = metricSelect.value;
-    repaint(true);
-  });
+  // Custom date inputs (still available, compact)
+  const fromInput = el("input", { type:"date", value: fromISO });
+  const toInput   = el("input", { type:"date", value: toISO });
 
   fromInput.addEventListener("change", () => {
     fromISO = fromInput.value || fromISO;
-    // keep from <= to
     if(fromISO > toISO){
       toISO = fromISO;
       toInput.value = toISO;
@@ -4196,7 +4187,86 @@ Progress(){
     repaint(true);
   });
 
-  refreshBtn.addEventListener("click", () => repaint(true));
+  // Metric segmented
+  const metricRow = el("div", { class:"segRow" });
+
+  // Overview host (compact KPIs)
+  const statsHost = el("div", { class:"overviewList", style:"margin-top:8px;" });
+
+  topCard.appendChild(el("div", { class:"note", text:"Type + search to select an exercise." }));
+  topCard.appendChild(typeRow);
+  topCard.appendChild(el("div", { style:"height:10px" }));
+  topCard.appendChild(searchWrap);
+  topCard.appendChild(selectedRow);
+  topCard.appendChild(resultsHost);
+
+  topCard.appendChild(el("div", { style:"height:10px" }));
+
+  topCard.appendChild(el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"Routine" }), routineSelect ]),
+    el("label", {}, [ el("span", { text:"Range" }), el("div", { style:"display:flex; gap:8px; flex-wrap:wrap;" }, [ rangeRow ]) ])
+  ]));
+
+  topCard.appendChild(el("div", { class:"row2" }, [
+    el("label", {}, [ el("span", { text:"From" }), fromInput ]),
+    el("label", {}, [ el("span", { text:"To" }), toInput ])
+  ]));
+
+  topCard.appendChild(el("div", { style:"height:8px" }));
+  topCard.appendChild(el("div", { class:"note", text:"Metric" }));
+  topCard.appendChild(metricRow);
+
+  topCard.appendChild(el("div", { style:"height:10px" }));
+  topCard.appendChild(el("div", { class:"note", text:"Overview" }));
+  topCard.appendChild(statsHost);
+
+  root.appendChild(topCard);
+
+  // ────────────────────────────
+  // Graph (primary focus)
+  // ────────────────────────────
+  const chartCard = el("div", { class:"card" }, [
+    el("h2", { text:"Trend" })
+  ]);
+  const chartWrap = el("div", { class:"chartWrap" });
+  const canvas = el("canvas", {});
+  chartWrap.appendChild(canvas);
+  const chartNote = el("div", { class:"note", style:"margin-top:10px;" });
+
+  chartCard.appendChild(chartWrap);
+  chartCard.appendChild(chartNote);
+  root.appendChild(chartCard);
+
+  // ────────────────────────────
+  // History (collapsible)
+  // ────────────────────────────
+  const tableCard = el("div", { class:"card" }, [
+    el("div", { class:"accItem" }, [
+      el("div", {
+        class:"accHead",
+        onClick: () => {
+          const body = tableCard.querySelector(".accBody");
+          const caret = tableCard.querySelector(".accCaret");
+          const isOpen = body.style.display === "block";
+          body.style.display = isOpen ? "none" : "block";
+          caret.textContent = isOpen ? "▾" : "▴";
+        }
+      }, [
+        el("div", { class:"accTitle", text:"History" }),
+        el("div", { class:"accCaret", text:"▾" })
+      ]),
+      el("div", { class:"accBody" }, [
+        el("div", { class:"note", text:"Most recent logs for the selected exercise." }),
+        el("div", { style:"height:8px" }),
+        el("div", { class:"list", id:"progressHistoryHost" })
+      ])
+    ])
+  ]);
+  const tableHost = tableCard.querySelector("#progressHistoryHost");
+  root.appendChild(tableCard);
+
+  // Populate routine dropdown
+  repaintRoutineSelect();
 
   // Initial paint
   repaint(true);
@@ -4209,6 +4279,23 @@ Progress(){
     return "volume";
   }
 
+  function setType(next){
+    type = next;
+    query = "";
+    searchWrap.querySelector("input").value = "";
+    exerciseId = (state.exerciseLibrary?.[type]?.[0]?.id) || null;
+    metric = defaultMetricForType(type);
+    repaint(true);
+  }
+
+  function setRange(days){
+    fromISO = Dates.addDaysISO(todayISO, -Math.max(1, Number(days) || 30));
+    toISO = todayISO;
+    fromInput.value = fromISO;
+    toInput.value = toISO;
+    repaint(true);
+  }
+
   function repaintRoutineSelect(){
     routineSelect.innerHTML = "";
     routineSelect.appendChild(el("option", { value:"", text:"All routines" }));
@@ -4216,6 +4303,45 @@ Progress(){
     all.forEach(r => routineSelect.appendChild(el("option", { value:r.id, text:r.name })));
     routineSelect.value = routineId || "";
   }
+
+  function setMetric(next){
+    metric = next;
+    repaint(true);
+  }
+
+  function repaintMetricRow(){
+    metricRow.innerHTML = "";
+
+    if(type === "weightlifting"){
+      metricRow.appendChild(el("button", { class:"seg", onClick: () => setMetric("topWeight") }, ["Top Weight"]));
+      metricRow.appendChild(el("button", { class:"seg", onClick: () => setMetric("est1RM") }, ["Est 1RM"]));
+      metricRow.appendChild(el("button", { class:"seg", onClick: () => setMetric("volume") }, ["Volume"]));
+    } else if(type === "cardio"){
+      metricRow.appendChild(el("button", { class:"seg", onClick: () => setMetric("pace") }, ["Pace"]));
+      metricRow.appendChild(el("button", { class:"seg", onClick: () => setMetric("distance") }, ["Distance"]));
+      metricRow.appendChild(el("button", { class:"seg", onClick: () => setMetric("timeSec") }, ["Time"]));
+    } else {
+      metricRow.appendChild(el("button", { class:"seg", onClick: () => setMetric("volume") }, ["Volume"]));
+    }
+
+    // active styles
+    [...metricRow.querySelectorAll(".seg")].forEach(btn => {
+      const v = (btn.textContent || "").toLowerCase();
+      const isActive =
+        (metric === "topWeight" && v.includes("top")) ||
+        (metric === "est1RM" && v.includes("1rm")) ||
+        (metric === "volume" && v.includes("volume")) ||
+        (metric === "pace" && v.includes("pace")) ||
+        (metric === "distance" && v.includes("distance")) ||
+        (metric === "timeSec" && v.includes("time"));
+      btn.classList.toggle("active", isActive);
+    });
+  }
+
+  function repaintTypeRow(){
+    Object.entries(typeBtns).forEach(([k,btn]) => btn.classList.toggle("active", k === type));
+  }
+
   function confirmDeleteLog(entry){
     Modal.open({
       title: "Delete log?",
@@ -4235,303 +4361,165 @@ Progress(){
           }, ["Delete"]),
           el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
         ])
-      ])
+      ]),
+      size: "sm"
     });
   }
 
   function repaint(forceChart){
-    // Exercise dropdown
-    exSelect.innerHTML = "";
+    repaintTypeRow();
+    repaintMetricRow();
+
+    // Exercise library for current type
     const lib = (state.exerciseLibrary?.[type] || []).slice()
       .sort((a,b) => (a.name||"").localeCompare(b.name||""));
 
+    // Ensure exerciseId is valid
     if(lib.length === 0){
-      exSelect.appendChild(el("option", { value:"", text:"No exercises — create one in Library" }));
       exerciseId = null;
     }else{
-      lib.forEach(x => exSelect.appendChild(el("option", { value:x.id, text:x.name })));
       if(!exerciseId || !lib.some(x => x.id === exerciseId)) exerciseId = lib[0].id;
-      exSelect.value = exerciseId;
     }
 
-    // Metric dropdown
-    metricSelect.innerHTML = "";
-    if(type === "weightlifting"){
-      metricSelect.appendChild(el("option", { value:"topWeight", text:"Top Weight" }));
-      metricSelect.appendChild(el("option", { value:"est1RM", text:"Estimated 1RM (Epley)" }));
-      metricSelect.appendChild(el("option", { value:"volume", text:"Volume" }));
-    }else if(type === "cardio"){
-      metricSelect.appendChild(el("option", { value:"pace", text:"Pace (lower is better)" }));
-      metricSelect.appendChild(el("option", { value:"distance", text:"Distance" }));
-      metricSelect.appendChild(el("option", { value:"timeSec", text:"Time" }));
-    }else{
-      metricSelect.appendChild(el("option", { value:"volume", text:"Core Volume" }));
-    }
-    const allVals = [...metricSelect.querySelectorAll("option")].map(o => o.value);
-    if(!allVals.includes(metric)) metric = defaultMetricForType(type);
-    metricSelect.value = metric;
+    // Search results
+    resultsHost.innerHTML = "";
+    selectedRow.innerHTML = "";
 
-    // No exercise selected
+    const selectedName = exerciseId ? resolveExerciseName(type, exerciseId, "Exercise") : null;
+
+    if(selectedName){
+      selectedRow.appendChild(el("div", { class:"pill" }, [
+        el("div", { class:"t", text:selectedName }),
+        el("button", {
+          class:"x",
+          onClick: () => {
+            exerciseId = null;
+            repaint(true);
+          }
+        }, ["×"])
+      ]));
+    } else {
+      selectedRow.appendChild(el("div", { class:"note", text:"No exercise selected." }));
+    }
+
+    const q = normName(query);
+    if(query && lib.length){
+      const hits = lib.filter(x => normName(x.name).includes(q)).slice(0, 10);
+      if(hits.length){
+        const list = el("div", { class:"list", style:"margin-top:8px;" }, hits.map(x => {
+          return el("div", {
+            class:"item",
+            onClick: () => {
+              exerciseId = x.id;
+              query = "";
+              searchWrap.querySelector("input").value = "";
+              repaint(true);
+            }
+          }, [
+            el("div", { class:"left" }, [
+              el("div", { class:"name", text:x.name }),
+              el("div", { class:"meta", text: typeLabel(type) })
+            ])
+          ]);
+        }));
+        resultsHost.appendChild(list);
+      } else {
+        resultsHost.appendChild(el("div", { class:"note", text:"No matches. Try a different keyword." }));
+      }
+    }
+
+    // Stats + chart + table only if exercise selected
+    statsHost.innerHTML = "";
+    tableHost.innerHTML = "";
+    chartNote.textContent = "";
+
     if(!exerciseId){
-      statsHost.innerHTML = "";
-      tableHost.innerHTML = "";
-      tableHost.appendChild(el("div", { class:"note", text:"Select or create an exercise to view progress." }));
       destroyProgressChart();
-      chartNote.textContent = "No data.";
+      chartNote.textContent = "Select an exercise to see your trend.";
+      tableHost.appendChild(el("div", { class:"note", text:"Select an exercise to see history." }));
       return;
     }
 
-    // Pull filtered logs
-    const all = (state.logs?.workouts || []).filter(e => {
-      if(e.type !== type) return false;
-      if(e.exerciseId !== exerciseId) return false;
-      if(routineId && e.routineId !== routineId) return false;
+    // Filter entries for selected exercise
+    const all = (state.logs?.workouts || []).filter(e =>
+      e.type === type &&
+      e.exerciseId === exerciseId &&
+      (!routineId || e.routineId === routineId) &&
+      (e.dateISO >= fromISO && e.dateISO <= toISO)
+    );
 
-      const d = String(e.dateISO || "");
-      if(d < fromISO || d > toISO) return false;
-      return true;
-    });
+    // Overview KPIs
+    const desc = all.slice().sort((a,b) => (b.dateISO||"").localeCompare(a.dateISO||"") || (b.createdAt||0)-(a.createdAt||0));
+    const latest = desc[0] || null;
 
-    // Sort
-    const desc = all.slice().sort((a,b) => String(b.dateISO).localeCompare(String(a.dateISO)));
-    const asc  = all.slice().sort((a,b) => String(a.dateISO).localeCompare(String(b.dateISO)));
+    const bests = LogEngine.lifetimeBests(type, exerciseId);
+    const bestText = bestsText(type, bests);
 
-    // Stats
-    statsHost.innerHTML = "";
-    renderStats(statsHost, desc);
-
-    // Table
-// Table
-tableHost.innerHTML = "";
-if(desc.length === 0){
-  tableHost.appendChild(el("div", { class:"note", text:"No logs in this range yet. Log sets from Routine → Log Sets." }));
-}else{
-  desc.slice(0, 40).forEach(e => {
-    tableHost.appendChild(el("div", { class:"item" }, [
-      el("div", { class:"left" }, [
-        el("div", { class:"name", text: e.dateISO }),
-        el("div", { class:"meta", text: tableLine(e) })
-      ]),
-      el("div", { class:"actions" }, [
-        el("div", { class:"meta", text: prLine(e.pr) }),
-        el("button", {
-          class:"btn danger",
-          onClick: () => {
-            Modal.open({
-              title: "Delete entry?",
-              center: true,
-              bodyNode: el("div", {}, [
-                el("div", { class:"note", text:`Delete this log from ${e.dateISO}? This can’t be undone.` }),
-                el("div", { style:"height:12px" }),
-                el("div", { class:"btnrow" }, [
-                  el("button", {
-                    class:"btn danger",
-                    onClick: () => {
-                      state.logs.workouts = (state.logs.workouts || []).filter(x => x.id !== e.id);
-                      Storage.save(state);
-                      Modal.close();
-                      repaint(true);
-                    }
-                  }, ["Delete"]),
-                  el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-                ])
-              ])
-            });
-          }
-        }, ["Delete"])
-      ])
+    statsHost.appendChild(el("div", { class:"ovItem" }, [
+      el("div", { class:"ovA", text:"Sessions" }),
+      el("div", { class:"ovB", text:String(all.length) })
     ]));
-  });
-}
-    // Chart
+    statsHost.appendChild(el("div", { class:"ovItem" }, [
+      el("div", { class:"ovA", text:"Lifetime best" }),
+      el("div", { class:"ovB", text: bestText || "—" })
+    ]));
+    statsHost.appendChild(el("div", { class:"ovItem" }, [
+      el("div", { class:"ovA", text:"Latest" }),
+      el("div", { class:"ovB", text: latest ? tableLine(latest) : "—" })
+    ]));
+
+    // Chart (ascending for series builder)
+    const asc = all.slice().sort((a,b) => (a.dateISO||"").localeCompare(b.dateISO||"") || (a.createdAt||0)-(b.createdAt||0));
     if(asc.length < 2){
       destroyProgressChart();
-      chartNote.textContent = "Add at least 2 entries in this date range to see a trend line.";
-      return;
-    }
-
-    const series = buildSeries(type, asc);
-    renderProgressChart(canvas, type, metric, series);
-
-    const exName = resolveExerciseName(type, exerciseId, "exercise");
-    chartNote.textContent = `${exName} • ${asc.length} entries • ${fromISO} → ${toISO}`;
-
-    function tableLine(e){
-      if(e.type === "weightlifting"){
-        const w = Number.isFinite(e.summary?.bestWeight) ? e.summary.bestWeight : "—";
-        const r = Number.isFinite(e.summary?.best1RM) ? e.summary.best1RM : "—";
-        const v = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
-        return `Top W: ${w} • Est1RM: ${r} • Vol: ${v}`;
-      }
-      if(e.type === "cardio"){
-        const t = Number.isFinite(e.summary?.timeSec) ? formatTime(e.summary.timeSec) : "—";
-        const d = Number.isFinite(e.summary?.distance) ? e.summary.distance : "—";
-        const p = formatPace(e.summary?.paceSecPerUnit);
-        return `Time: ${t} • Dist: ${d} • Pace: ${p}`;
-      }
-      const v = Number.isFinite(e.summary?.totalVolume) ? e.summary.totalVolume : "—";
-      return `Core Vol: ${v}`;
-    }
-
-    function prLine(pr){
-      if(!pr) return "";
-      const b = [];
-      if(pr.isPRWeight) b.push("PR W");
-      if(pr.isPR1RM) b.push("PR 1RM");
-      if(pr.isPRVolume) b.push("PR Vol");
-      if(pr.isPRPace) b.push("PR Pace");
-      return b.join(" • ");
-    }
-  }
-
-  function renderStats(host, desc){
-    const exName = resolveExerciseName(type, exerciseId, "exercise");
-    const count = desc.length;
-    const lastDate = desc[0]?.dateISO || "—";
-
-    let bestLabel = "Best";
-    let bestVal = "—";
-    let totalLabel = "Total";
-    let totalVal = "—";
-
-    if(type === "weightlifting"){
-      const bestW = Math.max(...desc.map(e => Number(e.summary?.bestWeight) || 0), 0);
-      const best1 = Math.max(...desc.map(e => Number(e.summary?.best1RM) || 0), 0);
-      const vol = desc.reduce((a,e) => a + (Number(e.summary?.totalVolume) || 0), 0);
-
-      bestLabel = (metric === "est1RM") ? "Best est 1RM" : "Best weight";
-      bestVal = (metric === "est1RM") ? (best1 ? String(best1) : "—") : (bestW ? String(bestW) : "—");
-
-      totalLabel = "Total volume";
-      totalVal = vol ? String(vol) : "—";
-    }else if(type === "cardio"){
-      const bestDist = Math.max(...desc.map(e => Number(e.summary?.distance) || 0), 0);
-      const totalTime = desc.reduce((a,e) => a + (Number(e.summary?.timeSec) || 0), 0);
-
-      bestLabel = "Best distance";
-      bestVal = bestDist ? String(bestDist) : "—";
-
-      totalLabel = "Total time";
-      totalVal = totalTime ? formatTime(totalTime) : "—";
+      chartNote.textContent = `Not enough data in this range (${fromISO} to ${toISO}). Log at least 2 sessions.`;
     }else{
-      const bestCore = Math.max(...desc.map(e => Number(e.summary?.totalVolume) || 0), 0);
-      const vol = desc.reduce((a,e) => a + (Number(e.summary?.totalVolume) || 0), 0);
-
-      bestLabel = "Best volume";
-      bestVal = bestCore ? String(bestCore) : "—";
-
-      totalLabel = "Total volume";
-      totalVal = vol ? String(vol) : "—";
-    }
-function openLogEntryEditor(entry){
-  const type = entry.type;
-  const body = el("div", { class:"grid" });
-
-  const header = el("div", { class:"note" }, [
-    `${resolveExerciseName(type, entry.exerciseId, "Exercise")} • ${entry.dateISO}`
-  ]);
-  body.appendChild(header);
-
-  const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
-  body.appendChild(err);
-
-  function showErr(msg){
-    err.textContent = msg;
-    err.style.display = "block";
-  }
-
-  if(type === "weightlifting"){
-    const rows = el("div", { class:"grid" });
-    const inputs = [];
-
-    (entry.sets || []).forEach(s => {
-      const wInput = el("input", { type:"number", value:String(s.weight || "") });
-      const rInput = el("input", { type:"number", value:String(s.reps || "") });
-      inputs.push({ wInput, rInput });
-
-      rows.appendChild(el("div", { class:"row2" }, [
-        el("label", {}, [ el("span",{text:"Weight"}), wInput ]),
-        el("label", {}, [ el("span",{text:"Reps"}), rInput ])
-      ]));
-    });
-
-    body.appendChild(rows);
-
-    body.appendChild(el("div", { class:"btnrow" }, [
-      el("button", {
-        class:"btn primary",
-        onClick: () => {
-          const sets = inputs.map(s => ({
-            weight: Number(s.wInput.value) || 0,
-            reps: Number(s.rInput.value) || 0
-          })).filter(s => s.weight > 0 || s.reps > 0);
-
-          if(sets.length === 0){
-            showErr("Enter at least one set.");
-            return;
-          }
-
-          entry.sets = sets;
-          entry.summary = LogEngine.computeWeightliftingSummary(sets);
-          entry.pr = LogEngine.computePRFlags(type, entry.exerciseId, entry.summary);
-
-          Storage.save(state);
-          Modal.close();
-          repaint(true);
-        }
-      }, ["Save"]),
-
-      el("button", {
-        class:"btn danger",
-        onClick: () => {
-          state.logs.workouts = state.logs.workouts.filter(e => e.id !== entry.id);
-          Storage.save(state);
-          Modal.close();
-          repaint(true);
-        }
-      }, ["Delete"]),
-
-      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-    ]));
-
-  } else {
-    // Cardio + Core basic delete support (extend later if needed)
-    body.appendChild(el("div", { class:"note", text:"Editing supported for weightlifting entries. You can delete this entry." }));
-
-    body.appendChild(el("div", { class:"btnrow" }, [
-      el("button", {
-        class:"btn danger",
-        onClick: () => {
-          state.logs.workouts = state.logs.workouts.filter(e => e.id !== entry.id);
-          Storage.save(state);
-          Modal.close();
-          repaint(true);
-        }
-      }, ["Delete"]),
-      el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-    ]));
-  }
-
-  Modal.open({
-    title: "Edit Entry",
-    center: true,
-    bodyNode: body
-  });
-}
-    function row(label, value){
-      host.appendChild(el("div", { class:"overviewRow" }, [
-        el("div", { class:"overviewLabel", text: label }),
-        el("div", { class:"overviewValue", text: String(value) })
-      ]));
+      const series = buildSeries(type, asc);
+      renderProgressChart(canvas, type, metric, series);
+      chartNote.textContent = `${asc.length} points • ${fromISO} → ${toISO}${routineId ? " • Filtered by routine" : ""}`;
     }
 
-    row("Exercise", exName);
-    row("Entries", String(count));
-    row("Last logged", lastDate);
-    row(bestLabel, bestVal);
-    row(totalLabel, totalVal);
+    // History table
+    if(desc.length === 0){
+      tableHost.appendChild(el("div", { class:"note", text:"No logs in this range." }));
+    }else{
+      desc.slice(0, 40).forEach(entry => {
+        tableHost.appendChild(el("div", { class:"item" }, [
+          el("div", { class:"left" }, [
+            el("div", { class:"name", text: entry.dateISO }),
+            el("div", { class:"meta", text: tableLine(entry) })
+          ]),
+          el("div", { class:"actions" }, [
+            el("button", { class:"mini danger", onClick: () => confirmDeleteLog(entry) }, ["Delete"])
+          ])
+        ]));
+      });
+    }
   }
-  },
+
+  function typeLabel(t){
+    if(t === "weightlifting") return "Weightlifting";
+    if(t === "cardio") return "Cardio";
+    return "Core";
+  }
+
+  function bestsText(t, bests){
+    if(!bests) return "";
+    if(t === "weightlifting"){
+      const bw = bests.bestWeight != null ? `${Math.round(bests.bestWeight*10)/10} top` : "";
+      const brm = bests.best1RM != null ? `${Math.round(bests.best1RM*10)/10} est 1RM` : "";
+      const bv = bests.bestVolume != null ? `${Math.round(bests.bestVolume)} vol` : "";
+      return [bw, brm, bv].filter(Boolean)[0] || "";
+    }
+    if(t === "cardio"){
+      const bp = bests.bestPace != null ? `${formatTime(Math.round(bests.bestPace))} pace` : "";
+      return bp || "";
+    }
+    const bv = bests.bestVolume != null ? `${Math.round(bests.bestVolume)} vol` : "";
+    return bv || "";
+  }
+},
+
   
   Weight(){
   WeightEngine.ensure();
