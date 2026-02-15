@@ -4955,7 +4955,13 @@ statsHost.appendChild(el("div", { class:"pill" }, [
       },
          Settings(){
         // Persist across renders (not saved to Storage)
-        const ui = UIState.settings;
+const ui = UIState.settings || (UIState.settings = {});
+
+// ✅ ensure accordion state exists so taps don’t crash
+if(!ui.open || typeof ui.open !== "object") ui.open = {};
+
+// ✅ default: open Profile the first time Settings is visited
+if(Object.keys(ui.open).length === 0) ui.open.profile = true;
 
         const normalize = (s) => (s||"").toString().trim().toLowerCase();
 
@@ -4972,10 +4978,11 @@ statsHost.appendChild(el("div", { class:"pill" }, [
 
           const head = el("div", {
             class:"accHead",
-            onClick: () => {
-              ui.open[key] = !ui.open[key];
-              renderView();
-            }
+          onClick: () => {
+  ui.open = ui.open || {};
+  ui.open[key] = !ui.open[key];
+  renderView();
+}
           }, [
             el("div", {}, [
               el("div", { class:"accTitle", text: title }),
@@ -5008,15 +5015,23 @@ statsHost.appendChild(el("div", { class:"pill" }, [
         weekSelect.value = normalized;
 
 
-        const hideRestSwitch = el("input", { type:"checkbox" });
-        hideRestSwitch.checked = !!state.profile?.hideRestDays;
+        let hideRestDays = !!state.profile?.hideRestDays;
+
+const hideRestSwitch = el("div", {
+  class: "switch" + (hideRestDays ? " on" : ""),
+  onClick: () => {
+    hideRestDays = !hideRestDays;
+    hideRestSwitch.classList.toggle("on", hideRestDays);
+  }
+});
+
 
         function saveProfile(){
           state.profile = state.profile || {};
           state.profile.name = (nameInput.value || "").trim();
           state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
           state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
-          state.profile.hideRestDays = !!hideRestSwitch.checked;
+state.profile.hideRestDays = !!hideRestDays;
           Storage.save(state);
           showToast("Saved");
           renderView();
