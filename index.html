@@ -1149,105 +1149,55 @@ button.mini.added{
 .setLink .a{ font-weight: 800; }
 .setLink .b{ font-size: 12px; color: var(--muted); }
   
-/* =====================================================
-   GLOBAL COMPACT MODE (iPhone)
-   Makes entire app denser like the green version
-   ===================================================== */
+/* ✅ GLOBAL COMPACT: Routine + Progress + Settings (iPhone) */
 @media (max-width: 500px){
 
-  /* Base scale */
-  html{ font-size: 13.5px; }
-  body{ font-size: 13.5px; }
+  /* ---------- Routine (lists, segmented picker, toggles, mini buttons) ---------- */
+  .seg{ gap: 6px; padding: 5px; border-radius: 14px; }               /* routine add-exercise modal uses this:contentReference[oaicite:5]{index=5} */
+  .segbtn{ padding: 8px 8px; font-size: 11px; border-radius: 10px; } /* :contentReference[oaicite:6]{index=6} */
 
-  :root{
-    --r: 16px;
-    --navH: 60px;
-  }
+  .list{ gap: 8px; }                                                 /* routine uses list/items heavily:contentReference[oaicite:7]{index=7} */
+  .item{ padding: 10px; border-radius: 14px; gap: 10px; }            /* :contentReference[oaicite:8]{index=8} */
+  .item .name{ max-width: 64vw; }                                    /* prevents wrapping too early */
 
-  /* Layout density */
-  .app{
-    padding: 0 12px calc(var(--navH) + env(safe-area-inset-bottom)) 12px;
-  }
-  main{ padding-top: 6px; }
-  .grid{ gap: 10px; }
-  .homeRow{ gap: 8px; }
+  .mini{ padding: 7px 9px; font-size: 11px; border-radius: 10px; }   /* :contentReference[oaicite:9]{index=9} */
 
-  /* Cards */
-  .card{
-    padding: 10px;
-    border-radius: 16px;
-  }
-  .card h2{
-    font-size: 11.5px;
-    margin: 0 0 6px 0;
-    letter-spacing: .05em;
-  }
+  .toggle{ padding: 10px 10px; border-radius: 12px; }                /* toggle + switch appear in routine/settings flows:contentReference[oaicite:10]{index=10} */
+  .toggle .ttext .a{ font-size: 12px; }                              /* :contentReference[oaicite:11]{index=11} */
+  .toggle .ttext .b{ font-size: 11px; }
 
-  /* KPI blocks (Protein, Weight, Workout titles) */
-  .kpi .big{ font-size: 17px; }
-  .kpi .small{ font-size: 11px; line-height: 1.2; }
+  .switch{ width: 46px; height: 26px; }                              /* :contentReference[oaicite:12]{index=12} */
+  .switch::after{ width: 20px; height: 20px; }
+  .switch.on::after{ left: 22px; }
 
-  /* Buttons */
-  .btn{
-    padding: 9px 11px;
-    border-radius: 12px;
-  }
+  /* ---------- Progress (overview tiles, filters form, labels/inputs) ---------- */
+  .overviewList{ gap: 10px; padding-top: 6px; }                      /*  */
+  .overviewRow{ gap: 4px; }
+  .overviewLabel{ font-size: 11px; letter-spacing: .18em; }
+  .overviewValue{ font-size: 18px; }                                 /* big numbers in Progress overview */
 
-  /* Pills / segmented controls */
-  .pill{
-    padding: 6px 8px;
-    font-size: 11px;
-    line-height: 1.15;
-  }
+  .form{ gap: 8px; }                                                 /*  */
+  .row2{ gap: 8px; }
 
-  /* Bottom nav */
-  .navbar{
-    padding: 6px;
-    border-radius: 18px;
-  }
-  .navbtn{
-    padding: 7px 6px;
-    font-size: 10.5px;
-    gap: 4px;
-  }
-  .navbtn .dot{
-    width: 22px;
-    height: 22px;
-    border-radius: 8px;
-  }
+  label{ gap: 6px; font-size: 11.5px; }                              /*  */
+  input, select{ padding: 10px 10px; font-size: 13px; border-radius: 12px; } /*  */
 
-  /* Rings (Protein + any future progress rings) */
-  .ringWrap{
-    width: 92px;
-    height: 92px;
-  }
-  .ringWrap::before{
-    inset: 7px;
-  }
-  .ringText .big{ font-size: 14px; }
-  .ringText .small{ font-size: 10px; }
+  canvas{ height: 200px; }                                           /* progress/weight charts */
 
-  /* Modal density */
-  .sheet{
-    padding: 12px;
-    border-radius: 18px 18px 0 0;
-  }
-  .list{ gap: 8px; }
-  .item{
-    padding: 10px;
-    border-radius: 14px;
-  }
-  .name{ font-size: 12px; }
-  .meta{ font-size: 11px; }
-  .mini{
-    padding: 7px 9px;
-    font-size: 11px;
-  }
+  /* ---------- Settings (search bar, accordion density, settings rows) ---------- */
+  .settingsWrap{ gap: 8px; }                                         /* :contentReference[oaicite:18]{index=18} */
+  .settingsSearch{ padding: 8px 10px; border-radius: 14px; gap: 8px; } /* :contentReference[oaicite:19]{index=19} */
+  .settingsSearch .ico{ font-size: 13px; }                           /* :contentReference[oaicite:20]{index=20} */
 
-  /* Charts */
-  canvas{
-    height: 210px;
-  }
+  .accList{ gap: 8px; }                                              /* :contentReference[oaicite:21]{index=21} */
+  .accItem{ border-radius: 16px; }
+  .accHead{ padding: 12px 12px; gap: 10px; }                         /* :contentReference[oaicite:22]{index=22} */
+  .accSub{ font-size: 11px; margin-top: 2px; }                       /* :contentReference[oaicite:23]{index=23} */
+  .accBody{ padding: 0 12px 12px; }                                  /* :contentReference[oaicite:24]{index=24} */
+
+  .setRow{ padding: 8px 0; }                                         /* :contentReference[oaicite:25]{index=25} */
+  .setRow .meta{ font-size: 11px; }                                  /* :contentReference[oaicite:26]{index=26} */
+  .setRow input, .setRow select{ width: 150px; max-width: 46vw; }     /* keeps rows compact */
 }
   </style>
 </head>
