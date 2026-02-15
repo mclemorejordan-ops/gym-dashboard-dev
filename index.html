@@ -3957,79 +3957,143 @@ function openRoutinePicker(anchorBtn){
     return byName || null;
   }
 
-  const body = el("div", { style:"max-height:70vh; overflow:auto; padding-right:4px;" }, [
-    // Existing routines (if any)
-    el("div", { class:"popTitle", text:"Select routine" }),
-    (all.length === 0)
-      ? el("div", { class:"note", text:"No routines yet. Choose a template below to create one." })
-      : el("div", { style:"display:grid; gap:10px;" }, all.map(r => {
-          const isActive = (r.id === activeId);
-          return el("div", {
-            class:"popItem",
-            onClick: () => {
-              Routines.setActive(r.id);
-              routine = Routines.getActive();
-              selectedIndex = todayIndex;
-              PopoverClose();
-              repaint();
-            }
-          }, [
-            el("div", { class:"l" }, [
-              el("div", { class:"n", text:r.name }),
-              el("div", { class:"m", text: isActive ? "Currently active" : "Tap to activate" })
-            ]),
-            isActive ? el("div", { class:"popBadge", text:"Active" }) : el("div", { class:"m", text:"" })
-          ]);
-        })),
+// ────────────────────────────
+// Visual-only layout upgrade
+// Active pinned, rest scrollable
+// ────────────────────────────
 
-    // Default templates (always shown)
-    el("div", { style:"height:10px" }),
-    el("div", { class:"popTitle", text:"Default templates" }),
+// Outer shell (column layout)
+const shell = el("div", {
+  style: "display:flex; flex-direction:column; max-height:70vh;"
+});
 
-    el("div", { style:"display:grid; gap:10px;" }, (RoutineTemplates || []).map(tpl => {
-      // This is only for the label display. The real duplicate protection happens on click.
-      const existingAtRender = findRoutineForTemplate(tpl);
-      const labelRight = existingAtRender ? "Activate" : "Add";
+// Title (fixed)
+shell.appendChild(
+  el("div", { class:"popTitle", text:"Select routine" })
+);
 
-      return el("div", {
+// Identify active routine (visual only)
+const activeRoutine = all.find(r => r.id === activeId);
+
+// Fixed Active Section
+if(activeRoutine){
+  shell.appendChild(
+    el("div", { style:"margin-top:8px;" }, [
+      el("div", { class:"popItem" }, [
+        el("div", { class:"l" }, [
+          el("div", { class:"n", text: activeRoutine.name }),
+          el("div", { class:"m", text:"Currently active" })
+        ]),
+        el("div", { class:"popBadge", text:"Active" })
+      ])
+    ])
+  );
+
+  shell.appendChild(el("div", {
+    style:"height:1px; background:rgba(255,255,255,.08); margin:12px 0;"
+  }));
+}
+
+// Scrollable area (existing + templates)
+const scrollHost = el("div", {
+  style:"overflow:auto; padding-right:4px; display:grid; gap:10px;"
+});
+
+// ────────────────────────────
+// Existing routines (UNCHANGED LOGIC)
+// ────────────────────────────
+
+if(all.length === 0){
+  scrollHost.appendChild(
+    el("div", { class:"note", text:"No routines yet. Choose a template below to create one." })
+  );
+}else{
+  all.forEach(r => {
+    const isActive = (r.id === activeId);
+
+    scrollHost.appendChild(
+      el("div", {
         class:"popItem",
         onClick: () => {
-          // ✅ Re-check at click time (prevents stale state + duplicates)
-          all = Routines.getAll() || [];
-          const existingNow = findRoutineForTemplate(tpl);
+          Routines.setActive(r.id);
+          routine = Routines.getActive();
+          selectedIndex = todayIndex;
+          PopoverClose();
+          repaint();
+        }
+      }, [
+        el("div", { class:"l" }, [
+          el("div", { class:"n", text:r.name }),
+          el("div", { class:"m", text: isActive ? "Currently active" : "Tap to activate" })
+        ]),
+        isActive
+          ? el("div", { class:"popBadge", text:"Active" })
+          : el("div", { class:"m", text:"" })
+      ])
+    );
+  });
+}
 
-          if(existingNow){
-            Routines.setActive(existingNow.id);
-            routine = Routines.getActive();
-            selectedIndex = todayIndex;
+// Spacer before templates
+scrollHost.appendChild(el("div", { style:"height:12px" }));
 
-            PopoverClose();
-            repaint();
-            showToast(`Active: ${existingNow.name}`);
-            return;
-          }
+// Templates title
+scrollHost.appendChild(
+  el("div", { class:"popTitle", text:"Default templates" })
+);
 
-          // Otherwise create ONE routine for that template (includes Blank)
-          Routines.addFromTemplate(tpl.key, tpl.name);
+// ────────────────────────────
+// Default templates (UNCHANGED LOGIC)
+// ────────────────────────────
 
+(RoutineTemplates || []).forEach(tpl => {
+
+  const existingAtRender = findRoutineForTemplate(tpl);
+  const labelRight = existingAtRender ? "Activate" : "Add";
+
+  scrollHost.appendChild(
+    el("div", {
+      class:"popItem",
+      onClick: () => {
+
+        all = Routines.getAll() || [];
+        const existingNow = findRoutineForTemplate(tpl);
+
+        if(existingNow){
+          Routines.setActive(existingNow.id);
           routine = Routines.getActive();
           selectedIndex = todayIndex;
 
           PopoverClose();
           repaint();
-          showToast(`Created: ${tpl.name}`);
+          showToast(`Active: ${existingNow.name}`);
+          return;
         }
-      }, [
-        el("div", { class:"l" }, [
-          el("div", { class:"n", text: tpl.name }),
-          el("div", { class:"m", text: tpl.desc || "Template" })
-        ]),
-        el("div", { class:"m", text: labelRight })
-      ]);
-    }))
-  ]);
 
-  PopoverOpen(anchorBtn, body);
+        Routines.addFromTemplate(tpl.key, tpl.name);
+
+        routine = Routines.getActive();
+        selectedIndex = todayIndex;
+
+        PopoverClose();
+        repaint();
+        showToast(`Created: ${tpl.name}`);
+      }
+    }, [
+      el("div", { class:"l" }, [
+        el("div", { class:"n", text: tpl.name }),
+        el("div", { class:"m", text: tpl.desc || "Template" })
+      ]),
+      el("div", { class:"m", text: labelRight })
+    ])
+  );
+});
+
+// Attach scroll area
+shell.appendChild(scrollHost);
+
+// Open popover (same behavior)
+PopoverOpen(anchorBtn, shell);
 }
 
   // Phase 3: Per-exercise Workout Execution (logger)
