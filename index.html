@@ -1302,21 +1302,6 @@ button.mini.added{
   display:none;
   padding-top: 8px;
 }
-.fabWeight{
-  position: fixed;
-  right: 16px;
-  bottom: calc(84px + env(safe-area-inset-bottom));
-  z-index: 90;
-  width: 52px;
-  height: 52px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(124,92,255,.22);
-  color: rgba(255,255,255,.95);
-  font-size: 22px;
-  font-weight: 900;
-  box-shadow: 0 18px 44px rgba(0,0,0,.55);
-} 
   </style>
 </head>
 
@@ -4620,13 +4605,6 @@ function openLogEntryEditor(entry){
   root.appendChild(summaryCard);
   root.appendChild(chartCard);
   root.appendChild(historyCard);
-
-  // Floating action (helps when history is expanded & user scrolled)
-  const fab = el("button", {
-    class:"fabWeight",
-    onClick: () => openLogModal()
-  }, ["+"]);
-  root.appendChild(fab);
 
   repaintAll();
   return root;
