@@ -1206,7 +1206,7 @@ body.modalOpen{
   width: min(58vw, 190px);       /* ✅ smaller cards */
   aspect-ratio: 1 / 1;
   border-radius: 18px;
-  background: rgba(255,255,255,.085);   /* less transparent */
+  background: rgba(255,255,255,.14);   /* more solid */
   border: 1px solid rgba(255,255,255,.16);
   box-shadow: 0 18px 55px rgba(0,0,0,.55);
   padding: 12px;
@@ -4619,7 +4619,7 @@ fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
       const z = -(abs * 95);           // ✅ less depth than before
       const y = abs * 6;
       const rot = off * -22;           // ✅ slightly tighter rotation
-      const op = (off === 0) ? 1 : (abs === 1 ? .70 : .36);
+      const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
 
       const chips = [];
       chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
