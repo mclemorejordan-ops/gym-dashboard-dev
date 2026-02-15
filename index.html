@@ -1464,17 +1464,23 @@ button.mini.added{
 
 <body>
   <div class="app">
-    <header>
-      <div class="topbar">
-        <div class="brand">
-          <div class="title" id="appTitle">Gym Dashboard</div>
+<header>
+  <div class="topbar">
+    <div class="brand">
+      <div class="title" id="appTitle">Gym Dashboard</div>
+
       <div class="subtitle" id="appSubtitle">
-  <div class="subPills">
-    <button class="subPill" id="syncPill" type="button">Offline</button>
-    <button class="subPill" id="verPill" type="button">v0.0.0</button>
+        <div class="subPills">
+          <button class="subPill" id="syncPill" type="button">Offline</button>
+          <button class="subPill" id="verPill" type="button">v0.0.0</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chip" id="chipStatus">Not set up</div>
   </div>
-</div>
-    </header>
+</header>
+
 
     <main id="viewRoot"></main>
   </div>
@@ -1502,13 +1508,11 @@ button.mini.added{
 const STORAGE_KEY = "gymdash:v1";
 
 // Manual version (YOU bump this when you commit/publish)
-const APP_VERSION = "0.7.2";
+const APP_VERSION = "1.1";
 
 // Remote version file (YOU create/maintain this in GitHub)
-const REMOTE_VERSION_URL = "./version.json"; 
+const REMOTE_VERSION_URL = "./version.json";
 
-// Version shown in header (update this when you publish a new build)
-const APP_VERSION = "1.1";
 
     const DefaultState = () => ({
       schemaVersion: 1,
