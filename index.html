@@ -1199,6 +1199,37 @@ button.mini.added{
   .setRow .meta{ font-size: 11px; }                                  /* :contentReference[oaicite:26]{index=26} */
   .setRow input, .setRow select{ width: 150px; max-width: 46vw; }     /* keeps rows compact */
 }
+    /* ✅ Protein: Compact iPhone sizing (tile + ring + modal) */
+@media (max-width: 500px){
+
+  /* Tighten the Protein tile row layout */
+  .homeRow{ gap: 8px; }
+
+  /* Card density (affects Protein tile + others, but in a good way) */
+  .card{ padding: 10px; border-radius: 16px; }
+  .card h2{ font-size: 11.5px; margin: 0 0 6px 0; }
+
+  /* KPI text (Protein “___g left”) */
+  .kpi .big{ font-size: 17px; }
+  .kpi .small{ font-size: 11px; line-height: 1.2; }
+
+  /* ✅ Protein ring: more compact */
+  .ringWrap{ width: 92px; height: 92px; }
+  .ringWrap::before{ inset: 7px; }  /* keeps ring thickness proportional */
+  .ringText{ gap: 1px; }
+  .ringText .big{ font-size: 14px; }
+  .ringText .small{ font-size: 10px; line-height: 1.15; }
+
+  /* Button density (Protein “Log meals” button + modal buttons) */
+  .btn{ padding: 9px 11px; border-radius: 12px; }
+
+  /* ✅ Protein modal density (meal list rows + mini buttons) */
+  .list{ gap: 8px; }
+  .item{ padding: 10px; border-radius: 14px; }
+  .name{ font-size: 12px; }
+  .meta{ font-size: 11px; }
+  .mini{ padding: 7px 9px; font-size: 11px; }
+}
   </style>
 </head>
 
