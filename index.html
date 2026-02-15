@@ -1175,90 +1175,137 @@ body.modalOpen{
 }
 .manageLink:active{ transform: translateY(1px); }
 
+/* ─────────────────────────────
+   Routine — 3D Square Carousel + Day Strip (Option C - compact)
+   (visual-only)
+   ───────────────────────────── */
+
 .carouselCard{
-  padding: 14px;
+  padding: 12px;
   display:flex;
   flex-direction:column;
   gap:10px;
 }
-/* ✅ Routine carousel: compact Rest days */
-.carouselCard.isRest{
-  padding: 10px;
-  gap: 6px;
-}
-.carouselCard.isRest .carouselMid{
-  flex: 0;          /* prevents the card from feeling “tall/empty” */
-}
-.carouselCard.isRest .carouselSub{
-  display: none;    /* removes redundant “Rest” subline */
-}
 
-/* ✅ Rest day content card (below carousel) */
-.restCard{
-  padding: 10px;
-}
-.restCard h2{
-  margin: 0 0 6px 0;
-}
-.carouselTop{
+/* 3D stage (cards area) */
+.c3d{
+  position: relative;
+  height: 160px;                 /* ✅ more compact */
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  gap:10px;
+  justify-content:center;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  touch-action: pan-y;
+  user-select:none;
 }
 
-.carouselMid{
-  text-align:center;
-  flex: 1;
-  min-width: 0;
-}
-
-.carouselTitle{
-  font-weight: 860;
-  letter-spacing:.2px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.carouselSub{
-  font-size: 12.5px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-.weekRow{
+/* Square “3D” card */
+.c3dCard{
+  position:absolute;
+  width: min(58vw, 190px);       /* ✅ smaller cards */
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 18px 55px rgba(0,0,0,.55);
+  padding: 12px;
   display:flex;
   flex-direction:column;
-  gap: 8px;
+  justify-content:space-between;
+  will-change: transform, opacity, filter;
 }
 
-.weekLabel{
+.c3dCard.sel{
+  border-color: rgba(55,214,122,.45); /* ✅ subtle neon accent */
+  box-shadow:
+    0 22px 70px rgba(0,0,0,.65),
+    0 0 0 1px rgba(55,214,122,.18) inset;
+}
+
+.c3dDay{
+  font-size: 22px;
+  font-weight: 950;
+  letter-spacing: .8px;
+}
+
+.c3dLabel{
+  font-size: 15px;
+  font-weight: 850;
+  color: rgba(255,255,255,.78);
+  margin-top: 4px;
+}
+
+.c3dMeta{
   font-size: 12px;
-  color: rgba(255,255,255,.55);
-  letter-spacing: .35em;
-  text-align:center;
-  user-select:none;
+  color: rgba(255,255,255,.60);
+  font-weight: 750;
+  margin-top: 8px;
 }
 
-.weekDots{
+.c3dChips{
   display:flex;
-  justify-content:center;
-  gap: 10px;
-  user-select:none;
+  gap: 8px;
+  justify-content:flex-end;
 }
 
-.weekDot{
-  width: 12px;
-  height: 12px;
+.c3dChip{
+  padding: 8px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.16);
-  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  color: rgba(255,255,255,.82);
+  font-weight: 850;
+  font-size: 12px;
+  letter-spacing: .2px;
+  white-space: nowrap;
 }
-.weekDot.on{
-  background: rgba(124,92,255,.75);
-  border-color: rgba(124,92,255,.55);
-} 
+
+.c3dChip.active{
+  border-color: rgba(55,214,122,.45);
+  box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
+}
+
+/* Day strip (fixed under carousel) */
+.routineDayStrip{
+  display:flex;
+  gap: 8px;
+  justify-content:space-between;
+  margin-top: 10px;
+}
+
+.routineDayBtn{
+  flex: 1 1 0;
+  min-width: 0;
+  height: 58px;                  /* ✅ more compact */
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.03);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap: 8px;
+  color: rgba(255,255,255,.60);
+  font-weight: 950;
+  letter-spacing: .6px;
+}
+
+.routineDayBtn .dot{
+  width: 8px; height: 8px; border-radius: 999px;
+  background: rgba(255,255,255,.22);
+}
+
+.routineDayBtn.sel{
+  border-color: rgba(55,214,122,.45);
+  box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
+  color: rgba(255,255,255,.92);
+}
+
+.routineDayBtn.sel .dot{
+  background: rgba(55,214,122,1);
+  box-shadow: 0 0 0 3px rgba(55,214,122,.12);
+}
   /* Add Multiple visual feedback */
 .item.selected{
   border-color: rgba(124,92,255,.55);
@@ -4515,40 +4562,102 @@ fixedHost.appendChild(el("div", { class:"card" }, [
     // ────────────────────────────
     // 3D Card Carousel (visual container)
     // ────────────────────────────
-fixedHost.appendChild(el("div", { class:"card carouselCard" + (day.isRest ? " isRest" : "") }, [
-      el("div", { class:"carouselTop" }, [
-        el("button", {
-          class:"btn",
-          onClick: () => { selectedIndex = (selectedIndex + 6) % 7; repaint(); }
-        }, ["◀"]),
+fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
+  (() => {
+    let down = false;
+    let startX = 0;
+    let dx = 0;
+    const THRESH = 55;
 
-        el("div", { class:"carouselMid" }, [
-          el("div", {
-            class:"carouselTitle",
-            text: `${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][selectedIndex]} • ${day.label || "Day"} • ${prettyDayTag(selectedDateISO)}`
-          }),
-          el("div", {
-            class:"carouselSub",
-            text: day.isRest ? "Rest" : `${(day.exercises||[]).length} exercises`
-          })
+    function onDown(e){
+      down = true;
+      startX = e.clientX;
+      dx = 0;
+      try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+    }
+    function onMove(e){
+      if(!down) return;
+      dx = e.clientX - startX;
+      // (visual-only: we keep drag simple; snap happens on release)
+    }
+    function onEnd(){
+      if(!down) return;
+      down = false;
+
+      if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
+      else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
+
+      repaint();
+    }
+
+    const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+    const c3d = el("div", {
+      class:"c3d",
+      onPointerDown: onDown,
+      onPointerMove: onMove,
+      onPointerUp: onEnd,
+      onPointerCancel: onEnd,
+      onLostPointerCapture: onEnd
+    }, []);
+
+    // Show selected ±2
+    const offsets = [-2,-1,0,1,2];
+    offsets.forEach(off => {
+      const idx = (selectedIndex + off + 7) % 7;
+      const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
+
+      const abs = Math.abs(off);
+      const scale = (off === 0) ? 1 : (1 - abs * 0.10);
+      const x = off * 92;              // ✅ tighter spacing (more compact)
+      const z = -(abs * 95);           // ✅ less depth than before
+      const y = abs * 6;
+      const rot = off * -22;           // ✅ slightly tighter rotation
+      const op = (off === 0) ? 1 : (abs === 1 ? .70 : .36);
+
+      const chips = [];
+      chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
+      if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
+
+      const card = el("div", {
+        class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
+        style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+      }, [
+        el("div", {}, [
+          el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
+          el("div", { class:"c3dLabel", text: d.label || "Day" }),
+          el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
         ]),
+        el("div", { class:"c3dChips" }, chips)
+      ]);
 
-        el("button", {
-          class:"btn",
-          onClick: () => { selectedIndex = (selectedIndex + 1) % 7; repaint(); }
-        }, ["▶"])
-      ]),
+      // Tap any card to jump (visual-only)
+      card.addEventListener("click", () => {
+        selectedIndex = idx;
+        repaint();
+      });
 
-      el("div", { class:"weekRow" }, [
-        el("div", { class:"weekLabel", text: (weekStartsOn === "sun" ? "S   M   T   W   T   F   S" : "M   T   W   T   F   S   S") }),
-        el("div", { class:"weekDots" }, [
-          // order = Mon Tue Wed Thu Fri Sat Sun
-          ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => el("div", {
-            class: "weekDot" + (i === selectedIndex ? " on" : "")
-          }))
-        ])
-      ])
-    ]));
+      c3d.appendChild(card);
+    });
+
+    return c3d;
+  })(),
+
+  // Fixed day strip under carousel (tap to jump)
+  el("div", { class:"routineDayStrip" }, [
+    ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
+      const label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
+      return el("button", {
+        class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
+        onClick: () => { selectedIndex = i; repaint(); }
+      }, [
+        el("div", { text: label }),
+        el("div", { class:"dot" })
+      ]);
+    })
+  ])
+]));
+
 
     // Rest Day
     if(day.isRest){
