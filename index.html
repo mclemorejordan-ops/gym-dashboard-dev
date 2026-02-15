@@ -374,11 +374,11 @@ input, select, textarea{
   display:flex;
   align-items:center;
   justify-content:center;
-  border: 1px solid rgba(255,255,255,10);
-  background: rgba(255,255,255,04);
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
   flex: 0 0 auto;
 
-  /* ✅ Fix: keep the conic-gradient fill perfectly inside the circle */
+  /* ✅ Fix: clip conic-gradient to the circle (prevents Safari/iOS bleed) */
   overflow: hidden;
   contain: paint;
 }
@@ -3462,7 +3462,8 @@ else root.appendChild(el("div", { class:"card" }, [
         const done = totalProtein(todayISO);
         const left = Math.max(0, goal - done);
         const pct = goal > 0 ? Math.max(0, Math.min(1, done / goal)) : 0;
-        const deg = Math.round(pct * 360);
+        const deg = pct * 360; // keep as float for smoother conic-gradient edges (prevents seams)
+const EPS_DEG = 0.6;   // tiny overlap to eliminate hairline gaps at the join (Safari/iOS)
 
         const openProteinModal = () => {
           Modal.open({
@@ -3490,7 +3491,14 @@ else root.appendChild(el("div", { class:"card" }, [
 
         const ring = el("div", {
           class:"ringWrap",
-          style: `background: conic-gradient(rgba(124,92,255,.95) 0deg ${deg}deg, rgba(255,255,255,.10) ${deg}deg 360deg);`
+style: (() => {
+  // ✅ Avoid a 1px “seam” at the boundary by slightly overlapping the stops (clamped).
+  if(deg <= 0) return "background: conic-gradient(from -90deg, rgba(255,255,255,.10) 0deg 360deg);";
+  if(deg >= 360) return "background: conic-gradient(from -90deg, rgba(124,92,255,.95) 0deg 360deg);";
+  const a = Math.min(360, deg + EPS_DEG); // end of accent (slightly extended)
+  const b = Math.max(0, deg - EPS_DEG);   // start of track (slightly earlier)
+  return `background: conic-gradient(from -90deg, rgba(124,92,255,.95) 0deg ${a}deg, rgba(255,255,255,.10) ${b}deg 360deg);`;
+})()
         }, [
           el("div", { class:"ringText" }, [
             el("div", { class:"big", text: `${left}g` }),
