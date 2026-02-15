@@ -1240,6 +1240,83 @@ button.mini.added{
   .meta{ font-size: 11px; }
   .mini{ padding: 7px 9px; font-size: 11px; }
 }
+   /* Weight page — Compact Card Stack (Option 1) */
+.weightPage .weightTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 12px;
+}
+.weightPage .weightLogBtn{
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 750;
+}
+.weightSummaryKpi .big{
+  font-size: 34px;
+}
+.weightChartHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+.segRow{
+  display:flex;
+  gap: 8px;
+}
+.seg{
+  appearance:none;
+  border:none;
+  cursor:pointer;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  color: rgba(255,255,255,.78);
+  font-size: 11.5px;
+  font-weight: 750;
+}
+.seg.active{
+  background: rgba(124,92,255,.18);
+  border-color: rgba(124,92,255,.35);
+  color: rgba(255,255,255,.95);
+}
+.weightChartWrap{
+  height: 240px;
+}
+.accHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  cursor:pointer;
+  user-select:none;
+}
+.accChevron{
+  opacity: .75;
+  font-weight: 800;
+}
+.accBody{
+  display:none;
+  padding-top: 8px;
+}
+.fabWeight{
+  position: fixed;
+  right: 16px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  z-index: 90;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(124,92,255,.22);
+  color: rgba(255,255,255,.95);
+  font-size: 22px;
+  font-weight: 900;
+  box-shadow: 0 18px 44px rgba(0,0,0,.55);
+} 
   </style>
 </head>
 
@@ -4472,170 +4549,237 @@ function openLogEntryEditor(entry){
   },
   
   Weight(){
-    WeightEngine.ensure();
+  WeightEngine.ensure();
 
-    const root = el("div", { class:"grid" });
+  const root = el("div", { class:"grid weightPage" });
 
-    const header = el("div", { class:"card" }, [
-      el("h2", { text:"Weight" }),
-      el("div", { class:"note", text:"Log your bodyweight. See your trend, delta vs last entry, and 7-day average." })
-    ]);
+  const todayISO = Dates.todayISO();
 
-    const entryCard = el("div", { class:"card" }, [
-      el("h2", { text:"Add entry" })
-    ]);
+  // Local UI state
+  let rangeDays = 30;      // 7, 30, 90, 365
+  let historyOpen = false;
 
-    const statsCard = el("div", { class:"card" }, [
-      el("h2", { text:"Stats" })
-    ]);
+  // ---- UI: Summary (Top) ----
+  const summaryCard = el("div", { class:"card" }, [
+    el("div", { class:"weightTop" }, [
+      el("div", {}, [
+        el("h2", { text:"Weight" }),
+        el("div", { class:"note", text:"Quick view + trend. Tap History to see past entries." })
+      ]),
+      el("button", {
+        class:"btn primary weightLogBtn",
+        onClick: () => openLogModal()
+      }, ["+ Log"])
+    ])
+  ]);
 
-    const chartCard = el("div", { class:"card" }, [
-      el("h2", { text:"Graph" })
-    ]);
+  const summaryKpi = el("div", { class:"kpi weightSummaryKpi" });
+  summaryCard.appendChild(summaryKpi);
 
-    const tableCard = el("div", { class:"card" }, [
-      el("h2", { text:"Table" })
-    ]);
+  // ---- UI: Graph (Middle) ----
+  const chartCard = el("div", { class:"card" }, [
+    el("div", { class:"weightChartHead" }, [
+      el("h2", { text:"Trend" }),
+      el("div", { class:"segRow" }, [
+        segBtn("7D", 7),
+        segBtn("30D", 30),
+        segBtn("90D", 90),
+        segBtn("1Y", 365)
+      ])
+    ])
+  ]);
 
-    root.appendChild(header);
-    root.appendChild(entryCard);
-    root.appendChild(statsCard);
-    root.appendChild(chartCard);
-    root.appendChild(tableCard);
+  const chartWrap = el("div", { class:"chartWrap weightChartWrap" });
+  const canvas = el("canvas", {});
+  chartWrap.appendChild(canvas);
+  const chartNote = el("div", { class:"note" });
 
-    const dateInput = el("input", { type:"date", value: Dates.todayISO() });
-    const weightInput = el("input", { type:"number", inputmode:"decimal", placeholder:"e.g., 185.4", min:"0", step:"0.1" });
+  chartCard.appendChild(chartWrap);
+  chartCard.appendChild(el("div", { style:"height:10px" }));
+  chartCard.appendChild(chartNote);
 
-    const saveBtn = el("button", {
-      class:"btn primary",
+  // ---- UI: History (Bottom - collapsible) ----
+  const historyCard = el("div", { class:"card" }, [
+    el("div", {
+      class:"accHeader",
       onClick: () => {
-        try{
-          WeightEngine.add(dateInput.value || Dates.todayISO(), weightInput.value);
-          weightInput.value = "";
-          repaint();
-        }catch(e){
-          Modal.open({
-            title: "Can’t save",
-            bodyNode: el("div", {}, [
-              el("div", { class:"note", text: e.message || "Unable to save weight." }),
-              el("div", { style:"height:12px" }),
-              el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
-            ])
-          });
-        }
+        historyOpen = !historyOpen;
+        repaintHistory();
       }
-    }, ["Save"]);
+    }, [
+      el("h2", { text:"History" }),
+      el("div", { class:"accChevron", text:"▾" })
+    ])
+  ]);
 
-    entryCard.appendChild(el("div", { class:"row2" }, [
-      el("label", {}, [ el("span", { text:"Date" }), dateInput ]),
-      el("label", {}, [ el("span", { text:"Weight" }), weightInput ])
-    ]));
-    entryCard.appendChild(el("div", { style:"height:10px" }));
-    entryCard.appendChild(el("div", { class:"btnrow" }, [saveBtn]));
+  const historyBody = el("div", { class:"accBody" });
+  const tableHost = el("div", { class:"list" });
+  historyBody.appendChild(tableHost);
+  historyCard.appendChild(historyBody);
 
-    // Stats UI
-    const statsHost = el("div", { class:"kpi" });
-    statsCard.appendChild(statsHost);
+  root.appendChild(summaryCard);
+  root.appendChild(chartCard);
+  root.appendChild(historyCard);
 
-    // Chart UI
-    const chartWrap = el("div", { class:"chartWrap" });
-    const canvas = el("canvas", {});
-    chartWrap.appendChild(canvas);
+  // Floating action (helps when history is expanded & user scrolled)
+  const fab = el("button", {
+    class:"fabWeight",
+    onClick: () => openLogModal()
+  }, ["+"]);
+  root.appendChild(fab);
 
-    const dlBtn = el("button", {
-      class:"btn",
-      onClick: () => downloadCanvasPNG(canvas, `weight_${Dates.todayISO()}.png`)
-    }, ["Download PNG"]);
+  repaintAll();
+  return root;
 
-    chartCard.appendChild(chartWrap);
-    chartCard.appendChild(el("div", { style:"height:10px" }));
-    const chartNote = el("div", { class:"note" });
-    chartCard.appendChild(chartNote);
-    chartCard.appendChild(el("div", { style:"height:10px" }));
-    chartCard.appendChild(el("div", { class:"btnrow" }, [dlBtn]));
-
-    // Table UI
-    const tableHost = el("div", { class:"list" });
-    tableCard.appendChild(tableHost);
-
-    repaint();
-    return root;
-
-    function repaint(){
-      WeightEngine.ensure();
-
-      const latest = WeightEngine.latest();
-      const prev = WeightEngine.previous();
-      const delta = WeightEngine.delta();
-
-      const avg7 = WeightEngine.avg7(latest?.dateISO || Dates.todayISO());
-
-      statsHost.innerHTML = "";
-      statsHost.appendChild(el("div", { class:"big", text: latest ? `${latest.weight}` : "—" }));
-      statsHost.appendChild(el("div", { class:"small", text: latest ? `Latest • ${latest.dateISO}` : "No weight entries yet." }));
-
-      const deltaText = (delta === null) ? "—" : (delta > 0 ? `+${delta}` : `${delta}`);
-      statsHost.appendChild(el("div", { class:"small", text: `Delta vs previous: ${deltaText}` }));
-
-      const avgText = (avg7 === null) ? "—" : `${avg7}`;
-      statsHost.appendChild(el("div", { class:"small", text: `7-day avg: ${avgText}` }));
-
-      // Table
-      const desc = WeightEngine.listDesc();
-      tableHost.innerHTML = "";
-
-           if(desc.length === 0){
-        tableHost.appendChild(el("div", { class:"note", text:"No entries yet. Add one above." }));
-      }else{
-        desc.slice(0, 40).forEach(row => {
-          tableHost.appendChild(el("div", { class:"item" }, [
-            el("div", { class:"left" }, [
-              el("div", { class:"name", text: row.dateISO }),
-              el("div", { class:"meta", text: `${row.weight}` })
-            ]),
-            el("div", { class:"actions" }, [
-              el("button", {
-                class:"mini danger",
-                onClick: () => {
-                  Modal.open({
-                    title: "Delete entry?",
-                    center: true,
-                    bodyNode: el("div", {}, [
-                      el("div", { class:"note", text:`Delete ${row.weight} on ${row.dateISO}?` }),
-                      el("div", { style:"height:12px" }),
-                      el("div", { class:"btnrow" }, [
-                        el("button", {
-                          class:"btn danger",
-                          onClick: () => {
-                            WeightEngine.remove(row.id);
-                            Modal.close();
-                            repaint();
-                          }
-                        }, ["Delete"]),
-                        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-                      ])
-                    ])
-                  });
-                }
-              }, ["Delete"])
-            ])
-          ]));
-        });
+  // -----------------------------
+  // Helpers
+  // -----------------------------
+  function segBtn(label, days){
+    const b = el("button", {
+      class:"seg" + (days === rangeDays ? " active" : ""),
+      onClick: () => {
+        rangeDays = days;
+        repaintChart();
+        // update active styles
+        const all = chartCard.querySelectorAll(".seg");
+        all.forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
       }
+    }, [label]);
+    return b;
+  }
 
-      // Chart (last 30 points)
-      const asc = WeightEngine.listAsc().slice(-30);
-      if(asc.length < 2){
-        destroyWeightChart();
-        chartNote.textContent = "Add at least 2 entries to see the trend line.";
-        return;
-      }
+  function openLogModal(){
+    const dateInput = el("input", { type:"date", value: todayISO });
+    const weightInput = el("input", { type:"number", inputmode:"decimal", placeholder:"e.g., 185.4", min:"0", step:"0.1" });
+    const err = el("div", { class:"note", style:"display:none; color: rgba(255,92,122,.95);" });
 
-      renderWeightChart(canvas, asc);
-      chartNote.textContent = `Showing last ${asc.length} entries`;
+    Modal.open({
+      title: "Log weight",
+      center: true,
+      size: "sm",
+      bodyNode: el("div", {}, [
+        el("label", {}, [ el("span", { text:"Date" }), dateInput ]),
+        el("label", {}, [ el("span", { text:"Weight (lb)" }), weightInput ]),
+        err,
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn primary",
+            onClick: () => {
+              try{
+                err.style.display = "none";
+                WeightEngine.add(dateInput.value || todayISO, weightInput.value);
+                Modal.close();
+                repaintAll();
+              }catch(e){
+                err.textContent = e.message || "Unable to save weight.";
+                err.style.display = "block";
+              }
+            }
+          }, ["Save"]),
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
+      ])
+    });
+  }
+
+  function repaintAll(){
+    repaintSummary();
+    repaintChart();
+    repaintHistory(); // keeps collapsed by default
+  }
+
+  function repaintSummary(){
+    const latest = WeightEngine.latest();
+    const avg7 = WeightEngine.avg7(latest?.dateISO || todayISO);
+
+    summaryKpi.innerHTML = "";
+
+    const main = latest ? `${latest.weight}` : "—";
+    const sub = latest
+      ? ((latest.dateISO === todayISO) ? "Today" : `Latest • ${latest.dateISO}`)
+      : "No weight entries yet.";
+
+    // Change vs 7D avg (matches your mock)
+    let change7 = null;
+    if(latest && avg7 != null) change7 = round2((Number(latest.weight)||0) - (Number(avg7)||0));
+    const change7Text = (change7 == null) ? "—" : (change7 > 0 ? `+${change7}` : `${change7}`);
+
+    summaryKpi.appendChild(el("div", { class:"big", text: `${main} lb` }));
+    summaryKpi.appendChild(el("div", { class:"small", text: sub }));
+    summaryKpi.appendChild(el("div", { class:"small", text: `Change: ${change7Text} lb (7d)` }));
+  }
+
+  function repaintChart(){
+    const ascAll = WeightEngine.listAsc();
+    const asc = ascAll.slice(-rangeDays);
+
+    if(asc.length < 2){
+      destroyWeightChart();
+      chartNote.textContent = "Add at least 2 entries to see the trend line.";
+      return;
     }
-  },
 
+    renderWeightChart(canvas, asc);
+    chartNote.textContent = `Showing last ${asc.length} entries`;
+  }
+
+  function repaintHistory(){
+    // collapsed by default
+    historyCard.classList.toggle("open", !!historyOpen);
+    historyBody.style.display = historyOpen ? "block" : "none";
+
+    const chevron = historyCard.querySelector(".accChevron");
+    if(chevron) chevron.textContent = historyOpen ? "▴" : "▾";
+
+    if(!historyOpen) return;
+
+    const desc = WeightEngine.listDesc();
+    tableHost.innerHTML = "";
+
+    if(desc.length === 0){
+      tableHost.appendChild(el("div", { class:"note", text:"No entries yet. Tap + Log to add your first one." }));
+      return;
+    }
+
+    desc.slice(0, 60).forEach(row => {
+      tableHost.appendChild(el("div", { class:"item" }, [
+        el("div", { class:"left" }, [
+          el("div", { class:"name", text: row.dateISO }),
+          el("div", { class:"meta", text: `${row.weight} lb` })
+        ]),
+        el("div", { class:"actions" }, [
+          el("button", {
+            class:"mini danger",
+            onClick: () => {
+              Modal.open({
+                title: "Delete entry?",
+                center: true,
+                size: "sm",
+                bodyNode: el("div", {}, [
+                  el("div", { class:"note", text:`Delete ${row.weight} lb on ${row.dateISO}?` }),
+                  el("div", { style:"height:12px" }),
+                  el("div", { class:"btnrow" }, [
+                    el("button", {
+                      class:"btn danger",
+                      onClick: () => {
+                        WeightEngine.remove(row.id);
+                        Modal.close();
+                        repaintAll();
+                      }
+                    }, ["Delete"]),
+                    el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                  ])
+                ])
+              });
+            }
+          }, ["Delete"])
+        ])
+      ]));
+    });
+  }
+},
   Attendance(){
 
         AttendanceEngine.ensure();
