@@ -4514,73 +4514,79 @@ statsHost.appendChild(el("div", { class:"pill" }, [
     const bv = bests.bestVolume != null ? `${Math.round(bests.bestVolume)} vol` : "";
     return bv || "";
   }
-},
-function metricValue(type, metric, entry){
-  try{
-    if(!entry) return null;
 
-    if(type === "weightlifting"){
-      if(metric === "topWeight") return entry.summary?.bestWeight ?? entry.summary?.topWeight ?? null;
-      if(metric === "est1RM")    return entry.summary?.est1RM ?? null;
-      if(metric === "volume")    return entry.summary?.totalVolume ?? null;
-      return entry.summary?.bestWeight ?? null;
+  // ✅ helpers must stay INSIDE Progress() (not inside Views object root)
+  function metricValue(type, metric, entry){
+    try{
+      if(!entry) return null;
+
+      if(type === "weightlifting"){
+        if(metric === "topWeight") return entry.summary?.bestWeight ?? entry.summary?.topWeight ?? null;
+        if(metric === "est1RM")    return entry.summary?.est1RM ?? null;
+        if(metric === "volume")    return entry.summary?.totalVolume ?? null;
+        return entry.summary?.bestWeight ?? null;
+      }
+
+      if(type === "cardio"){
+        if(metric === "pace")     return entry.summary?.paceSecPerUnit ?? null;
+        if(metric === "distance") return entry.summary?.distance ?? null;
+        if(metric === "timeSec")  return entry.summary?.timeSec ?? null;
+        return entry.summary?.paceSecPerUnit ?? null;
+      }
+
+      // core
+      if(metric === "volume") return entry.summary?.totalVolume ?? null;
+      return entry.summary?.totalVolume ?? null;
+    }catch(e){
+      return null;
     }
-
-    if(type === "cardio"){
-      if(metric === "pace")     return entry.summary?.paceSecPerUnit ?? null;
-      if(metric === "distance") return entry.summary?.distance ?? null;
-      if(metric === "timeSec")  return entry.summary?.timeSec ?? null;
-      return entry.summary?.paceSecPerUnit ?? null;
-    }
-
-    // core
-    if(metric === "volume") return entry.summary?.totalVolume ?? null;
-    return entry.summary?.totalVolume ?? null;
-  }catch(e){
-    return null;
   }
-}
 
-function prForMetric(type, metric, bests){
-  try{
-    if(!bests) return null;
+  function prForMetric(type, metric, bests){
+    try{
+      if(!bests) return null;
 
-    if(type === "weightlifting"){
-      if(metric === "topWeight") return bests.bestWeight ?? null;
-      if(metric === "est1RM")    return bests.best1RM ?? null;
-      if(metric === "volume")    return bests.bestVolume ?? null;
-      return bests.bestWeight ?? null;
+      if(type === "weightlifting"){
+        if(metric === "topWeight") return bests.bestWeight ?? null;
+        if(metric === "est1RM")    return bests.best1RM ?? null;
+        if(metric === "volume")    return bests.bestVolume ?? null;
+        return bests.bestWeight ?? null;
+      }
+
+      if(type === "cardio"){
+        if(metric === "pace")     return bests.bestPace ?? null;
+        if(metric === "distance") return bests.bestDistance ?? null;
+        if(metric === "timeSec")  return bests.bestTime ?? null;
+        return bests.bestPace ?? null;
+      }
+
+      // core
+      if(metric === "volume") return bests.bestVolume ?? null;
+      return bests.bestVolume ?? null;
+    }catch(e){
+      return null;
     }
+  }
 
-    if(type === "cardio"){
-      if(metric === "pace")     return bests.bestPace ?? null;
-      if(metric === "distance") return bests.bestDistance ?? null;
-      if(metric === "timeSec")  return bests.bestTime ?? null;
-      return bests.bestPace ?? null;
+  function formatMetricValue(type, metric, v){
+    if(v == null) return "—";
+
+    // cardio formatting
+    if(type === "cardio" && metric === "pace") return formatPace(v);
+    if(type === "cardio" && metric === "timeSec") return formatTime(v);
+
+    // numeric formatting
+    if(typeof v === "number"){
+      const n = Math.round(v * 10) / 10;
+      return String(n);
     }
-
-    // core
-    if(metric === "volume") return bests.bestVolume ?? null;
-    return bests.bestVolume ?? null;
-  }catch(e){
-    return null;
+    return String(v);
   }
-}
 
-function formatMetricValue(type, metric, v){
-  if(v == null) return "—";
+},  // ✅ end Progress()
 
-  // cardio formatting
-  if(type === "cardio" && metric === "pace") return formatPace(v);
-  if(type === "cardio" && metric === "timeSec") return formatTime(v);
+Weight(){
 
-  // numeric formatting
-  if(typeof v === "number"){
-    const n = Math.round(v * 10) / 10;
-    return String(n);
-  }
-  return String(v);
-}
   
   Weight(){
   WeightEngine.ensure();
