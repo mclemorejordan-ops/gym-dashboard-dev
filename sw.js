@@ -1,6 +1,6 @@
 /* sw.js — Gym Dashboard (reliable "Reload to update" flow)
-   - Caches app shell (index.html)
-   - Updates shell in background
+   - Network-first for index.html so users always get the newest UI when online
+   - Cache fallback for offline
    - Exposes SKIP_WAITING so UI can force-apply an update
 */
 
@@ -47,22 +47,31 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Navigation requests get the app shell (cached fast, refreshed in background)
+  // ✅ NETWORK-FIRST for navigation so the newest index.html is used immediately
   if (req.mode === "navigate") {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
+
+        // Try fresh first
+        try {
+          const fresh = await fetch("./index.html", { cache: "no-store" });
+          if (fresh && fresh.ok) {
+            await cache.put("./index.html", fresh.clone());
+            return fresh;
+          }
+        } catch (e) {
+          // ignore; fall back to cache
+        }
+
+        // Offline / fetch failed → cached shell
         const cached = await cache.match("./index.html");
+        if (cached) return cached;
 
-        const freshPromise = fetch("./index.html", { cache: "no-store" })
-          .then((res) => {
-            if (res.ok) cache.put("./index.html", res.clone());
-            return res;
-          })
-          .catch(() => null);
-
-        return cached || (await freshPromise) || cached;
+        // Absolute last resort (should be rare)
+        return new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain" } });
       })()
     );
+    return;
   }
 });
