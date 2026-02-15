@@ -1223,12 +1223,14 @@ body.modalOpen{
   /* filter: saturate(.75) brightness(.75) blur(.3px); */
 }
 .c3dCard.sel{
-  border-color: rgba(55,214,122,.45); /* ✅ subtle neon accent */
+  background: rgba(255,255,255,.20);
+  border-color: rgba(55,214,122,.45);
   box-shadow:
     0 22px 70px rgba(0,0,0,.65),
     0 0 0 1px rgba(55,214,122,.18) inset;
+  filter: none;
+  opacity: 1 !important;
 }
-
 .c3dDay{
   font-size: 22px;
   font-weight: 950;
