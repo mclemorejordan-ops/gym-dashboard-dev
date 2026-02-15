@@ -169,6 +169,15 @@ header{
       border-color: rgba(255,92,122,.28);
     }
     .btn:active{ transform: translateY(1px); }
+.btn.sm{
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.btn.ghost{
+  background: rgba(255,255,255,.05);
+}
 
     .muted{ color: var(--muted); }
     .kpi{
@@ -960,7 +969,54 @@ body.modalOpen{
   display:grid;
   gap: 12px;
 }
+/* Compact exercise rows under Routine carousel */
+.rxCard{
+  padding: 10px 12px;
+}
 
+.rxTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.rxName{
+  font-weight: 860;
+  letter-spacing: .1px;
+  font-size: 14px;
+}
+
+.rxChip{
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.80);
+  white-space: nowrap;
+}
+
+.rxChip.on{
+  border-color: rgba(124,92,255,.30);
+  background: rgba(124,92,255,.16);
+  color: rgba(255,255,255,.92);
+}
+
+.rxMeta{
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+  margin-top: 4px;
+  line-height: 1.25;
+}
+
+.rxActions{
+  display:flex;
+  gap:10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
 .routineScroll{
   flex: 1 1 auto;
   overflow:auto;
@@ -4041,46 +4097,45 @@ scrollHost.appendChild(el("div", { class:"card" }, [
     }
 
 
-    // ────────────────────────────
-    // Exercise Cards
-    // ────────────────────────────
-    (day.exercises || []).forEach(rx => {
-      const exName = resolveExerciseName(rx.type, rx.exerciseId, rx.nameSnap);
-      const logged = hasRoutineExerciseLog(selectedDateISO, rx.id);
+// ────────────────────────────
+// Exercise Cards (compact)
+// ────────────────────────────
+(day.exercises || []).forEach(rx => {
+  const exName = resolveExerciseName(rx.type, rx.exerciseId, rx.nameSnap);
+  const logged = hasRoutineExerciseLog(selectedDateISO, rx.id);
 
-      const max = lifetimeMaxSet(rx.type, rx.exerciseId);
-      const maxText = max ? `${max.weight} × ${max.reps}` : "—";
+  const max = lifetimeMaxSet(rx.type, rx.exerciseId);
+  const maxText = max ? `${max.weight} × ${max.reps}` : "—";
 
-scrollHost.appendChild(el("div", {
-  class:"card",
-  id:`rx_${rx.id}`,
-  "data-unlogged": logged ? "false" : "true"
-}, [
-  el("div", { style:"font-weight:860; letter-spacing:.1px;", text: exName }),
+  scrollHost.appendChild(el("div", {
+    class:"card rxCard",
+    id:`rx_${rx.id}`,
+    "data-unlogged": logged ? "false" : "true"
+  }, [
+    el("div", { class:"rxTop" }, [
+      el("div", { class:"rxName", text: exName }),
+      el("div", {
+        class:"rxChip" + (logged ? " on" : ""),
+        text: logged ? "Logged" : "Not logged"
+      })
+    ]),
 
-  // ✅ Logged indicator (so Test 3 passes)
-  logged
-    ? el("div", { class:"note", text:"✓ Logged today" })
-    : el("div", { class:"note", text:"Not logged yet" }),
+    el("div", { class:"rxMeta", text:`🏆 Lifetime Max: ${maxText}` }),
 
-  el("div", { class:"note", text:`🏆 Lifetime Max: ${maxText}` }),
+    el("div", { class:"rxActions" }, [
+      el("button", {
+        class:"btn primary sm",
+        onClick: () => openExerciseLogger(rx, day, selectedDateISO)
+      }, ["Log Sets"]),
 
-        el("div", { style:"height:10px" }),
+      el("button", {
+        class:"btn ghost sm",
+        onClick: () => openExerciseHistoryModal(rx.type, rx.exerciseId, exName)
+      }, ["History →"])
+    ])
+  ]));
+});
 
-        el("div", { class:"rHdrRow" }, [
-          el("button", {
-            class:"btn primary",
-          onClick: () => openExerciseLogger(rx, day, selectedDateISO)
-          }, ["Log Sets"]),
-
-        el("button", {
-  class:"btn ghost",
-  onClick: () => openExerciseHistoryModal(rx.type, rx.exerciseId, exName)
-}, ["History →"])
-
-        ])
-      ]));
-    });
   }
 
   repaint();
