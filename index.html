@@ -3519,51 +3519,55 @@ else root.appendChild(el("div", { class:"card" }, [
 el("div", { class:"card" }, [
   el("h2", { text:"Today’s workout" }),
 
-  // ✅ KPI + action (Edit routine) on the same row
-  el("div", { class:"homeRow" }, [
-    el("div", { class:"kpi" }, [
-      el("div", { class:"big", text: workoutTitle }),
-      el("div", { class:"small", text: workoutSub })
-    ]),
-    el("button", {
-      class:"btn",
-      onClick: () => navigate("routine")
-    }, ["Edit routine"])
+// ✅ KPI + action (Edit routine) on the same row
+el("div", { class:"homeRow" }, [
+  el("div", { class:"kpi" }, [
+    el("div", { class:"big", text: workoutTitle }),
+    el("div", { class:"small", text: workoutSub })
   ]),
-
-  el("div", { style:"height:10px" }),
-
-  (workoutExercises.length === 0)
-    ? el("div", { class:"note", text: day?.isRest ? "Rest day is enabled." : "Add exercises in Routine Editor." })
-    : el("div", { class:"list" }, workoutExercises.slice(0,6).map(n =>
-        el("div", { class:"item" }, [
-          el("div", { class:"left" }, [ el("div", { class:"name", text: n }) ]),
-          el("div", { class:"actions" }, [ el("div", { class:"meta", text:"Planned" }) ])
-        ])
-      ))
+  el("button", {
+    class:"btn",
+    onClick: () => navigate("routine")
+  }, ["Edit routine"])
 ]),
 
-            el("div", { style:"height:10px" }),
-            el("div", { class:"btnrow" }, [
-              el("button", { class:"btn primary", onClick: openCheckIn }, [isTrained(todayISO) ? "Undo check-in" : "Check in"]),
-              el("button", { class:"btn", onClick: () => navigate("routine") }, ["Edit routine"])
-            ])
-          ]),
+el("div", { style:"height:10px" }),
 
-          el("div", { class:"card" }, [
-            el("h2", { text:"Protein" }),
-            el("div", { class:"homeRow" }, [
-              el("div", { class:"kpi" }, [
-                el("div", { class:"big", text: `${left}g left` }),
-                el("div", { class:"small", text:"Tap to log meals for today." })
-              ]),
-              el("div", { onClick: openProteinModal }, [ ring ])
-            ]),
-            el("div", { style:"height:10px" }),
-            el("div", { class:"btnrow" }, [
-              el("button", { class:"btn primary", onClick: openProteinModal }, ["Log meals"])
-            ])
-          ]),
+/* Planned exercises (unchanged) */
+(workoutExercises.length === 0)
+  ? el("div", {
+      class:"note",
+      text: day?.isRest ? "Rest day is enabled." : "Add exercises in Routine Editor."
+    })
+  : el("div", { class:"list" }, workoutExercises.slice(0,6).map(n =>
+      el("div", { class:"item" }, [
+        el("div", { class:"left" }, [ el("div", { class:"name", text: n }) ]),
+        el("div", { class:"actions" }, [ el("div", { class:"meta", text:"Planned" }) ])
+      ])
+    ))
+]),
+
+// ✅ Removed from Today's Workout card:
+// el("div", { style:"height:10px" }),
+// el("div", { class:"btnrow" }, [
+//   el("button", { class:"btn primary", onClick: openCheckIn }, [isTrained(todayISO) ? "Undo check-in" : "Check in"]),
+//   el("button", { class:"btn", onClick: () => navigate("routine") }, ["Edit routine"])
+// ])
+
+el("div", { class:"card" }, [
+  el("h2", { text:"Protein" }),
+  el("div", { class:"homeRow" }, [
+    el("div", { class:"kpi" }, [
+      el("div", { class:"big", text: `${left}g left` }),
+      el("div", { class:"small", text:"Tap to log meals for today." })
+    ]),
+    el("div", { onClick: openProteinModal }, [ ring ])
+  ]),
+  el("div", { style:"height:10px" }),
+  el("div", { class:"btnrow" }, [
+    el("button", { class:"btn primary", onClick: openProteinModal }, ["Log meals"])
+  ])
+]),
 
 el("div", { class:"card" }, [
   // Header row + action buttons
@@ -3572,21 +3576,23 @@ el("div", { class:"card" }, [
       el("h2", { text:"Attendance" }),
       el("div", { class:"note", text: weekLabel })
     ]),
-    // ✅ Stack actions so "Check in" sits under "View calendar"
-   el("div", { style:"display:flex; flex-direction:column; gap:8px; align-items:flex-end;" }, [
-  // ✅ Primary action first
-  el("button", {
-    class:"btn primary",
-    onClick: openCheckIn
-  }, [isTrained(todayISO) ? "Undo check-in" : "Check in"]),
 
-  // Secondary action
-  el("button", {
-    class:"btn",
-    onClick: () => navigate("attendance")
-  }, ["View calendar"])
-])
+    // ✅ Stack actions: Check in ABOVE View calendar
+    el("div", {
+      style:"display:flex; flex-direction:column; gap:8px; align-items:flex-end;"
+    }, [
+      el("button", {
+        class:"btn primary",
+        onClick: openCheckIn
+      }, [isTrained(todayISO) ? "Undo check-in" : "Check in"]),
+
+      el("button", {
+        class:"btn",
+        onClick: () => navigate("attendance")
+      }, ["View calendar"])
+    ])
   ]),
+
 
   el("div", { style:"height:10px" }),
 
