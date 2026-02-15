@@ -1176,137 +1176,129 @@ body.modalOpen{
 .manageLink:active{ transform: translateY(1px); }
 
 /* ─────────────────────────────
-   Routine: Square 3D Carousel (Compact) + Tap Day Strip
-   Visual-only (no data/logic changes)
+   Routine — 3D Square Carousel + Day Strip (Option C - compact)
+   (visual-only)
    ───────────────────────────── */
 
 .carouselCard{
-  padding: 10px;      /* slightly tighter */
-  gap: 10px;
+  padding: 12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
 
-/* 3D stage container */
-.r3dStage{
+/* 3D stage (cards area) */
+.c3d{
   position: relative;
-  height: 148px;                  /* ✅ compact height */
+  height: 160px;                 /* ✅ more compact */
   display:flex;
   align-items:center;
   justify-content:center;
-  perspective: 1100px;
+  perspective: 1000px;
   transform-style: preserve-3d;
-  touch-action: pan-y;            /* allow vertical scroll; we handle horizontal */
+  touch-action: pan-y;
   user-select:none;
 }
 
-/* Square 3D cards */
-.r3dCard{
+/* Square “3D” card */
+.c3dCard{
   position:absolute;
-  width: min(44vw, 170px);        /* ✅ smaller cards */
+  width: min(58vw, 190px);       /* ✅ smaller cards */
   aspect-ratio: 1 / 1;
   border-radius: 18px;
-
-  /* ✅ barely transparent glass */
-  background: rgba(255,255,255,.02);
-  border: 1px solid rgba(255,255,255,.10);
-  backdrop-filter: blur(10px);
-
-  box-shadow: 0 14px 44px rgba(0,0,0,.55);
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 18px 55px rgba(0,0,0,.55);
   padding: 12px;
-
   display:flex;
   flex-direction:column;
   justify-content:space-between;
-
   will-change: transform, opacity, filter;
 }
 
-.r3dCard.sel{
-  /* ✅ subtle neon accent border + slightly brighter surface */
-  border-color: rgba(55,214,122,.52);
-  background: rgba(255,255,255,.035);
+.c3dCard.sel{
+  border-color: rgba(55,214,122,.45); /* ✅ subtle neon accent */
   box-shadow:
-    0 18px 60px rgba(0,0,0,.65),
-    0 0 0 1px rgba(55,214,122,.16) inset;
+    0 22px 70px rgba(0,0,0,.65),
+    0 0 0 1px rgba(55,214,122,.18) inset;
 }
 
-.r3dDay{
+.c3dDay{
   font-size: 22px;
   font-weight: 950;
   letter-spacing: .8px;
 }
 
-.r3dLabel{
-  margin-top: 4px;
-  font-size: 14px;
+.c3dLabel{
+  font-size: 15px;
   font-weight: 850;
   color: rgba(255,255,255,.78);
+  margin-top: 4px;
 }
 
-.r3dMeta{
-  margin-top: 8px;
+.c3dMeta{
   font-size: 12px;
+  color: rgba(255,255,255,.60);
   font-weight: 750;
-  color: rgba(255,255,255,.58);
+  margin-top: 8px;
 }
 
-.r3dChips{
+.c3dChips{
   display:flex;
   gap: 8px;
   justify-content:flex-end;
 }
 
-.r3dChip{
-  padding: 7px 10px;
+.c3dChip{
+  padding: 8px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.05);
-  color: rgba(255,255,255,.78);
+  color: rgba(255,255,255,.82);
   font-weight: 850;
   font-size: 12px;
   letter-spacing: .2px;
   white-space: nowrap;
 }
 
-.r3dChip.active{
-  border-color: rgba(55,214,122,.52);
-  box-shadow: 0 0 0 1px rgba(55,214,122,.14) inset;
+.c3dChip.active{
+  border-color: rgba(55,214,122,.45);
+  box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
 }
 
-/* Fixed day strip under carousel */
+/* Day strip (fixed under carousel) */
 .routineDayStrip{
   display:flex;
   gap: 8px;
   justify-content:space-between;
+  margin-top: 10px;
 }
 
 .routineDayBtn{
   flex: 1 1 0;
   min-width: 0;
-  height: 56px;                  /* ✅ compact */
+  height: 58px;                  /* ✅ more compact */
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.03);
-
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap: 7px;
-
-  color: rgba(255,255,255,.55);
+  gap: 8px;
+  color: rgba(255,255,255,.60);
   font-weight: 950;
   letter-spacing: .6px;
 }
 
 .routineDayBtn .dot{
-  width: 8px; height: 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.20);
+  width: 8px; height: 8px; border-radius: 999px;
+  background: rgba(255,255,255,.22);
 }
 
 .routineDayBtn.sel{
-  border-color: rgba(55,214,122,.52);
-  box-shadow: 0 0 0 1px rgba(55,214,122,.14) inset;
+  border-color: rgba(55,214,122,.45);
+  box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
   color: rgba(255,255,255,.92);
 }
 
