@@ -245,16 +245,16 @@ header{
       font-weight: 650;
       letter-spacing: .2px;
     }
-    input, select{
-      appearance:none;
-      border-radius: 14px;
-      padding: 12px 12px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      font-size: 14px;
-      outline: none;
-    }
+input, select, textarea{
+  appearance:none;
+  border-radius: 14px;
+  padding: 12px 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  font-size: 16px; /* ✅ critical: prevents iOS focus zoom */
+  outline: none;
+}
     input::placeholder{ color: rgba(255,255,255,.35); }
     input:focus, select:focus{
       border-color: rgba(124,92,255,.40);
@@ -1297,7 +1297,7 @@ button.mini.added{
   .row2{ gap: 8px; }
 
   label{ gap: 6px; font-size: 11.5px; }                              /*  */
-  input, select{ padding: 10px 10px; font-size: 13px; border-radius: 12px; } /*  */
+  input, select, textarea{ padding: 10px 10px; font-size: 16px; border-radius: 12px; }
 
   /* Prevent iOS input zoom (GLOBAL — not just modals) */
 @media (hover: none) and (pointer: coarse){
@@ -1468,6 +1468,13 @@ button.mini.added{
 .pill .x:active{ transform: scale(.98); }
 
 .progResults{ margin-top: 10px; }
+    /* ✅ Prevent iOS Safari auto-zoom on focus (must be >= 16px computed) */
+@media (hover: none) and (pointer: coarse){
+  input, select, textarea,
+  .settingsSearch input{
+    font-size: 16px !important;
+  }
+}
   </style>
 </head>
 
