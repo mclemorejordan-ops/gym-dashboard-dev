@@ -17,7 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <style>
-    :root{
+:root{
       --bg: #0b0f17;
       --panel: rgba(255,255,255,.06);
       --panel2: rgba(255,255,255,.09);
@@ -33,38 +33,53 @@
       --r: 18px;
       --shadow: 0 18px 40px rgba(0,0,0,.45);
 
+      /* Unified "glass" theme tokens (header + nav + modals match) */
+      --glass: rgba(16,20,30,.72);
+      --glass2: rgba(16,20,30,.55);
+      --glassStrong: rgba(16,20,30,.88);
+      --glassBorder: rgba(255,255,255,.10);
+      --blur: 18px;
+
       --navH: 78px;
     }
 
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
-    body{
+body{
       margin:0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: radial-gradient(1200px 700px at 20% -10%, rgba(124,92,255,.24), transparent 60%),
-                  radial-gradient(900px 600px at 90% 10%, rgba(55,214,122,.14), transparent 55%),
-                  var(--bg);
+      background:
+        radial-gradient(1200px 700px at 20% -10%, rgba(124,92,255,.24), transparent 60%),
+        radial-gradient(900px 600px at 90% 10%, rgba(55,214,122,.14), transparent 55%),
+        var(--bg);
+      background-attachment: fixed; /* makes the theme feel like ONE canvas */
       color: var(--text);
       -webkit-font-smoothing: antialiased;
       -webkit-tap-highlight-color: transparent;
+      min-height: 100dvh; /* better than 100vh for iPhone/PWA */
     }
-
-    .app{
+.app{
       min-height: 100%;
-      padding: env(safe-area-inset-top) 14px calc(var(--navH) + env(safe-area-inset-bottom)) 14px;
+      /* IMPORTANT: remove safe-area top here so HEADER can own it (looks seamless on iPhone) */
+      padding: 0 14px calc(var(--navH) + env(safe-area-inset-bottom)) 14px;
       max-width: 780px;
       margin: 0 auto;
     }
-
-    header{
+header{
       position: sticky;
       top: 0;
-      z-index: 5;
-      backdrop-filter: blur(16px);
-      background: linear-gradient(to bottom, rgba(11,15,23,.88), rgba(11,15,23,.55));
-      padding: 14px 0 10px 0;
+      z-index: 60;
+      backdrop-filter: blur(var(--blur));
+      /* Fade to transparent so it blends into the BODY canvas like one theme */
+      background: linear-gradient(
+        to bottom,
+        var(--glassStrong) 0%,
+        rgba(16,20,30,.62) 60%,
+        rgba(16,20,30,0) 100%
+      );
+      /* Header owns the safe-area top so the theme covers the whole iPhone app */
+      padding: calc(env(safe-area-inset-top) + 12px) 0 10px 0;
     }
-
     .topbar{
       display:flex;
       align-items:center;
@@ -699,16 +714,16 @@
       z-index: 50;
       pointer-events:none;
     }
-    .navbar{
+.navbar{
       width: min(780px, calc(100% - 18px));
       display:flex;
       justify-content:space-between;
       gap: 8px;
-      background: rgba(16,20,30,.72);
-      border: 1px solid rgba(255,255,255,.10);
+      background: var(--glass);
+      border: 1px solid var(--glassBorder);
       border-radius: 22px;
       padding: 8px;
-      backdrop-filter: blur(18px);
+      backdrop-filter: blur(var(--blur));
       box-shadow: 0 18px 44px rgba(0,0,0,.55);
       pointer-events:auto;
     }
@@ -753,14 +768,15 @@ body.modalOpen{
   touch-action: none;
 }
     /* Modal */
-    .modalHost{
+.modalHost{
       position: fixed;
       inset: 0;
       display:none;
       align-items:flex-end;
       justify-content:center;
       z-index: 80;
-      padding: 0 10px;
+      /* safe areas so sheets never clash with notch/home indicator */
+      padding: env(safe-area-inset-top) 10px calc(12px + env(safe-area-inset-bottom)) 10px;
     }
     .modalHost.show{ display:flex; }
     .backdrop{
@@ -769,11 +785,13 @@ body.modalOpen{
       background: rgba(0,0,0,.55);
       backdrop-filter: blur(8px);
     }
-    .sheet{
+.sheet{
       position:relative;
       width: min(780px, 100%);
-      max-height: 82vh;
+      /* iPhone/PWA correct sizing: dvh tracks Safari bars correctly */
+      max-height: calc(100dvh - 32px);
       overflow:auto;
+      -webkit-overflow-scrolling: touch;
       background: rgba(16,20,30,.92);
       border: 1px solid rgba(255,255,255,.12);
       border-radius: 22px 22px 0 0;
@@ -781,6 +799,14 @@ body.modalOpen{
       padding: 14px;
       transform: translateY(10px);
     }
+    /* iOS: prevent input focus zoom inside modals (keep inputs at 16px on iPhone) */
+@media (hover:none) and (pointer:coarse){
+  .modalHost .sheet input,
+  .modalHost .sheet select,
+  .modalHost .sheet textarea{
+    font-size: 16px !important;
+  }
+}
         .modalHost.center{
       align-items:center;          /* center vertically */
       padding: 14px 10px;          /* breathing room */
@@ -1122,6 +1148,47 @@ button.mini.added{
 .setLink .l{ display:flex; flex-direction:column; gap:2px; }
 .setLink .a{ font-weight: 800; }
 .setLink .b{ font-size: 12px; color: var(--muted); }
+  
+  /* iPhone / touch devices: tighten spacing + typography without affecting desktop */
+@media (hover:none) and (pointer:coarse){
+  :root{ --navH: 70px; }
+
+  .title{ font-size: 16px; }
+  .subtitle{ font-size: 11px; }
+
+  header{ padding: calc(env(safe-area-inset-top) + 10px) 0 8px 0; }
+
+  .chip{
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .navbar{
+    padding: 6px;
+    border-radius: 20px;
+  }
+
+  .navbtn{
+    padding: 8px 6px;
+    font-size: 11px;
+    gap: 5px;
+  }
+  .navbtn .dot{
+    width: 24px;
+    height: 24px;
+    border-radius: 9px;
+  }
+
+  .pill{
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .sheet{
+    border-radius: 20px 20px 0 0;
+    padding: 12px;
+  }
+}
   </style>
 </head>
 
