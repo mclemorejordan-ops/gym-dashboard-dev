@@ -3516,21 +3516,32 @@ else root.appendChild(el("div", { class:"card" }, [
 
         return el("div", { class:"grid cols2" }, [
           el("div", { class:"card" }, [
-            el("h2", { text:"Today’s workout" }),
-            el("div", { class:"kpi" }, [
-              el("div", { class:"big", text: workoutTitle }),
-              el("div", { class:"small", text: workoutSub })
-            ]),
-            el("div", { style:"height:10px" }),
+el("div", { class:"card" }, [
+  el("h2", { text:"Today’s workout" }),
 
-            (workoutExercises.length === 0)
-              ? el("div", { class:"note", text: day?.isRest ? "Rest day is enabled." : "Add exercises in Routine Editor." })
-              : el("div", { class:"list" }, workoutExercises.slice(0,6).map(n =>
-                  el("div", { class:"item" }, [
-                    el("div", { class:"left" }, [ el("div", { class:"name", text: n }) ]),
-                    el("div", { class:"actions" }, [ el("div", { class:"meta", text:"Planned" }) ])
-                  ])
-                )),
+  // ✅ KPI + action (Edit routine) on the same row
+  el("div", { class:"homeRow" }, [
+    el("div", { class:"kpi" }, [
+      el("div", { class:"big", text: workoutTitle }),
+      el("div", { class:"small", text: workoutSub })
+    ]),
+    el("button", {
+      class:"btn",
+      onClick: () => navigate("routine")
+    }, ["Edit routine"])
+  ]),
+
+  el("div", { style:"height:10px" }),
+
+  (workoutExercises.length === 0)
+    ? el("div", { class:"note", text: day?.isRest ? "Rest day is enabled." : "Add exercises in Routine Editor." })
+    : el("div", { class:"list" }, workoutExercises.slice(0,6).map(n =>
+        el("div", { class:"item" }, [
+          el("div", { class:"left" }, [ el("div", { class:"name", text: n }) ]),
+          el("div", { class:"actions" }, [ el("div", { class:"meta", text:"Planned" }) ])
+        ])
+      ))
+]),
 
             el("div", { style:"height:10px" }),
             el("div", { class:"btnrow" }, [
@@ -3554,30 +3565,40 @@ else root.appendChild(el("div", { class:"card" }, [
             ])
           ]),
 
-          el("div", { class:"card" }, [
-            // Header row + action button
-            el("div", { class:"homeRow" }, [
-              el("div", {}, [
-                el("h2", { text:"Attendance" }),
-                el("div", { class:"note", text: weekLabel })
-              ]),
-              el("button", {
-                class:"btn",
-                onClick: () => navigate("attendance")
-              }, ["View calendar"])
-            ]),
+el("div", { class:"card" }, [
+  // Header row + action buttons
+  el("div", { class:"homeRow" }, [
+    el("div", {}, [
+      el("h2", { text:"Attendance" }),
+      el("div", { class:"note", text: weekLabel })
+    ]),
+    // ✅ Stack actions so "Check in" sits under "View calendar"
+   el("div", { style:"display:flex; flex-direction:column; gap:8px; align-items:flex-end;" }, [
+  // ✅ Primary action first
+  el("button", {
+    class:"btn primary",
+    onClick: openCheckIn
+  }, [isTrained(todayISO) ? "Undo check-in" : "Check in"]),
 
-            el("div", { style:"height:10px" }),
+  // Secondary action
+  el("button", {
+    class:"btn",
+    onClick: () => navigate("attendance")
+  }, ["View calendar"])
+])
+  ]),
 
-            // Make the dots preview clickable too
-            el("div", {
-              onClick: () => navigate("attendance"),
-              style:"cursor:pointer;"
-            }, [ dots ]),
+  el("div", { style:"height:10px" }),
 
-            el("div", { style:"height:10px" }),
-            el("div", { class:"note", text:`This week: ${trainedThisWeek.filter(x => x.trained).length} sessions` })
-          ]),
+  // Make the dots preview clickable too
+  el("div", {
+    onClick: () => navigate("attendance"),
+    style:"cursor:pointer;"
+  }, [ dots ]),
+
+  el("div", { style:"height:10px" }),
+  el("div", { class:"note", text:`This week: ${trainedThisWeek.filter(x => x.trained).length} sessions` })
+]),
 
 // ✅ NEW: Weight card (Weight tab replacement)
           el("div", { class:"card" }, [
