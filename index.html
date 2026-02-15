@@ -34,13 +34,6 @@
       --shadow: 0 18px 40px rgba(0,0,0,.45);
 
       --navH: 78px;
-
-      /* ✅ Shared glass surface (header + bottom nav should match) */
-      --glass-bg: rgba(16,20,30,.72);
-      --glass-border: rgba(255,255,255,.10);
-      --glass-blur: blur(18px);
-      --glass-shadow: 0 18px 44px rgba(0,0,0,.55);
-      --glass-shadow-top: 0 10px 30px rgba(0,0,0,.35);
     }
 
     *{ box-sizing:border-box; }
@@ -67,16 +60,8 @@
       position: sticky;
       top: 0;
       z-index: 5;
-
-      /* ✅ Same glass system as nav */
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      background: var(--glass-bg);
-
-      /* ✅ Subtle separation like iOS */
-      border-bottom: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow-top);
-
+      backdrop-filter: blur(16px);
+      background: linear-gradient(to bottom, rgba(11,15,23,.88), rgba(11,15,23,.55));
       padding: 14px 0 10px 0;
     }
 
@@ -719,19 +704,14 @@
       display:flex;
       justify-content:space-between;
       gap: 8px;
-
-      /* ✅ Use the same glass tokens as header */
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
+      background: rgba(16,20,30,.72);
+      border: 1px solid rgba(255,255,255,.10);
       border-radius: 22px;
       padding: 8px;
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      box-shadow: var(--glass-shadow);
-
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 44px rgba(0,0,0,.55);
       pointer-events:auto;
     }
-
     .navbtn{
       flex: 1;
       appearance:none;
