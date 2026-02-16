@@ -3802,13 +3802,19 @@ async function checkForUpdates(){
       }
     }
 
-    // ✅ If version.json changed, force the SW registration to check for an updated SW script.
-    // This makes "version.json is the source of truth" actually trigger the update pipeline.
-    const versionChanged = !!(__latestVersion && __latestVersion !== prevLatest);
+   // ✅ If version.json changed, re-register the SW with the new ?v= URL.
+// This makes "version.json is the source of truth" actually trigger the update pipeline.
+const versionChanged = !!(__latestVersion && __latestVersion !== prevLatest);
 
-    if(versionChanged && __swReg){
-      try{ await __swReg.update(); }catch(_){}
-    }
+if(versionChanged){
+  // Ensure SW URL becomes ./sw.js?v=<latest>
+  try{ await registerServiceWorker(); }catch(_){}
+  // Ask the SW registration to check the server immediately
+  if(__swReg){
+    try{ await __swReg.update(); }catch(_){}
+  }
+}
+
 
 
     __latestNotes = notes;
@@ -7343,7 +7349,7 @@ Modal.open({
 /********************
  * 8) Boot (guarded)
  ********************/
-try{
+(async () => {
   // If already onboarded and library is empty, seed it (won't overwrite non-empty)
   if(state.profile) ExerciseLibrary.ensureSeeded();
 
@@ -7366,15 +7372,16 @@ try{
   bindHeaderPills();
   setHeaderPills();
 
-  // True "Reload to update" support
-  registerServiceWorker();
+  // ✅ IMPORTANT: fetch version.json FIRST, so SW registers with the correct ?v=
+  await checkForUpdates();
 
-  // Fetch version.json so the version pill + What's New reflect the latest release
-  checkForUpdates();
+  // ✅ Then register SW using the latest version (deterministic updates)
+  await registerServiceWorker();
 
-}catch(e){
+})().catch((e) => {
   __fatal(e, "boot");
-}
+});
+
   </script>
 </body>
 </html>
