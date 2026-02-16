@@ -7472,15 +7472,10 @@ const addMultiBtn = el("button", {
     // Collapsed/expanded groups (session only)
     const openGroups = new Set();
 
-    // If day label hints a muscle, open that group by default
+    // ✅ Option 1 behavior: ALL groups start collapsed
+    // (No auto-open based on day label)
     (function seedOpenGroupFromDay(){
-      const hint = normName(dayLabel || "");
-      const mus = (state.exerciseLibrary?.weightlifting || [])
-        .map(x => String(x.primaryMuscle || "").trim())
-        .filter(Boolean);
-
-      const match = mus.find(m => hint && hint.includes(normName(m)));
-      if(match) openGroups.add(match);
+      // intentionally blank
     })();
 
     // UI nodes
@@ -7643,57 +7638,127 @@ const addMultiBtn = el("button", {
         return;
       }
 
-      // Weightlifting grouped by primaryMuscle (tap to expand)
-      const wl = libs.weightlifting
-        .map(x => ({...x, type:"weightlifting"}))
-        .sort((a,b) =>
-          (String(a.primaryMuscle||"").localeCompare(String(b.primaryMuscle||"")) ||
-           (a.name||"").localeCompare(b.name||""))
+      // ✅ Option 1: Classic groups (ALL collapsed by default)
+      // Groups: Chest, Back, Shoulders, Arms, Legs, Full Body, Core, Cardio, Other
+
+      function normGroupBase(s){
+        return String(s || "")
+          .toLowerCase()
+          .split("/")[0]          // take first part of "Chest / Triceps"
+          .trim();
+      }
+
+      function isCoreish(muscle){
+        const m = String(muscle || "").toLowerCase();
+        return (
+          m.includes("core") ||
+          m.includes("abs") ||
+          m.includes("oblique") ||
+          m.includes("lower abs") ||
+          m.includes("anti-rotation") ||
+          m.includes("rotation") ||
+          m.includes("stability") ||
+          m.includes("lower back") ||
+          m.includes("low back") ||
+          m.includes("lumbar") ||
+          m.includes("erector")
         );
+      }
 
-      const byMuscle = new Map();
-      wl.forEach(x => {
-        const g = String(x.primaryMuscle || "Other").trim() || "Other";
-        if(!byMuscle.has(g)) byMuscle.set(g, []);
-        byMuscle.get(g).push(x);
-      });
+      function classifyWeightliftingGroup(x){
+        const mRaw = x?.primaryMuscle || "";
+        if(isCoreish(mRaw)) return "Core"; // core always owns core-ish items
 
-      const muscleNames = Array.from(byMuscle.keys()).sort((a,b)=>a.localeCompare(b));
+        const m = normGroupBase(mRaw);
 
-      if(muscleNames.length){
-        scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Weightlifting (by muscle)" }));
+        if(m.includes("full body")) return "Full Body";
 
-        // Default-open: if we seeded a match, it will already be in openGroups
-        muscleNames.forEach(name => {
-          const items = byMuscle.get(name) || [];
-          scroller.appendChild(renderGroup(name, items, existingSet));
+        if(m.includes("chest") || m.includes("pec")) return "Chest";
+        if(m.includes("back") || m.includes("lat")) return "Back";
+        if(m.includes("shoulder") || m.includes("delt")) return "Shoulders";
+
+        // Arms bucket: biceps/triceps/forearms/grip
+        if(
+          m.includes("bicep") ||
+          m.includes("tricep") ||
+          m.includes("forearm") ||
+          m.includes("grip")
+        ) return "Arms";
+
+        // Legs bucket: legs/quads/hamstrings/glutes/calves/adductors
+        if(
+          m.includes("leg") ||
+          m.includes("quad") ||
+          m.includes("hamstring") ||
+          m.includes("glute") ||
+          m.includes("calf") ||
+          m.includes("adductor")
+        ) return "Legs";
+
+        return "Other";
+      }
+
+      // Build group containers (in the exact order you want)
+      const groups = new Map([
+        ["Chest", []],
+        ["Back", []],
+        ["Shoulders", []],
+        ["Arms", []],
+        ["Legs", []],
+        ["Full Body", []],
+        ["Core", []],
+        ["Cardio", []],
+        ["Other", []]
+      ]);
+
+      // 1) Weightlifting → map into classic groups (Core owns core-ish)
+      libs.weightlifting
+        .map(x => ({...x, type:"weightlifting"}))
+        .forEach(x => {
+          const g = classifyWeightliftingGroup(x);
+          if(!groups.has(g)) groups.set(g, []);
+          groups.get(g).push(x);
         });
+
+      // 2) Core library → always goes into Core group
+      libs.core
+        .map(x => ({...x, type:"core"}))
+        .forEach(x => {
+          groups.get("Core").push(x);
+        });
+
+      // 3) Cardio library → always goes into Cardio group
+      libs.cardio
+        .map(x => ({...x, type:"cardio"}))
+        .forEach(x => {
+          groups.get("Cardio").push(x);
+        });
+
+      // Sort items inside each group
+      for(const [k, arr] of groups.entries()){
+        arr.sort((a,b) => (a.name||"").localeCompare(b.name||""));
       }
 
-      // Cardio collapsible group
-      const cardioItems = libs.cardio.map(x => ({...x, type:"cardio"}))
-        .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+      // Render: all collapsed by default (openGroups starts empty)
+      let renderedAny = false;
 
-      if(cardioItems.length){
-        scroller.appendChild(el("div", { style:"height:10px" }));
-        scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Cardio" }));
-        if(!openGroups.has("Cardio")) openGroups.add("Cardio"); // feels better to open by default
-        scroller.appendChild(renderGroup("Cardio", cardioItems, existingSet));
+      for(const [title, items] of groups.entries()){
+        if(!items.length) continue;
+        renderedAny = true;
+
+        // small spacing between groups (visual breathing room)
+        if(scroller.childNodes.length){
+          scroller.appendChild(el("div", { style:"height:10px" }));
+        }
+
+        scroller.appendChild(renderGroup(title, items, existingSet));
       }
 
-      // Core collapsible group
-      const coreItems = libs.core.map(x => ({...x, type:"core"}))
-        .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
-
-      if(coreItems.length){
-        scroller.appendChild(el("div", { style:"height:10px" }));
-        scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Core" }));
-        if(!openGroups.has("Core")) openGroups.add("Core"); // open by default
-        scroller.appendChild(renderGroup("Core", coreItems, existingSet));
-      }
-
-      if(!muscleNames.length && !cardioItems.length && !coreItems.length){
-        scroller.appendChild(el("div", { class:"note", text:"No exercises yet. Seed the library or add exercises in Settings." }));
+      if(!renderedAny){
+        scroller.appendChild(el("div", {
+          class:"note",
+          text:"No exercises yet. Seed the library or add exercises in Settings."
+        }));
       }
 
       updateCount();
