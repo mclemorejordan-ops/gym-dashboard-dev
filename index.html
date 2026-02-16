@@ -1783,12 +1783,18 @@ const Storage = (() => {
 
 function load(){
   try{
+    const base = DefaultState();          // ✅ always start from a fresh plain object
     const raw = localStorage.getItem(KEY);
-    if(!raw) return deepClone(DefaultState());               // ✅ call DefaultState()
-    return Object.assign(deepClone(DefaultState()), JSON.parse(raw)); // ✅ call DefaultState()
+    if(!raw) return base;
+
+    const parsed = JSON.parse(raw);
+    if(!parsed || typeof parsed !== "object") return base;
+
+    // ✅ merge saved fields onto defaults (keeps defaults for new keys)
+    return Object.assign(base, parsed);
   }catch(e){
     console.warn("Storage.load failed:", e);
-    return deepClone(DefaultState());                        // ✅ call DefaultState()
+    return DefaultState();                // ✅ fresh default, no deepClone needed
   }
 }
   function __writeNow(state){
@@ -1840,8 +1846,13 @@ function load(){
     flush,                // 🔥 Immediate write
     reset
   };
+ 
 
 })();
+
+    let state = Storage.load();
+    window.state = state; // important because your Storage module flush listeners use window.state
+
     /********************
      * Backup / Import (Step 10)
      ********************/
