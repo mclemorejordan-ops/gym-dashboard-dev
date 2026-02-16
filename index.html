@@ -1820,138 +1820,108 @@ const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date
       attendance: []
     });
 
-    const Storage = {
-      load(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return DefaultState();
+const Storage = {
+  load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return DefaultState();
 
-    const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
 
-    // ✅ Always migrate/repair into latest schema
-    return migrateState(parsed);
-  }catch(e){
-    return DefaultState();
+      // ✅ Always migrate/repair into latest schema
+      return migrateState(parsed);
+    }catch(e){
+      return DefaultState();
+    }
+  },
+
+  save(state){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){
+      // QuotaExceededError or storage blocked in private modes
+      console.warn("Storage.save failed:", e);
+      handleStorageWriteError(e);
+    }
+  },
+
+  reset(){
+    try{
+      localStorage.removeItem(STORAGE_KEY);
+    }catch(e){
+      console.warn("Storage.reset failed:", e);
+    }
   }
-},
+};
 
-      save(state){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }catch(e){
-    // QuotaExceededError or storage blocked in private modes
-    console.warn("Storage.save failed:", e);
-    handleStorageWriteError(e);
-  }
-},
-      // ─────────────────────────────
-// Storage quota / write failure UX (production hardening)
-// ─────────────────────────────
-let __storageErrorShown = false;
+// ✅ Load state AFTER Storage exists
+let state = Storage.load();
 
-function handleStorageWriteError(err){
-  if(__storageErrorShown) return;
-  __storageErrorShown = true;
-
-  const msg = String(err && (err.message || err.name) ? (err.message || err.name) : err);
-
-  Modal.open({
-    title: "Storage full",
-    bodyNode: el("div", {}, [
-      el("div", { class:"note", text:
-        "Your device/browser storage is full, so the app could not save your latest changes. " +
-        "Your data is still in memory for this session, but it may be lost if the app closes."
-      }),
-      el("div", { class:"note", text:
-        "Recommended: Export a backup now, then clear space (or reset local data if needed)."
-      }),
-      el("div", { class:"btnrow" }, [
-        el("button", {
-          class:"btn",
-          onClick: () => {
-            try{
-              const json = exportBackupJSON();
-              downloadTextFile(
-                `gym-dashboard-backup-${(new Date().toISOString().slice(0,10))}.json`,
-                json
-              );
-            }catch(e2){
-              alert("Export failed: " + String(e2 && e2.message ? e2.message : e2));
-            }
-          }
-        }, ["Export backup"]),
-        el("button", {
-          class:"btn danger",
-          onClick: () => {
-            try{ Storage.reset(); }catch(_){}
-            location.reload();
-          }
-        }, ["Reset local data"])
-      ]),
-      el("pre", {
-        style:"white-space:pre-wrap; font-size:12px; color: rgba(255,255,255,.85); background: rgba(0,0,0,.25); border:1px solid var(--hair); padding:10px; border-radius:12px; overflow:auto; max-height: 25vh;"
-      }, [msg])
-    ])
-  });
+/********************
+ * Backup / Import (Step 10)
+ ********************/
+function downloadTextFile(filename, text, mime="application/json"){
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 250);
 }
 
-    /********************
-     * Backup / Import (Step 10)
-     ********************/
-    function downloadTextFile(filename, text, mime="application/json"){
-      const blob = new Blob([text], { type: mime });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 250);
-    }
+function exportBackupJSON(){
+  // Keep export simple: full state snapshot
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    app: "gym-dashboard-dev",
+    data: state
+  };
+  return JSON.stringify(payload, null, 2);
+}
 
-    function exportBackupJSON(){
-      // Keep export simple: full state snapshot
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        app: "gym-dashboard-dev",
-        data: state
-      };
-      return JSON.stringify(payload, null, 2);
-    }
+function validateImportedState(obj){
+  // Accept either raw state or wrapped { data: state }
+  const imported = (obj && typeof obj === "object" && "data" in obj) ? obj.data : obj;
 
-    function validateImportedState(obj){
-      // Accept either raw state or wrapped { data: state }
-      const imported = (obj && typeof obj === "object" && "data" in obj) ? obj.data : obj;
+  if(!imported || typeof imported !== "object") throw new Error("Invalid JSON object.");
+  if(typeof imported.schemaVersion !== "number") throw new Error("Invalid backup: missing schemaVersion.");
 
-      if(!imported || typeof imported !== "object") throw new Error("Invalid JSON object.");
-      if(typeof imported.schemaVersion !== "number") throw new Error("Invalid backup: missing schemaVersion.");
+  // Must contain expected top-level fields (loose validation)
+  if(!("profile" in imported)) throw new Error("Invalid backup: missing profile.");
+  if(!("routines" in imported)) throw new Error("Invalid backup: missing routines.");
+  if(!("exerciseLibrary" in imported)) throw new Error("Invalid backup: missing exerciseLibrary.");
+  if(!("logs" in imported)) throw new Error("Invalid backup: missing logs.");
+  if(!("attendance" in imported)) throw new Error("Invalid backup: missing attendance.");
 
-      // Must contain expected top-level fields (loose validation)
-      if(!("profile" in imported)) throw new Error("Invalid backup: missing profile.");
-      if(!("routines" in imported)) throw new Error("Invalid backup: missing routines.");
-      if(!("exerciseLibrary" in imported)) throw new Error("Invalid backup: missing exerciseLibrary.");
-      if(!("logs" in imported)) throw new Error("Invalid backup: missing logs.");
-      if(!("attendance" in imported)) throw new Error("Invalid backup: missing attendance.");
+  return migrateState(imported);
+}
 
-      return migrateState(imported);
-    }
+function importBackupJSON(jsonText){
+  let parsed;
+  try{
+    parsed = JSON.parse(jsonText);
+  }catch(e){
+    throw new Error("Could not parse JSON. Make sure it’s valid.");
+  }
 
-    function importBackupJSON(jsonText){
-      let parsed;
-      try{
-        parsed = JSON.parse(jsonText);
-      }catch(e){
-        throw new Error("Could not parse JSON. Make sure it’s valid.");
-      }
+  const importedState = validateImportedState(parsed);
 
-      const importedState = validateImportedState(parsed);
+  // Overwrite local storage + live state
+  state = importedState;
+  Storage.save(state);
+}
 
-      // Overwrite local storage + live state
-      state = importedState;
-      Storage.save(state);
-    }
-    let state = Storage.load();
+// ✅ failsafe: prevent Storage.save from crashing if handler is missing
+function handleStorageWriteError(e){
+  try{
+    // Minimal user-safe warning; you can enhance later
+    console.warn("Storage write error:", e);
+  }catch(_){}
+}
+
 const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
   settings: {
     q: "",
@@ -1963,6 +1933,7 @@ const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
     equipment: "all"
   }
 });
+
     /********************
      * 2) Helpers
      ********************/
