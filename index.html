@@ -817,6 +817,158 @@ input, select, textarea{
       background: rgba(255,92,122,.14);
       border-color: rgba(255,92,122,.28);
     }
+        /* ─────────────────────────────
+       Add Exercise Modal (Routine Editor) — compact, phone-first
+       ───────────────────────────── */
+    .addExModal{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      height: min(76vh, 640px);
+    }
+
+    .addExCtx{ display:flex; flex-direction:column; gap:2px; }
+    .addExCtxA{
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .addExCtxB{
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: .1px;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .addExSearch{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      backdrop-filter: blur(8px);
+    }
+    .addExSearch .ico{ opacity:.85; }
+    .addExSearch input{
+      flex:1;
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      outline: none !important;
+      color: rgba(255,255,255,.92);
+      font-size: 16px; /* prevents iOS zoom */
+    }
+    .addExSearch input::placeholder{ color: rgba(255,255,255,.45); }
+
+    .addExScroller{
+      flex:1;
+      overflow:auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 8px;
+    }
+
+    .addExSectionLabel{
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.60);
+      margin: 6px 2px 8px;
+    }
+
+    .addExGroup{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      overflow:hidden;
+      margin-bottom: 10px;
+    }
+    .addExGroupHead{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .addExGroupHead:active{ transform: scale(.995); }
+
+    .addExGroupLeft{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .addExGroupTitle{
+      font-weight: 900;
+      letter-spacing: .1px;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .addExGroupSub{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .addExGroupCaret{ opacity:.85; font-weight: 900; }
+
+    .addExGroupBody{
+      padding: 0 10px 10px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      display:grid;
+      gap: 8px;
+    }
+
+    /* Slightly tighter rows inside this modal */
+    .addExRow{
+      padding: 10px;
+      border-radius: 14px;
+    }
+    .addExRow .name{ max-width: 64vw; }
+
+    .addExBottom{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 10px 10px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+      backdrop-filter: blur(10px);
+      border-radius: 14px;
+    }
+    .addExCount{
+      font-size: 12px;
+      color: rgba(255,255,255,.75);
+      font-weight: 800;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+    }
+
+    .addExSearchHint{
+      font-size: 12px;
+      color: rgba(255,255,255,.70);
+      font-weight: 800;
+      margin: 6px 2px 8px;
+    }
+
+    @media (max-width: 500px){
+      .addExModal{ height: 78vh; gap: 8px; }
+      .addExCtxB{ font-size: 13px; }
+      .addExGroupHead{ padding: 11px 11px; }
+      .addExGroupBody{ padding: 0 9px 9px; gap: 7px; }
+      .addExRow{ padding: 9px; }
+      .addExBottom{ padding: 9px 9px; }
+      .addExCount{ padding: 7px 9px; }
+    }
     /* Attendance */
     .calWrap{
       border: 1px solid rgba(255,255,255,.10);
@@ -7215,136 +7367,293 @@ const addMultiBtn = el("button", {
   }
 
   function openAddExercise(routineId, dayId, opts={}){
-    let type = "weightlifting";
+    // Compact, phone-first "Add Exercise" modal
+    // - Active day context (top)
+    // - Fixed search bar
+    // - Scrollable exercise sections grouped by Primary Muscle (tap to expand)
+    // - Fixed Add/Done bar (supports multi-add when opts.keepOpen === true)
+    ExerciseLibrary.ensureSeeded();
 
-    const seg = el("div", { class:"seg" }, [
-      el("button", { class:"segbtn active", onClick: () => setType("weightlifting") }, ["Weightlifting"]),
-      el("button", { class:"segbtn", onClick: () => setType("cardio") }, ["Cardio"]),
-      el("button", { class:"segbtn", onClick: () => setType("core") }, ["Core"])
+    const routine = (state.routines || []).find(r => r.id === routineId) || Routines.getActive();
+    const day = (routine?.days || []).find(d => d.id === dayId) || null;
+
+    const dayIndex = day ? (routine.days || []).findIndex(d => d.id === dayId) : -1;
+    const dow = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const dayTag = (dayIndex >= 0 && dayIndex < 7) ? dow[dayIndex] : "Day";
+    const dayLabel = (day?.label || "").trim();
+    const dayTitle = dayLabel ? `${dayTag} • ${dayLabel}` : `${dayTag}`;
+
+    // Tracks what the user adds during THIS open session (for live count)
+    const addedThisSession = new Set();
+
+    // Persisted exercises already on this day (to prevent duplicates)
+    function getExistingSetForDay(){
+      const s = new Set();
+      (day?.exercises || []).forEach(rx => s.add(`${rx.type}:${rx.exerciseId}`));
+      return s;
+    }
+
+    // Search state
+    let query = "";
+
+    // Collapsed/expanded groups (session only)
+    const openGroups = new Set();
+
+    // If day label hints a muscle, open that group by default
+    (function seedOpenGroupFromDay(){
+      const hint = normName(dayLabel || "");
+      const mus = (state.exerciseLibrary?.weightlifting || [])
+        .map(x => String(x.primaryMuscle || "").trim())
+        .filter(Boolean);
+
+      const match = mus.find(m => hint && hint.includes(normName(m)));
+      if(match) openGroups.add(match);
+    })();
+
+    // UI nodes
+    const ctx = el("div", { class:"addExCtx" }, [
+      el("div", { class:"addExCtxA", text:"Add exercises to" }),
+      el("div", { class:"addExCtxB", text: dayTitle })
     ]);
 
-    const list = el("div", { class:"list" });
+    const searchWrap = el("div", { class:"addExSearch" }, [
+      el("div", { class:"ico", text:"🔎" }),
+      el("input", {
+        type:"text",
+        value:"",
+        placeholder:"Search exercises…",
+        onInput: (e) => {
+          query = String(e.target.value || "");
+          repaint();
+        }
+      })
+    ]);
 
-    function setType(t){
-      type = t;
-      [...seg.querySelectorAll(".segbtn")].forEach(b => b.classList.remove("active"));
-      if(t === "weightlifting") seg.children[0].classList.add("active");
-      if(t === "cardio") seg.children[1].classList.add("active");
-      if(t === "core") seg.children[2].classList.add("active");
-      repaint();
-      updateLiveCount();
+    const scroller = el("div", { class:"addExScroller" });
+    const bottomBar = el("div", { class:"addExBottom" });
+
+    const countPill = el("div", { class:"addExCount", text:"0 added" });
+    const doneBtn = el("button", {
+      class:"btn primary",
+      onClick: () => Modal.close()
+    }, [opts.keepOpen ? "Done" : "Close"]);
+
+    function updateCount(){
+      countPill.textContent = `${addedThisSession.size} added`;
     }
 
-// Tracks what the user adds during THIS open session (for live count)
-const addedThisSession = new Set();
+    function addExercise(type, exId, key, rowBtn, rowEl){
+      if(rowBtn?.disabled) return;
 
-// Live count UI (only shown in keepOpen mode)
-const liveCount = el("div", {
-  class:"note",
-  style:"margin-top:8px; margin-bottom:10px; display:none;"
-}, ["0 exercises added"]);
-
-function updateLiveCount(){
-  if(!opts.keepOpen){
-    liveCount.style.display = "none";
-    return;
-  }
-  liveCount.style.display = "block";
-  liveCount.textContent =
-    `${addedThisSession.size} exercise${addedThisSession.size === 1 ? "" : "s"} added`;
-}
-
-function getExistingSetForDay(){
-  const r = Routines.getActive();
-  const day = (r?.days || []).find(d => d.id === dayId);
-  const s = new Set();
-  (day?.exercises || []).forEach(rx => {
-    // store by type+id to avoid collisions across categories
-    s.add(`${rx.type}:${rx.exerciseId}`);
-  });
-  return s;
-}
-
-function repaint(){
-  list.innerHTML = "";
-
-  const existing = getExistingSetForDay();
-
-  const items = (state.exerciseLibrary?.[type] || []).slice()
-    .sort((a,b) => (a.name||"").localeCompare(b.name||""));
-
-  if(items.length === 0){
-    list.appendChild(el("div", {
-      class:"note",
-      text:"No exercises in this category yet. Add them in Settings later."
-    }));
-    updateLiveCount();
-    return;
-  }
-
-  items.forEach(x => {
-    const key = `${type}:${x.id}`;
-    const alreadyInDay = existing.has(key);
-
-    const row = el("div", { class:"item" });
-    const btn = el("button", { class:"mini" }, ["Add"]);
-
-    row.appendChild(
-      el("div", { class:"left" }, [
-        el("div", { class:"name", text:x.name }),
-        el("div", { class:"meta", text: ExerciseLibrary.typeLabel(type) })
-      ])
-    );
-
-    row.appendChild(el("div", { class:"actions" }, [ btn ]));
-
-    // Disable if already in the day (persist across reopen)
-    if(alreadyInDay){
-      row.classList.add("selected", "disabledRow");
-      btn.classList.add("added", "disabledBtn");
-      btn.textContent = "Added ✓";
-      btn.disabled = true;
-    }
-
-    btn.addEventListener("click", () => {
-      if(btn.disabled) return; // guard: no duplicates
-
-      Routines.addExerciseToDay(routineId, dayId, type, x.id);
+      // ✅ Keep original behavior: tap "Add" instantly adds (no checkbox flow)
+      Routines.addExerciseToDay(routineId, dayId, type, exId);
       repaintDays();
 
       if(opts.keepOpen){
         addedThisSession.add(key);
-        row.classList.add("selected");
-        btn.classList.add("added", "disabledBtn");
-        btn.textContent = "Added ✓";
-        btn.disabled = true;
 
-        updateLiveCount();
+        if(rowEl) rowEl.classList.add("selected", "disabledRow");
+        if(rowBtn){
+          rowBtn.classList.add("added", "disabledBtn");
+          rowBtn.textContent = "Added ✓";
+          rowBtn.disabled = true;
+        }
+
+        updateCount();
       }else{
         Modal.close();
       }
+    }
+
+    function renderRow(type, x, existingSet){
+      const key = `${type}:${x.id}`;
+      const alreadyInDay = existingSet.has(key);
+
+      const row = el("div", { class:"item addExRow" });
+      const btn = el("button", { class:"mini" }, ["Add"]);
+
+      const metaParts = [];
+      if(type === "weightlifting"){
+        if(x.primaryMuscle) metaParts.push(String(x.primaryMuscle));
+        if(x.equipment) metaParts.push(String(x.equipment));
+      }else{
+        if(x.equipment) metaParts.push(String(x.equipment));
+      }
+      metaParts.push(ExerciseLibrary.typeLabel(type));
+
+      row.appendChild(
+        el("div", { class:"left" }, [
+          el("div", { class:"name", text:x.name }),
+          el("div", { class:"meta", text: metaParts.filter(Boolean).join(" • ") })
+        ])
+      );
+      row.appendChild(el("div", { class:"actions" }, [ btn ]));
+
+      if(alreadyInDay){
+        row.classList.add("selected", "disabledRow");
+        btn.classList.add("added", "disabledBtn");
+        btn.textContent = "Added ✓";
+        btn.disabled = true;
+      }
+
+      btn.addEventListener("click", () => addExercise(type, x.id, key, btn, row));
+      return row;
+    }
+
+    function toggleGroup(name){
+      if(openGroups.has(name)) openGroups.delete(name);
+      else openGroups.add(name);
+      repaint();
+    }
+
+    function renderGroup(title, items, existingSet){
+      const isOpen = openGroups.has(title);
+
+      const head = el("div", {
+        class:"addExGroupHead",
+        onClick: () => toggleGroup(title)
+      }, [
+        el("div", { class:"addExGroupLeft" }, [
+          el("div", { class:"addExGroupTitle", text:title }),
+          el("div", { class:"addExGroupSub", text:`${items.length} exercise${items.length===1?"":"s"}` })
+        ]),
+        el("div", { class:"addExGroupCaret", text: isOpen ? "▾" : "▸" })
+      ]);
+
+      const body = el("div", {
+        class:"addExGroupBody",
+        style: isOpen ? "" : "display:none;"
+      });
+
+      items.forEach(x => body.appendChild(renderRow(x.type, x, existingSet)));
+
+      return el("div", { class:"addExGroup" }, [ head, body ]);
+    }
+
+    function repaint(){
+      scroller.innerHTML = "";
+      const existingSet = getExistingSetForDay();
+
+      // ✅ No segmented control: unify all categories
+      const libs = {
+        weightlifting: (state.exerciseLibrary?.weightlifting || []).slice(),
+        cardio:        (state.exerciseLibrary?.cardio || []).slice(),
+        core:          (state.exerciseLibrary?.core || []).slice()
+      };
+
+      const all = []
+        .concat(libs.weightlifting.map(x => ({...x, type:"weightlifting"})))
+        .concat(libs.cardio.map(x => ({...x, type:"cardio"})))
+        .concat(libs.core.map(x => ({...x, type:"core"})));
+
+      const q = normName(query || "");
+
+      // Search: flat list (fast + compact)
+      if(q){
+        const hits = all
+          .filter(x => normName(x.name).includes(q))
+          .sort((a,b) => (a.name||"").localeCompare(b.name||""))
+          .slice(0, 60);
+
+        if(hits.length === 0){
+          scroller.appendChild(el("div", { class:"note", text:"No matches. Try a different keyword." }));
+          updateCount();
+          return;
+        }
+
+        scroller.appendChild(el("div", { class:"addExSearchHint", text:`Results (${hits.length})` }));
+        const wrap = el("div", { class:"list" });
+        hits.forEach(x => wrap.appendChild(renderRow(x.type, x, existingSet)));
+        scroller.appendChild(wrap);
+
+        updateCount();
+        return;
+      }
+
+      // Weightlifting grouped by primaryMuscle (tap to expand)
+      const wl = libs.weightlifting
+        .map(x => ({...x, type:"weightlifting"}))
+        .sort((a,b) =>
+          (String(a.primaryMuscle||"").localeCompare(String(b.primaryMuscle||"")) ||
+           (a.name||"").localeCompare(b.name||""))
+        );
+
+      const byMuscle = new Map();
+      wl.forEach(x => {
+        const g = String(x.primaryMuscle || "Other").trim() || "Other";
+        if(!byMuscle.has(g)) byMuscle.set(g, []);
+        byMuscle.get(g).push(x);
+      });
+
+      const muscleNames = Array.from(byMuscle.keys()).sort((a,b)=>a.localeCompare(b));
+
+      if(muscleNames.length){
+        scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Weightlifting (by muscle)" }));
+
+        // Default-open: if we seeded a match, it will already be in openGroups
+        muscleNames.forEach(name => {
+          const items = byMuscle.get(name) || [];
+          scroller.appendChild(renderGroup(name, items, existingSet));
+        });
+      }
+
+      // Cardio collapsible group
+      const cardioItems = libs.cardio.map(x => ({...x, type:"cardio"}))
+        .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+
+      if(cardioItems.length){
+        scroller.appendChild(el("div", { style:"height:10px" }));
+        scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Cardio" }));
+        if(!openGroups.has("Cardio")) openGroups.add("Cardio"); // feels better to open by default
+        scroller.appendChild(renderGroup("Cardio", cardioItems, existingSet));
+      }
+
+      // Core collapsible group
+      const coreItems = libs.core.map(x => ({...x, type:"core"}))
+        .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+
+      if(coreItems.length){
+        scroller.appendChild(el("div", { style:"height:10px" }));
+        scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Core" }));
+        if(!openGroups.has("Core")) openGroups.add("Core"); // open by default
+        scroller.appendChild(renderGroup("Core", coreItems, existingSet));
+      }
+
+      if(!muscleNames.length && !cardioItems.length && !coreItems.length){
+        scroller.appendChild(el("div", { class:"note", text:"No exercises yet. Seed the library or add exercises in Settings." }));
+      }
+
+      updateCount();
+    }
+
+    // Bottom bar content
+    bottomBar.appendChild(countPill);
+    bottomBar.appendChild(el("div", { style:"flex:1" }));
+    bottomBar.appendChild(doneBtn);
+
+    // First paint
+    repaint();
+    updateCount();
+
+    Modal.open({
+      title: "Add exercise",
+      size: "lg",
+      bodyNode: el("div", { class:"addExModal" }, [
+        ctx,
+        searchWrap,
+        scroller,
+        bottomBar
+      ])
     });
 
-    list.appendChild(row);
-  });
-
-  updateLiveCount();
-}
-
-repaint();
-updateLiveCount();
-
-Modal.open({
-  title: "Add exercise",
-  bodyNode: el("div", {}, [
-    seg,
-    liveCount,
-    list,
-    el("div", { style:"height:12px" }),
-    el("button", { class:"btn", onClick: Modal.close }, ["Close"])
-  ])
-});
-  } // ✅ closes openAddExercise
+    // Focus search immediately (fast on phones)
+    setTimeout(() => {
+      try{
+        const inp = searchWrap.querySelector("input");
+        inp && inp.focus && inp.focus();
+      }catch(e){}
+    }, 0);
+  }
 };   // ✅ closes Views.RoutineEditor function
 /********************
  * 8) Boot (guarded)
