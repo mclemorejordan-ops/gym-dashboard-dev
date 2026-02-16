@@ -3722,8 +3722,10 @@ let __latestNotes = (() => {
 let __latestBuildDate = (localStorage.getItem(VERSION_BUILD_KEY) || "").trim() || null;
 
 let __swReg = null;
+let __swUrlRegistered = null; // ✅ tracks which SW URL (including ?v=...) we registered
 let __swUpdateReady = false;
 let __swInstalling = false;
+
 
 function __hasSwUpdateWaiting(){
   return !!(__swReg && __swReg.waiting) || __swUpdateReady;
