@@ -5755,6 +5755,35 @@ statsHost.appendChild(el("div", { class:"pill" }, [
     return String(v);
   }
 
+  // ✅ FIX: was referenced but missing — caused Progress to crash
+  function tableLine(entry){
+    try{
+      if(!entry) return "—";
+      const t = entry.type || type;           // fall back to current Progress tab type
+      const s = entry.summary || {};
+
+      if(t === "weightlifting"){
+        const bw  = (s.bestWeight != null) ? `${formatMetricValue("weightlifting","topWeight", s.bestWeight)} top` : "";
+        const brm = (s.best1RM != null)    ? `${formatMetricValue("weightlifting","est1RM",    s.best1RM)} est1RM` : "";
+        const bv  = (s.totalVolume != null)? `${formatMetricValue("weightlifting","volume",   s.totalVolume)} vol` : "";
+        return [bw, brm, bv].filter(Boolean).join(" • ") || "—";
+      }
+
+      if(t === "cardio"){
+        const pace = (s.paceSecPerUnit != null) ? `${formatMetricValue("cardio","pace", s.paceSecPerUnit)} pace` : "";
+        const dist = (s.distance != null)       ? `${formatMetricValue("cardio","distance", s.distance)} dist` : "";
+        const time = (s.timeSec != null)        ? `${formatMetricValue("cardio","timeSec", s.timeSec)} time` : "";
+        return [pace, dist, time].filter(Boolean).join(" • ") || "—";
+      }
+
+      // core
+      const vol = (s.totalVolume != null) ? `${formatMetricValue("core","volume", s.totalVolume)} vol` : "";
+      return vol || "—";
+    }catch(_){
+      return "—";
+    }
+  }
+
 },  // ✅ end Progress()
   Weight(){
   WeightEngine.ensure();
