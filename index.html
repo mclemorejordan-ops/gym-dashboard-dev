@@ -2827,6 +2827,24 @@ const RoutineTemplates = [
       }
     };
 
+        };
+
+    // ✅ FIX: used by Progress → History delete button
+    function removeWorkoutEntryById(entryId){
+      LogEngine.ensure();
+      const id = String(entryId || "");
+      const before = (state.logs.workouts || []).length;
+
+      state.logs.workouts = (state.logs.workouts || []).filter(e => String(e.id || "") !== id);
+
+      Storage.save(state);
+      return (state.logs.workouts || []).length !== before;
+    }
+
+    function round2(n){
+      return Math.round((Number(n) || 0) * 100) / 100;
+    }
+
     function round2(n){
       return Math.round((Number(n) || 0) * 100) / 100;
     }
