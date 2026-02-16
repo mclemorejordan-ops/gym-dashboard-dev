@@ -1959,18 +1959,13 @@ const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
       const day = routine.days.find(d => d.order === idx) || routine.days[idx] || null;
       return { routine, day, dayIndex: idx };
     }
+function isTrained(dateISO){
+  return AttendanceEngine.has(dateISO);
+}
 
-    function isTrained(dateISO){
-      return (state.attendance || []).includes(dateISO);
-    }
-
-    function toggleTrained(dateISO){
-      state.attendance = state.attendance || [];
-      const i = state.attendance.indexOf(dateISO);
-      if(i >= 0) state.attendance.splice(i, 1);
-      else state.attendance.push(dateISO);
-      Storage.save(state);
-    }
+function toggleTrained(dateISO){
+  AttendanceEngine.toggle(dateISO);
+}
     /********************
      * Attendance Helpers (Step 9)
      ********************/
@@ -1996,22 +1991,59 @@ const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
       return `${y}-${pad2(m)}-${pad2(d)}`;
     }
 
-    const AttendanceEngine = {
-      ensure(){
-        state.attendance = state.attendance || [];
-      },
-      monthCount(y, m){
-        this.ensure();
-        const prefix = `${y}-${pad2(m)}-`;
-        return state.attendance.filter(x => String(x).startsWith(prefix)).length;
-      },
-      clearMonth(y, m){
-        this.ensure();
-        const prefix = `${y}-${pad2(m)}-`;
-        state.attendance = state.attendance.filter(x => !String(x).startsWith(prefix));
-        Storage.save(state);
-      }
-    };
+const AttendanceEngine = {
+  ensure(){
+    state.attendance = state.attendance || [];
+  },
+
+  // ✅ Canonical membership check
+  has(dateISO){
+    this.ensure();
+    return state.attendance.includes(String(dateISO));
+  },
+
+  // ✅ Canonical add (idempotent)
+  add(dateISO){
+    this.ensure();
+    const iso = String(dateISO);
+    if(!state.attendance.includes(iso)){
+      state.attendance.push(iso);
+    }
+    Storage.save(state);
+  },
+
+  // ✅ Canonical remove (idempotent)
+  remove(dateISO){
+    this.ensure();
+    const iso = String(dateISO);
+    const before = state.attendance.length;
+    state.attendance = state.attendance.filter(x => String(x) !== iso);
+    if(state.attendance.length !== before){
+      Storage.save(state);
+    }
+  },
+
+  // ✅ Canonical toggle (preserves existing behavior)
+  toggle(dateISO){
+    this.ensure();
+    const iso = String(dateISO);
+    if(this.has(iso)) this.remove(iso);
+    else this.add(iso);
+  },
+
+  monthCount(y, m){
+    this.ensure();
+    const prefix = `${y}-${pad2(m)}-`;
+    return state.attendance.filter(x => String(x).startsWith(prefix)).length;
+  },
+
+  clearMonth(y, m){
+    this.ensure();
+    const prefix = `${y}-${pad2(m)}-`;
+    state.attendance = state.attendance.filter(x => !String(x).startsWith(prefix));
+    Storage.save(state);
+  }
+};
 
     const normName = (s) => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
 
