@@ -4,8 +4,16 @@
    - Exposes SKIP_WAITING so UI can force-apply an update
 */
 
-const CACHE_NAME = "gymdash-shell-v1";
-const APP_SHELL = ["./", "./index.html"];
+const CACHE_NAME = "gymdash-shell-v2";
+const EXT_CACHE = "gymdash-ext-v1";
+
+// App shell (always available offline)
+const APP_SHELL = [
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./icon.svg"
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
