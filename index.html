@@ -1960,6 +1960,11 @@ async function importBackupJSON(file){
 
         const pad2 = (n) => String(n).padStart(2, "0");
 
+    // numeric helper (shared)
+function round2(n){
+  return Math.round((Number(n) || 0) * 100) / 100;
+}
+
     const Dates = {
       todayISO(){
         const d = new Date();
@@ -5611,7 +5616,6 @@ topCard.appendChild(el("div", {
   function repaintTypeRow(){
     Object.entries(typeBtns).forEach(([k,btn]) => btn.classList.toggle("active", k === type));
   }
-
   function confirmDeleteLog(entry){
     Modal.open({
       title: "Delete log?",
