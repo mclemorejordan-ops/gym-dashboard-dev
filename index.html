@@ -2708,161 +2708,243 @@ const RoutineTemplates = [
       const p = getProteinForDate(dateISO);
       return (p.meals || []).reduce((sum,m) => sum + (Number(m.grams)||0), 0);
     }
-    /********************
-     * 4d) Log Engine + PR Engine (Step 6)  ✅ FIXED
-     ********************/
-    const LogEngine = {
-      ensure(){
-        state.logs = state.logs || { workouts: [], weight: [], protein: [] };
-        state.logs.workouts = state.logs.workouts || [];
-      },
+/********************
+ * 4d) Log Engine + PR Engine (Step 6)  ✅ FIXED
+ * Phase 2.3: Indexed log access (perf, zero UX change)
+ ********************/
+const LogEngine = {
+  // Internal indexes (built lazily)
+  __idxByExercise: null,   // Map "type::exerciseId" -> entries[] (sorted desc)
+  __idxByRoutineDay: null, // Set "dateISO::routineExerciseId" (quick logged check)
 
-      addEntry(entry){
-        this.ensure();
-        state.logs.workouts.push(entry);
-        Storage.save(state);
-      },
+  ensure(){
+    state.logs = state.logs || { workouts: [], weight: [], protein: [] };
+    state.logs.workouts = state.logs.workouts || [];
+  },
 
-      entriesForExercise(type, exerciseId){
-        this.ensure();
-        return state.logs.workouts
-          .filter(e => e.type === type && e.exerciseId === exerciseId)
-          .sort((a,b) => (b.dateISO || "").localeCompare(a.dateISO || "") || (b.createdAt||0)-(a.createdAt||0));
-      },
+  // Call this whenever workouts array is bulk-replaced (filter/reassign/import/reset)
+  invalidateIndex(){
+    this.__idxByExercise = null;
+    this.__idxByRoutineDay = null;
+  },
 
-      lifetimeBests(type, exerciseId){
-        const entries = this.entriesForExercise(type, exerciseId);
-        const bests = {
-          bestWeight: null,
-          best1RM: null,
-          bestVolume: null,
-          bestPace: null
-        };
+  __exKey(type, exerciseId){
+    return `${String(type || "")}::${String(exerciseId || "")}`;
+  },
+  __rxKey(dateISO, routineExerciseId){
+    return `${String(dateISO || "")}::${String(routineExerciseId || "")}`;
+  },
 
-        for(const e of entries){
-          if(e?.summary){
-            if(type === "weightlifting"){
-              if(Number.isFinite(e.summary.bestWeight)) bests.bestWeight = Math.max(bests.bestWeight ?? -Infinity, e.summary.bestWeight);
-              if(Number.isFinite(e.summary.best1RM)) bests.best1RM = Math.max(bests.best1RM ?? -Infinity, e.summary.best1RM);
-              if(Number.isFinite(e.summary.totalVolume)) bests.bestVolume = Math.max(bests.bestVolume ?? -Infinity, e.summary.totalVolume);
-            } else if(type === "cardio"){
-              if(Number.isFinite(e.summary.paceSecPerUnit)){
-                bests.bestPace = Math.min(bests.bestPace ?? Infinity, e.summary.paceSecPerUnit);
-              }
-            } else if(type === "core"){
-              if(Number.isFinite(e.summary.totalVolume)) bests.bestVolume = Math.max(bests.bestVolume ?? -Infinity, e.summary.totalVolume);
-            }
-          }
-        }
+  __buildIndex(){
+    this.ensure();
 
-        if(bests.bestWeight === -Infinity) bests.bestWeight = null;
-        if(bests.best1RM === -Infinity) bests.best1RM = null;
-        if(bests.bestVolume === -Infinity) bests.bestVolume = null;
-        if(bests.bestPace === Infinity) bests.bestPace = null;
+    const byEx = new Map();
+    const byRx = new Set();
 
-        return bests;
-      },
-
-      computeWeightliftingSummary(sets){
-        const cleanSets = (sets || []).map(s => ({
-          weight: Number(s.weight) || 0,
-          reps: Math.max(0, Math.floor(Number(s.reps) || 0))
-        }));
-
-        let totalVolume = 0;
-        let bestWeight = 0;
-        let best1RM = 0;
-
-        for(const s of cleanSets){
-          totalVolume += (s.weight * s.reps);
-          bestWeight = Math.max(bestWeight, s.weight);
-          const epley = (s.reps > 0) ? (s.weight * (1 + (s.reps / 30))) : 0;
-          best1RM = Math.max(best1RM, epley);
-        }
-
-        return {
-          totalVolume: round2(totalVolume),
-          bestWeight: round2(bestWeight),
-          best1RM: round2(best1RM)
-        };
-      },
-
-      computeCardioSummary(sets){
-        const clean = (sets || []).map(s => ({
-          timeSec: Math.max(0, Math.floor(Number(s.timeSec) || 0)),
-          distance: Number(s.distance) || 0,
-          incline: Number.isFinite(Number(s.incline)) ? Number(s.incline) : null
-        }));
-
-        const s = clean[0] || { timeSec:0, distance:0, incline:null };
-        const pace = (s.distance > 0) ? (s.timeSec / s.distance) : null;
-
-        return {
-          timeSec: s.timeSec,
-          distance: round2(s.distance),
-          incline: s.incline,
-          paceSecPerUnit: (pace === null) ? null : round2(pace)
-        };
-      },
-
-      computeCoreSummary(sets){
-        const clean = (sets || []).map(s => ({
-          sets: Math.max(0, Math.floor(Number(s.sets) || 0)),
-          reps: Math.max(0, Math.floor(Number(s.reps) || 0)),
-          timeSec: Math.max(0, Math.floor(Number(s.timeSec) || 0)),
-          weight: Number(s.weight) || 0
-        }));
-
-        let totalVolume = 0;
-        for(const s of clean){
-          if(s.reps > 0){
-            const w = (s.weight > 0) ? s.weight : 1;
-            totalVolume += (s.reps * s.sets * w);
-          }else{
-            totalVolume += s.timeSec;
-          }
-        }
-
-        return { totalVolume: round2(totalVolume) };
-      },
-
-      computePRFlags(type, exerciseId, summary){
-        const prev = this.lifetimeBests(type, exerciseId);
-
-        const pr = {
-          isPRWeight: false,
-          isPR1RM: false,
-          isPRVolume: false,
-          isPRPace: false
-        };
-
-        if(type === "weightlifting"){
-          if(Number.isFinite(summary.bestWeight)){
-            pr.isPRWeight = (prev.bestWeight === null) ? (summary.bestWeight > 0) : (summary.bestWeight > prev.bestWeight);
-          }
-          if(Number.isFinite(summary.best1RM)){
-            pr.isPR1RM = (prev.best1RM === null) ? (summary.best1RM > 0) : (summary.best1RM > prev.best1RM);
-          }
-          if(Number.isFinite(summary.totalVolume)){
-            pr.isPRVolume = (prev.bestVolume === null) ? (summary.totalVolume > 0) : (summary.totalVolume > prev.bestVolume);
-          }
-        } else if(type === "cardio"){
-          if(summary.paceSecPerUnit !== null && Number.isFinite(summary.paceSecPerUnit)){
-            pr.isPRPace = (prev.bestPace === null) ? (summary.paceSecPerUnit > 0) : (summary.paceSecPerUnit < prev.bestPace);
-          }
-        } else if(type === "core"){
-          if(Number.isFinite(summary.totalVolume)){
-            pr.isPRVolume = (prev.bestVolume === null) ? (summary.totalVolume > 0) : (summary.totalVolume > prev.bestVolume);
-          }
-        }
-
-        return pr;
+    for(const e of (state.logs.workouts || [])){
+      // index "logged today" checks
+      if(e && e.dateISO && e.routineExerciseId){
+        byRx.add(this.__rxKey(e.dateISO, e.routineExerciseId));
       }
+
+      // index exercise history
+      if(!e || !e.type || !e.exerciseId) continue;
+      const k = this.__exKey(e.type, e.exerciseId);
+      const arr = byEx.get(k);
+      if(arr) arr.push(e);
+      else byEx.set(k, [e]);
+    }
+
+    // Sort each exercise list once (desc)
+    for(const arr of byEx.values()){
+      arr.sort((a,b) =>
+        (String(b.dateISO || "")).localeCompare(String(a.dateISO || "")) ||
+        ((b.createdAt||0) - (a.createdAt||0))
+      );
+    }
+
+    this.__idxByExercise = byEx;
+    this.__idxByRoutineDay = byRx;
+  },
+
+  addEntry(entry){
+    this.ensure();
+    state.logs.workouts.push(entry);
+
+    // Keep indexes hot if they already exist
+    if(this.__idxByExercise || this.__idxByRoutineDay){
+      if(!this.__idxByExercise || !this.__idxByRoutineDay){
+        // If one is missing, rebuild cleanly
+        this.invalidateIndex();
+        this.__buildIndex();
+      }else{
+        // Update routine-day index
+        if(entry?.dateISO && entry?.routineExerciseId){
+          this.__idxByRoutineDay.add(this.__rxKey(entry.dateISO, entry.routineExerciseId));
+        }
+        // Update exercise history index
+        if(entry?.type && entry?.exerciseId){
+          const k = this.__exKey(entry.type, entry.exerciseId);
+          const arr = this.__idxByExercise.get(k) || [];
+          arr.push(entry);
+          // Keep sorted desc (cheap insert: re-sort small list; safe + simple)
+          arr.sort((a,b) =>
+            (String(b.dateISO || "")).localeCompare(String(a.dateISO || "")) ||
+            ((b.createdAt||0) - (a.createdAt||0))
+          );
+          this.__idxByExercise.set(k, arr);
+        }
+      }
+    }
+
+    Storage.save(state);
+  },
+
+  // Fast “already logged today?” check
+  hasRoutineExerciseLog(dateISO, routineExerciseId){
+    this.ensure();
+    if(!this.__idxByRoutineDay) this.__buildIndex();
+    return this.__idxByRoutineDay.has(this.__rxKey(dateISO, routineExerciseId));
+  },
+
+  // Fast exercise history lookup (already sorted desc)
+  entriesForExercise(type, exerciseId){
+    this.ensure();
+    if(!this.__idxByExercise) this.__buildIndex();
+    const arr = this.__idxByExercise.get(this.__exKey(type, exerciseId)) || [];
+    // Return a shallow copy so callers can slice safely without mutating the cache
+    return arr.slice();
+  },
+
+  lifetimeBests(type, exerciseId){
+    const entries = this.entriesForExercise(type, exerciseId);
+    const bests = {
+      bestWeight: null,
+      best1RM: null,
+      bestVolume: null,
+      bestPace: null
     };
 
-    function round2(n){
-      return Math.round((Number(n) || 0) * 100) / 100;
+    for(const e of entries){
+      if(e?.summary){
+        if(type === "weightlifting"){
+          if(Number.isFinite(e.summary.bestWeight)) bests.bestWeight = Math.max(bests.bestWeight ?? -Infinity, e.summary.bestWeight);
+          if(Number.isFinite(e.summary.best1RM)) bests.best1RM = Math.max(bests.best1RM ?? -Infinity, e.summary.best1RM);
+          if(Number.isFinite(e.summary.totalVolume)) bests.bestVolume = Math.max(bests.bestVolume ?? -Infinity, e.summary.totalVolume);
+        } else if(type === "cardio"){
+          if(Number.isFinite(e.summary.paceSecPerUnit)){
+            bests.bestPace = Math.min(bests.bestPace ?? Infinity, e.summary.paceSecPerUnit);
+          }
+        } else if(type === "core"){
+          if(Number.isFinite(e.summary.totalVolume)) bests.bestVolume = Math.max(bests.bestVolume ?? -Infinity, e.summary.totalVolume);
+        }
+      }
     }
+
+    if(bests.bestWeight === -Infinity) bests.bestWeight = null;
+    if(bests.best1RM === -Infinity) bests.best1RM = null;
+    if(bests.bestVolume === -Infinity) bests.bestVolume = null;
+    if(bests.bestPace === Infinity) bests.bestPace = null;
+
+    return bests;
+  },
+
+  computeWeightliftingSummary(sets){
+    const cleanSets = (sets || []).map(s => ({
+      weight: Number(s.weight) || 0,
+      reps: Math.max(0, Math.floor(Number(s.reps) || 0))
+    }));
+
+    let totalVolume = 0;
+    let bestWeight = 0;
+    let best1RM = 0;
+
+    for(const s of cleanSets){
+      totalVolume += (s.weight * s.reps);
+      bestWeight = Math.max(bestWeight, s.weight);
+      const epley = (s.reps > 0) ? (s.weight * (1 + (s.reps / 30))) : 0;
+      best1RM = Math.max(best1RM, epley);
+    }
+
+    return {
+      totalVolume: round2(totalVolume),
+      bestWeight: round2(bestWeight),
+      best1RM: round2(best1RM)
+    };
+  },
+
+  computeCardioSummary(sets){
+    const clean = (sets || []).map(s => ({
+      timeSec: Math.max(0, Math.floor(Number(s.timeSec) || 0)),
+      distance: Number(s.distance) || 0,
+      incline: Number.isFinite(Number(s.incline)) ? Number(s.incline) : null
+    }));
+
+    const s = clean[0] || { timeSec:0, distance:0, incline:null };
+    const pace = (s.distance > 0) ? (s.timeSec / s.distance) : null;
+
+    return {
+      timeSec: s.timeSec,
+      distance: round2(s.distance),
+      incline: s.incline,
+      paceSecPerUnit: (pace === null) ? null : round2(pace)
+    };
+  },
+
+  computeCoreSummary(sets){
+    const clean = (sets || []).map(s => ({
+      sets: Math.max(0, Math.floor(Number(s.sets) || 0)),
+      reps: Math.max(0, Math.floor(Number(s.reps) || 0)),
+      timeSec: Math.max(0, Math.floor(Number(s.timeSec) || 0)),
+      weight: Number(s.weight) || 0
+    }));
+
+    let totalVolume = 0;
+    for(const s of clean){
+      if(s.reps > 0){
+        const w = (s.weight > 0) ? s.weight : 1;
+        totalVolume += (s.reps * s.sets * w);
+      }else{
+        totalVolume += s.timeSec;
+      }
+    }
+
+    return { totalVolume: round2(totalVolume) };
+  },
+
+  computePRFlags(type, exerciseId, summary){
+    const prev = this.lifetimeBests(type, exerciseId);
+
+    const pr = {
+      isPRWeight: false,
+      isPR1RM: false,
+      isPRVolume: false,
+      isPRPace: false
+    };
+
+    if(type === "weightlifting"){
+      if(Number.isFinite(summary.bestWeight)){
+        pr.isPRWeight = (prev.bestWeight === null) ? (summary.bestWeight > 0) : (summary.bestWeight > prev.bestWeight);
+      }
+      if(Number.isFinite(summary.best1RM)){
+        pr.isPR1RM = (prev.best1RM === null) ? (summary.best1RM > 0) : (summary.best1RM > prev.best1RM);
+      }
+      if(Number.isFinite(summary.totalVolume)){
+        pr.isPRVolume = (prev.bestVolume === null) ? (summary.totalVolume > 0) : (summary.totalVolume > prev.bestVolume);
+      }
+    } else if(type === "cardio"){
+      if(summary.paceSecPerUnit !== null && Number.isFinite(summary.paceSecPerUnit)){
+        pr.isPRPace = (prev.bestPace === null) ? (summary.paceSecPerUnit > 0) : (summary.paceSecPerUnit < prev.bestPace);
+      }
+    } else if(type === "core"){
+      if(Number.isFinite(summary.totalVolume)){
+        pr.isPRVolume = (prev.bestVolume === null) ? (summary.totalVolume > 0) : (summary.totalVolume > prev.bestVolume);
+      }
+    }
+
+    return pr;
+  }
+};
 
     function formatTime(sec){
       const s = Math.max(0, Math.floor(Number(sec) || 0));
@@ -3137,7 +3219,7 @@ function attendanceRemove(dateISO){
 // Routine logging helpers (per-routine-exercise instance)
 function hasRoutineExerciseLog(dateISO, routineExerciseId){
   LogEngine.ensure();
-  return state.logs.workouts.some(e => e.dateISO === dateISO && e.routineExerciseId === routineExerciseId);
+  return LogEngine.hasRoutineExerciseLog(dateISO, routineExerciseId);
 }
 
 function lifetimeMaxSet(type, exerciseId){
@@ -4720,10 +4802,12 @@ function buildWeightliftingForm(){
 
       // Upsert: replace existing entry for this date + routineExerciseId
       LogEngine.ensure();
-      state.logs.workouts = (state.logs.workouts || []).filter(e =>
-        !(e.dateISO === dateISO && e.routineExerciseId === rx.id)
-      );
-      Storage.save(state);
+state.logs.workouts = (state.logs.workouts || []).filter(e =>
+  !(e.dateISO === dateISO && e.routineExerciseId === rx.id)
+);
+LogEngine.invalidateIndex(); // Phase 2.3: bulk replace => reset cache
+Storage.save(state);
+
 
       LogEngine.addEntry({
         id: uid("w"),
