@@ -3826,7 +3826,16 @@ async function registerServiceWorker(){
   if(!("serviceWorker" in navigator)) return;
 
   try{
-    __swReg = await navigator.serviceWorker.register("./sw.js");
+    // ✅ Version the SW script URL so a version.json bump forces a new SW install
+    // (this is what makes cache cleanup deterministic for users)
+    const v = (__latestVersion || __appliedVersion || "").trim();
+    const swUrl = v ? `./sw.js?v=${encodeURIComponent(v)}` : "./sw.js";
+
+    // If we already registered this exact URL, don't re-register.
+    if(__swReg && __swUrlRegistered === swUrl) return;
+    __swUrlRegistered = swUrl;
+
+    __swReg = await navigator.serviceWorker.register(swUrl);
 
     // If an update is already waiting
     if(__swReg.waiting){
