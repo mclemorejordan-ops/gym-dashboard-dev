@@ -7846,10 +7846,11 @@ scroller.appendChild(
       }catch(e){}
     }, 0);
   };
-};   // ✅ closes Views.RoutineEditor function
+
 /********************
  * 8) Boot (guarded)
  ********************/
+
 (async () => {
   // If already onboarded and library is empty, seed it (won't overwrite non-empty)
   if(state.profile) ExerciseLibrary.ensureSeeded();
