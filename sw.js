@@ -47,10 +47,8 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  if (url.origin !== self.location.origin) return;
-
   // Always fetch version.json fresh (we don't want it cached here)
-  if (url.pathname.endsWith("/version.json")) {
+  if (url.origin === self.location.origin && url.pathname.endsWith("/version.json")) {
     event.respondWith(fetch(req, { cache: "no-store" }));
     return;
   }
@@ -82,4 +80,50 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+
+  // ✅ SAME-ORIGIN: serve cached shell assets when possible
+  if (url.origin === self.location.origin) {
+    // Serve shell assets cache-first
+    if (APP_SHELL.includes(url.pathname === "/" ? "./" : `.${url.pathname}`)) {
+      event.respondWith(
+        (async () => {
+          const cache = await caches.open(CACHE_NAME);
+          const match = await cache.match(req);
+          if (match) return match;
+          const fresh = await fetch(req);
+          if (fresh && fresh.ok) await cache.put(req, fresh.clone());
+          return fresh;
+        })()
+      );
+      return;
+    }
+    return; // allow default browser fetch for other same-origin requests
+  }
+
+  // ✅ CROSS-ORIGIN: runtime-cache Chart.js so Progress charts still work offline
+  if (url.hostname === "cdn.jsdelivr.net" && url.pathname.includes("/chart.js@4.4.3/")) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(EXT_CACHE);
+        const cached = await cache.match(req);
+
+        // Stale-while-revalidate:
+        // - return cached immediately if present
+        // - update cache in the background
+        const fetchPromise = fetch(req).then((res) => {
+          if (res && res.ok) cache.put(req, res.clone());
+          return res;
+        }).catch(() => null);
+
+        if (cached) return cached;
+
+        const fresh = await fetchPromise;
+        if (fresh) return fresh;
+
+        return new Response("", { status: 504 });
+      })()
+    );
+    return;
+  }
 });
+
