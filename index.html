@@ -2728,6 +2728,19 @@ const RoutineTemplates = [
 // --- Core Stability (weightlifting bucket) ---
 { id: uid("ex"), type:"weightlifting", name:"Pallof Press", equipment:"Cable", primaryMuscle:"Core", secondaryMuscle:"Obliques", createdAt:Date.now() }
 ];
+          lib.core = [
+            // --- Core (existing or new) ---
+            { id: uid("ex"), type:"core", name:"Plank", equipment:"Bodyweight", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
+            { id: uid("ex"), type:"core", name:"Side Plank", equipment:"Bodyweight", primaryMuscle:"Core (Obliques)", createdAt:Date.now() },
+
+            // --- Additional Core ---
+            { id: uid("ex"), type:"core", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
+            { id: uid("ex"), type:"core", name:"Hanging Knee Raise", equipment:"Bar", primaryMuscle:"Core (Lower Abs)", createdAt:Date.now() },
+            { id: uid("ex"), type:"core", name:"Toe-to-Bar", equipment:"Bar", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
+            { id: uid("ex"), type:"core", name:"Dead Bug", equipment:"Bodyweight", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
+            { id: uid("ex"), type:"core", name:"Pallof Press (Core)", equipment:"Cable", primaryMuscle:"Core (Obliques)", createdAt:Date.now() }
+          ];
+
         }
         // Normalize older weightlifting muscle labels to basic buckets
         normalizeWeightliftingMuscles();
