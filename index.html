@@ -2,7 +2,6 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <link rel="icon" href="data:,">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f17" />
@@ -1731,19 +1730,6 @@ const STORAGE_KEY = "gymdash:v1";
 // version.json is the single source of truth for version display + release notes
 const REMOTE_VERSION_URL = "./version.json";
 
-// ────────────────────────────
-// Update check rate-limit (Phase 2.1)
-// ────────────────────────────
-const UPDATE_CHECK_MIN_MS = 10 * 60 * 1000; // 10 minutes
-let __lastUpdateCheckAt = 0;
-let __updateCheckPromise = null;
-
-function __shouldCheckUpdates(force){
-  if(force) return true;
-  const now = Date.now();
-  return (now - __lastUpdateCheckAt) >= UPDATE_CHECK_MIN_MS;
-}
-
 // Version metadata only (does NOT affect user profile/state)
 const VERSION_LATEST_KEY   = "gymdash:latestVersion";     // last fetched version.json value
 const VERSION_APPLIED_KEY  = "gymdash:appliedVersion";    // last version applied on this device
@@ -1771,95 +1757,27 @@ const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date
       },
       attendance: []
     });
-// ────────────────────────────
-// Storage Module (Debounced Writes - Phase 2.2)
-// ────────────────────────────
-const Storage = (() => {
 
-  const KEY = "gymdash:v1";
-
-  let __saveTimer = null;
-  const SAVE_DEBOUNCE_MS = 300;
-
-function load(){
-  try{
-    const base = DefaultState();          // ✅ always start from a fresh plain object
-    const raw = localStorage.getItem(KEY);
-    if(!raw) return base;
-
-    const parsed = JSON.parse(raw);
-    if(!parsed || typeof parsed !== "object") return base;
-
-    // ✅ merge saved fields onto defaults (keeps defaults for new keys)
-    return Object.assign(base, parsed);
-  }catch(e){
-    console.warn("Storage.load failed:", e);
-    return DefaultState();                // ✅ fresh default, no deepClone needed
-  }
-}
-  function __writeNow(state){
-    try{
-      localStorage.setItem(KEY, JSON.stringify(state));
-    }catch(e){
-      console.warn("Storage.write failed:", e);
-    }
-  }
-
-  function scheduleSave(state){
-    if(__saveTimer) clearTimeout(__saveTimer);
-    __saveTimer = setTimeout(() => {
-      __writeNow(state);
-      __saveTimer = null;
-    }, SAVE_DEBOUNCE_MS);
-  }
-
-  function flush(state){
-    if(__saveTimer){
-      clearTimeout(__saveTimer);
-      __saveTimer = null;
-    }
-    __writeNow(state);
-  }
-
-  function reset(){
-    try{
-      localStorage.removeItem(KEY);
-    }catch(e){
-      console.warn("Storage.reset failed:", e);
-    }
-  }
-
-  // Auto flush on tab close / background
-  window.addEventListener("beforeunload", () => {
-    if(window.state) flush(window.state);
-  });
-
-  document.addEventListener("visibilitychange", () => {
-    if(document.visibilityState === "hidden" && window.state){
-      flush(window.state);
-    }
-  });
-
-  return {
-    load,
-    save: scheduleSave,   // ⚡ Debounced by default
-    flush,                // 🔥 Immediate write
-    reset
-  };
- 
-
-})();
-
-    let state = Storage.load();
-    window.state = state; // important because your Storage module flush listeners use window.state
-    // ────────────────────────────
-    // UI-only ephemeral state (NOT persisted)
-    // Needed by Settings() + Library management views
-    // ────────────────────────────
-    const UIState = window.UIState || (window.UIState = {
-      settings: {},
-      libraryManage: {}
-    });
+    const Storage = {
+      load(){
+        try{
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if(!raw) return DefaultState();
+          const parsed = JSON.parse(raw);
+          if(!parsed || typeof parsed !== "object") return DefaultState();
+          if(!("schemaVersion" in parsed)) return DefaultState();
+          return parsed;
+        }catch(e){
+          return DefaultState();
+        }
+      },
+      save(state){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      },
+      reset(){
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    };
     /********************
      * Backup / Import (Step 10)
      ********************/
@@ -1874,21 +1792,17 @@ function load(){
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 250);
     }
-function exportBackupJSON(){
-  // ✅ Ensure the latest in-memory changes are persisted before exporting
-  try{ Storage.flush(state); }catch(_){}
 
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    app: "gym-dashboard",
-    state
-  };
+    function exportBackupJSON(){
+      // Keep export simple: full state snapshot
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        app: "gym-dashboard-dev",
+        data: state
+      };
+      return JSON.stringify(payload, null, 2);
+    }
 
-  downloadTextFile(
-    `gym-dashboard-backup-${(new Date().toISOString().slice(0,10))}.json`,
-    JSON.stringify(payload, null, 2)
-  );
-}
     function validateImportedState(obj){
       // Accept either raw state or wrapped { data: state }
       const imported = (obj && typeof obj === "object" && "data" in obj) ? obj.data : obj;
@@ -1905,36 +1819,33 @@ function exportBackupJSON(){
 
       return imported;
     }
-async function importBackupJSON(file){
-  try{
-    const text = await file.text();
-    const parsed = JSON.parse(text);
 
-    // Accept either {state:{...}} wrapper or direct state object
-    const incomingState = parsed && parsed.state ? parsed.state : parsed;
+    function importBackupJSON(jsonText){
+      let parsed;
+      try{
+        parsed = JSON.parse(jsonText);
+      }catch(e){
+        throw new Error("Could not parse JSON. Make sure it’s valid.");
+      }
 
-    validateImportedState(incomingState);
+      const importedState = validateImportedState(parsed);
 
-    // ✅ Replace in-memory state
-    state = Object.assign(deepClone(DefaultState()), incomingState);
-
-    // ✅ Persist immediately (no debounce)
-    Storage.flush(state);
-
-    // ✅ Re-render app
-    navigate("home");
-  }catch(e){
-    Modal.open({
-      title: "Import failed",
-      bodyNode: el("div", {}, [
-        el("div", { class:"note", text:"Could not import that file. See details below." }),
-        el("pre", {
-          style:"white-space:pre-wrap; font-size:12px; color: rgba(255,255,255,.85); background: rgba(0,0,0,.25); border:1px solid var(--hair); padding:10px; border-radius:12px; overflow:auto; max-height: 45vh;"
-        }, [String(e && e.message ? e.message : e)])
-      ])
-    });
+      // Overwrite local storage + live state
+      state = importedState;
+      Storage.save(state);
+    }
+    let state = Storage.load();
+const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
+  settings: {
+    q: "",
+    open: { "profile": true, "library": false, "backup": false, "data": false, "debug": false }
+  },
+  libraryManage: {
+    q: "",
+    type: "weightlifting",
+    equipment: "all"
   }
-}
+});
     /********************
      * 2) Helpers
      ********************/
@@ -2048,13 +1959,18 @@ async function importBackupJSON(file){
       const day = routine.days.find(d => d.order === idx) || routine.days[idx] || null;
       return { routine, day, dayIndex: idx };
     }
-function isTrained(dateISO){
-  return AttendanceEngine.has(dateISO);
-}
 
-function toggleTrained(dateISO){
-  AttendanceEngine.toggle(dateISO);
-}
+    function isTrained(dateISO){
+      return (state.attendance || []).includes(dateISO);
+    }
+
+    function toggleTrained(dateISO){
+      state.attendance = state.attendance || [];
+      const i = state.attendance.indexOf(dateISO);
+      if(i >= 0) state.attendance.splice(i, 1);
+      else state.attendance.push(dateISO);
+      Storage.save(state);
+    }
     /********************
      * Attendance Helpers (Step 9)
      ********************/
@@ -2080,59 +1996,22 @@ function toggleTrained(dateISO){
       return `${y}-${pad2(m)}-${pad2(d)}`;
     }
 
-const AttendanceEngine = {
-  ensure(){
-    state.attendance = state.attendance || [];
-  },
-
-  // ✅ Canonical membership check
-  has(dateISO){
-    this.ensure();
-    return state.attendance.includes(String(dateISO));
-  },
-
-  // ✅ Canonical add (idempotent)
-  add(dateISO){
-    this.ensure();
-    const iso = String(dateISO);
-    if(!state.attendance.includes(iso)){
-      state.attendance.push(iso);
-    }
-    Storage.save(state);
-  },
-
-  // ✅ Canonical remove (idempotent)
-  remove(dateISO){
-    this.ensure();
-    const iso = String(dateISO);
-    const before = state.attendance.length;
-    state.attendance = state.attendance.filter(x => String(x) !== iso);
-    if(state.attendance.length !== before){
-      Storage.save(state);
-    }
-  },
-
-  // ✅ Canonical toggle (preserves existing behavior)
-  toggle(dateISO){
-    this.ensure();
-    const iso = String(dateISO);
-    if(this.has(iso)) this.remove(iso);
-    else this.add(iso);
-  },
-
-  monthCount(y, m){
-    this.ensure();
-    const prefix = `${y}-${pad2(m)}-`;
-    return state.attendance.filter(x => String(x).startsWith(prefix)).length;
-  },
-
-  clearMonth(y, m){
-    this.ensure();
-    const prefix = `${y}-${pad2(m)}-`;
-    state.attendance = state.attendance.filter(x => !String(x).startsWith(prefix));
-    Storage.save(state);
-  }
-};
+    const AttendanceEngine = {
+      ensure(){
+        state.attendance = state.attendance || [];
+      },
+      monthCount(y, m){
+        this.ensure();
+        const prefix = `${y}-${pad2(m)}-`;
+        return state.attendance.filter(x => String(x).startsWith(prefix)).length;
+      },
+      clearMonth(y, m){
+        this.ensure();
+        const prefix = `${y}-${pad2(m)}-`;
+        state.attendance = state.attendance.filter(x => !String(x).startsWith(prefix));
+        Storage.save(state);
+      }
+    };
 
     const normName = (s) => (s || "").trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -2875,45 +2754,22 @@ const RoutineTemplates = [
       if(paceSecPerUnit === null || !Number.isFinite(paceSecPerUnit)) return "—";
       return `${formatTime(paceSecPerUnit)} / unit`;
     }
-// ────────────────────────────
-// Charts Manager (single source of truth)
-// ────────────────────────────
-const Charts = (() => {
-  const map = new Map(); // key -> Chart.js instance
+        /********************
+     * 4e) Progress Helpers (Step 7)
+     ********************/
+    let __progressChart = null;
 
-  function safeDestroy(ch){
-    try{ ch && ch.destroy && ch.destroy(); }catch(_){}
-  }
-
-  return {
-    set(key, chartInstance){
-      const prev = map.get(key);
-      if(prev) safeDestroy(prev);
-      map.set(key, chartInstance);
-      return chartInstance;
-    },
-    get(key){
-      return map.get(key) || null;
-    },
-    destroy(key){
-      const ch = map.get(key);
-      if(ch) safeDestroy(ch);
-      map.delete(key);
-    },
-    destroyAll(){
-      for(const key of map.keys()){
-        const ch = map.get(key);
-        if(ch) safeDestroy(ch);
+    function destroyProgressChart(){
+      try{
+        if(__progressChart){
+          __progressChart.destroy();
+          __progressChart = null;
+        }
+      }catch(e){
+        __progressChart = null;
       }
-      map.clear();
     }
-  };
-})();
 
-// Backward-compatible wrappers (keep existing call sites stable)
-function destroyProgressChart(){
-  Charts.destroy("progress");
-}
     function downloadCanvasPNG(canvas, filename){
       try{
         const url = canvas.toDataURL("image/png");
@@ -2957,48 +2813,53 @@ function destroyProgressChart(){
       const volume = entries.map(e => Number(e.summary?.totalVolume) || 0);
       return { labels, datasets: { volume } };
     }
-function renderProgressChart(canvas, type, metricKey, series){
-  destroyProgressChart();
 
-  // Build chart dataset (no custom colors per your standards — Chart.js defaults)
-  let data = [];
-  let label = "";
+    function renderProgressChart(canvas, type, metricKey, series){
+      destroyProgressChart();
 
-  if(type === "weightlifting"){
-    if(metricKey === "topWeight"){ data = series.datasets.topWeight; label = "Top Weight"; }
-    else if(metricKey === "est1RM"){ data = series.datasets.est1RM; label = "Estimated 1RM (Epley)"; }
-    else { data = series.datasets.volume; label = "Volume"; }
-  } else if(type === "cardio"){
-    if(metricKey === "pace"){ data = series.datasets.pace; label = "Pace (sec/unit) (lower is better)"; }
-    else if(metricKey === "distance"){ data = series.datasets.distance; label = "Distance"; }
-    else { data = series.datasets.timeSec; label = "Time (sec)"; }
-  } else {
-    data = series.datasets.volume;
-    label = "Core Volume";
-  }
+      // Build chart dataset (no custom colors per your standards — Chart.js defaults)
+      let data = [];
+      let label = "";
 
-  const ctx = canvas.getContext("2d");
-  const ch = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: series.labels,
-      datasets: [{
-        label,
-        data,
-        tension: 0.25,
-        spanGaps: true
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: true } },
-      scales: { y: { beginAtZero: false } }
+      if(type === "weightlifting"){
+        if(metricKey === "topWeight"){ data = series.datasets.topWeight; label = "Top Weight"; }
+        else if(metricKey === "est1RM"){ data = series.datasets.est1RM; label = "Estimated 1RM (Epley)"; }
+        else { data = series.datasets.volume; label = "Volume"; }
+      } else if(type === "cardio"){
+        if(metricKey === "pace"){ data = series.datasets.pace; label = "Pace (sec/unit) (lower is better)"; }
+        else if(metricKey === "distance"){ data = series.datasets.distance; label = "Distance"; }
+        else { data = series.datasets.timeSec; label = "Time (sec)"; }
+      } else {
+        data = series.datasets.volume;
+        label = "Core Volume";
+      }
+
+      const ctx = canvas.getContext("2d");
+      __progressChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: series.labels,
+          datasets: [{
+            label,
+            data,
+            tension: 0.25,
+            spanGaps: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+
+      return __progressChart;
     }
-  });
-
-  return Charts.set("progress", ch);
-}
         /********************
      * 4f) Weight Engine + Chart Helpers (Step 8)
      ********************/
@@ -3078,37 +2939,46 @@ function renderProgressChart(canvas, type, metricKey, series){
         return round2(avg);
       }
     };
-// Backward-compatible wrapper (keep existing call sites stable)
-function destroyWeightChart(){
-  Charts.destroy("weight");
-}
-function renderWeightChart(canvas, entriesAsc){
-  destroyWeightChart();
 
-  const labels = entriesAsc.map(e => e.dateISO);
-  const data = entriesAsc.map(e => Number(e.weight) || 0);
+    let __weightChart = null;
 
-  const ctx = canvas.getContext("2d");
-  const ch = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [{
-        label: "Bodyweight",
-        data,
-        tension: 0.25
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: true } },
-      scales: { y: { beginAtZero: false } }
+    function destroyWeightChart(){
+      try{
+        if(__weightChart){
+          __weightChart.destroy();
+          __weightChart = null;
+        }
+      }catch(e){
+        __weightChart = null;
+      }
     }
-  });
 
-  return Charts.set("weight", ch);
-}
+    function renderWeightChart(canvas, entriesAsc){
+      destroyWeightChart();
+      const labels = entriesAsc.map(e => e.dateISO);
+      const data = entriesAsc.map(e => Number(e.weight) || 0);
+
+      const ctx = canvas.getContext("2d");
+      __weightChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Bodyweight",
+            data,
+            tension: 0.25
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: true } },
+          scales: { y: { beginAtZero: false } }
+        }
+      });
+
+      return __weightChart;
+    }
     /********************
  * 4f) Routine/Attendance Helpers (NEW)
  ********************/
@@ -3313,55 +3183,6 @@ function __showFatalOverlay(title, detail){
 function __fatal(err, context){
   const detail = `[${context || "runtime"}]\n` + __formatErr(err);
   console.error("FATAL:", detail);
-
-  // Best-effort: render a fallback inside the app root so users never see a blank UI.
-  // This complements the overlay (which can fail in rare DOM/CSS edge cases).
-  try{
-    const root = document.getElementById("viewRoot");
-    if(root){
-      root.innerHTML = "";
-      root.appendChild(el("div", { class:"card" }, [
-        el("h2", { text:"Something went wrong" }),
-        el("div", { class:"note", text:"The app hit an unexpected error. Your data is still stored locally." }),
-        el("pre", {
-          style:"white-space:pre-wrap; font-size:12px; color: rgba(255,255,255,.85); background: rgba(0,0,0,.25); border:1px solid var(--hair); padding:10px; border-radius:12px; overflow:auto; max-height: 40vh;"
-        }, [detail]),
-        el("div", { class:"btnrow" }, [
-          el("button", {
-            class:"btn",
-            onClick: async () => {
-              try{
-                if(navigator.clipboard?.writeText){
-                  await navigator.clipboard.writeText(detail);
-                }else{
-                  window.prompt("Copy error details:", detail);
-                }
-              }catch(_){
-                window.prompt("Copy error details:", detail);
-              }
-            }
-          }, ["Copy error"]),
-          el("button", {
-            class:"btn",
-            onClick: () => location.reload()
-          }, ["Reload"]),
-          el("button", {
-            class:"btn danger",
-            onClick: () => {
-              if(confirm("This will reset local app data on this device. Continue?")){
-                try{ Storage.reset(); }catch(_){ localStorage.removeItem("gymdash:v1"); }
-                location.reload();
-              }
-            }
-          }, ["Reset local data"])
-        ])
-      ]));
-    }
-  }catch(e){
-    console.error("Fatal in-app fallback failed:", e);
-  }
-
-  // Overlay as a secondary, always-on-top fallback
   __showFatalOverlay("Gym Dashboard crashed", detail);
 }
 
@@ -3677,59 +3498,61 @@ function setHeaderPills(){
     syncPill.classList.add("ok");
   }
 }
-async function checkForUpdates(opts){
-  const force = !!(opts && opts.force);
 
-  // Coalesce calls (prevents spamming fetch on rapid navigation / multiple triggers)
-  if(__updateCheckPromise) return __updateCheckPromise;
-
-  // Rate-limit auto checks (navigate/boot). Manual checks always bypass.
-  if(!__shouldCheckUpdates(force)){
-    // Still update the pill state (SW state can change independently of version.json)
-    try{ setHeaderPills(); }catch(_){}
-    return Promise.resolve(false);
+async function checkForUpdates(){
+  // Fetch version.json (single source of truth for version + notes)
+  if(!navigator.onLine){
+    setHeaderPills();
+    return { ok:false, reason:"offline" };
   }
+  try{
+    const url = `${REMOTE_VERSION_URL}?t=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
 
-  __lastUpdateCheckAt = Date.now();
+    const latest = String(data?.version || "").trim() || null;
+    const notesRaw = Array.isArray(data?.notes) ? data.notes : [];
+    const notes = notesRaw
+      .map(x => String(x || "").trim())
+      .filter(Boolean)
+      .slice(0, 12); // keep it tight in UI
 
-  __updateCheckPromise = (async () => {
-    try{
-      const url = `${REMOTE_VERSION_URL}?t=${Date.now()}`;
-      const res = await fetch(url, { cache: "no-store" });
-      if(!res.ok) throw new Error(`version.json fetch failed: ${res.status}`);
+    const buildDate = String(data?.buildDate || data?.build || data?.date || "").trim() || null;
 
-      const data = await res.json();
+    if(latest){
+      __latestVersion = latest;
+      localStorage.setItem(VERSION_LATEST_KEY, latest);
 
-      // Expected fields: version, notes[], buildDate/build/date
-      const latestVersion = String(data.version || "").trim();
-      const notes = Array.isArray(data.notes) ? data.notes : [];
-      const buildDate = data.buildDate || data.build || data.date || "";
-
-      if(latestVersion){
-        __latestVersion = latestVersion;
-        try{ localStorage.setItem("gymdash:latestVersion", __latestVersion); }catch(_){}
+      // First run: initialize applied version so modal has a baseline
+      if(!__appliedVersion){
+        __appliedVersion = latest;
+        localStorage.setItem(VERSION_APPLIED_KEY, latest);
       }
-
-      __latestNotes = notes;
-      __latestBuildDate = buildDate ? String(buildDate) : "";
-
-      try{ localStorage.setItem("gymdash:latestNotes", JSON.stringify(__latestNotes || [])); }catch(_){}
-      try{ localStorage.setItem("gymdash:latestBuildDate", String(__latestBuildDate || "")); }catch(_){}
-
-      // Refresh UI
-      setHeaderPills();
-      return true;
-    }catch(e){
-      console.warn("checkForUpdates failed:", e);
-      try{ setHeaderPills(); }catch(_){}
-      return false;
-    }finally{
-      __updateCheckPromise = null;
     }
-  })();
 
-  return __updateCheckPromise;
+    __latestNotes = notes;
+    localStorage.setItem(VERSION_NOTES_KEY, JSON.stringify(notes));
+
+    __latestBuildDate = buildDate;
+    if(buildDate) localStorage.setItem(VERSION_BUILD_KEY, buildDate);
+
+    setHeaderPills();
+    return {
+      ok:true,
+      latestVersion: __latestVersion,
+      appliedVersion: __appliedVersion,
+      notes: __latestNotes,
+      buildDate: __latestBuildDate,
+      swUpdateWaiting: __hasSwUpdateWaiting(),
+      swInstalling: __swInstalling
+    };
+  }catch(e){
+    setHeaderPills();
+    return { ok:false, reason:"fetch_failed" };
+  }
 }
+
 async function registerServiceWorker(){
   if(!("serviceWorker" in navigator)) return;
 
@@ -3785,20 +3608,16 @@ async function registerServiceWorker(){
     console.warn("Service worker registration failed:", e);
   }
 }
+
 function applyUpdateNow(){
-  // ✅ Prevent losing changes that are still pending in debounce
-  try{ Storage.flush(state); }catch(_){}
-
-  try{
-    if(__swReg && __swReg.waiting){
-      __swReg.waiting.postMessage({ type: "SKIP_WAITING" });
-      return;
-    }
-  }catch(_){}
-
-  // Fallback
+  // If an update is waiting, activate it (skip waiting). Otherwise, just reload.
+  if(__swReg && __swReg.waiting){
+    __swReg.waiting.postMessage({ type:"SKIP_WAITING" });
+    return;
+  }
   location.reload();
 }
+
 function openVersionModal(){
   const status = !navigator.onLine
     ? "You’re offline. Updates can’t be checked right now."
@@ -3830,15 +3649,13 @@ function openVersionModal(){
       el("div", { style:"height:12px" }),
       notesNode,
       el("div", { class:"btnrow" }, [
-      el("button", {
-        class:"btn",
-        onClick: async () => {
-          const ok = await checkForUpdates({ force: true });
-          showToast(ok ? "Checked version.json" : "Couldn’t check updates");
-          // Refresh modal content to reflect any new version/notes/status
-          try{ openVersionModal(); }catch(_){}
-        }
-      }, ["Check for updates"]),
+        el("button", {
+          class:"btn",
+          onClick: async () => {
+            const r = await checkForUpdates();
+            showToast(r.ok ? "Checked version.json" : "Couldn’t check updates");
+          }
+        }, ["Check for updates"]),
         el("button", {
           class:"btn primary",
           onClick: () => applyUpdateNow()
@@ -3847,6 +3664,7 @@ function openVersionModal(){
     ])
   });
 }
+
 let __headerPillsBound = false;
 function bindHeaderPills(){
   if(__headerPillsBound) return;
@@ -3857,7 +3675,7 @@ function bindHeaderPills(){
 
   if(syncPill){
     syncPill.addEventListener("click", async () => {
-      await checkForUpdates({ force: true }); // ✅ manual action: always fetch
+      await checkForUpdates();
       openVersionModal();
     });
   }
@@ -3866,29 +3684,24 @@ function bindHeaderPills(){
     verPill.addEventListener("click", () => openVersionModal());
   }
 
-  // ✅ When coming online: refresh pill state immediately, then do a rate-limited update check
-  window.addEventListener("online", () => {
-    setHeaderPills();
-    checkForUpdates(); // ✅ NOT forced (rate-limited)
-  });
+  window.addEventListener("online",  () => { setHeaderPills(); checkForUpdates(); });
+  window.addEventListener("offline", () => { setHeaderPills(); });
+}
 
-  // ✅ When going offline: just reflect offline state
-  window.addEventListener("offline", () => {
-    setHeaderPills();
-  });
-}
+
+
     function navigate(routeKey){
-  try{
-    Charts.destroyAll();
-    currentRoute = routeKey;
-    renderNav();
-    renderView();
-    bindHeaderPills();
-    checkForUpdates();
-  }catch(e){
-    __fatal(e, `navigate:${routeKey}`);
-  }
-}
+      destroyProgressChart();
+      destroyWeightChart();
+      currentRoute = routeKey;
+      renderNav();
+      renderView();
+      bindHeaderPills();
+      checkForUpdates();
+
+    }
+
+
     function renderView(){
 setChip();
 setHeaderPills();
@@ -3917,7 +3730,6 @@ else root.appendChild(el("div", { class:"card" }, [
     /********************
      * 7) Views
      ********************/
-    
     const Views = {
       Onboarding(){
         let hideRestDays = true;
