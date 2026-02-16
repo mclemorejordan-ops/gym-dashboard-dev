@@ -7540,24 +7540,24 @@ function renderRow(type, x, existingSet){
   const row = el("div", { class:"item addExRow" });
   const btn = el("button", { class:"mini" }, ["Add"]);
 
-  // Build meta (keep it descriptive so users still see “Quads / Triceps / etc.”)
+  // Meta line (keep descriptive for clarity)
   const metaParts = [];
 
   if(type === "weightlifting"){
-    // Show full primaryMuscle string (do NOT truncate) so the user sees detail like:
-    // "Legs (Quads)" or "Chest / Triceps" or "Back / Glutes"
-    if(x.primaryMuscle) metaParts.push(String(x.primaryMuscle));
+    // Prefer: show sub-muscle detail (Quads/Triceps/etc) while grouping is handled separately
+    // Use secondaryMuscle if present, otherwise fall back to primaryMuscle string.
+    const detail = String(x.secondaryMuscle || x.primaryMuscle || "").trim();
+    if(detail) metaParts.push(detail);
     if(x.equipment) metaParts.push(String(x.equipment));
   }else if(type === "core"){
-    // Core stays its own category but we still show what it hits.
-    // If primaryMuscle looks like "Core (Abs)", show "Abs" + equipment.
+    // Core: show what it hits (Abs/Obliques/etc) + equipment
     const s = String(x.primaryMuscle || "").trim();
     const m = s.match(/\((.*?)\)/);
     const target = (m && m[1]) ? m[1].trim() : (s ? s.replace(/^core\s*/i,"").trim() : "");
     if(target) metaParts.push(target);
     if(x.equipment) metaParts.push(String(x.equipment));
   }else{
-    // Cardio: show modality + incline support + equipment when present
+    // Cardio: show modality + incline support + equipment
     if(x.modality) metaParts.push(String(x.modality).toUpperCase());
     if(x.supportsIncline) metaParts.push("Incline");
     if(x.equipment) metaParts.push(String(x.equipment));
@@ -7584,36 +7584,304 @@ function renderRow(type, x, existingSet){
   return row;
 }
 
-    function toggleGroup(name){
-      if(openGroups.has(name)) openGroups.delete(name);
-      else openGroups.add(name);
-      repaint();
+function toggleGroup(name){
+  if(openGroups.has(name)) openGroups.delete(name);
+  else openGroups.add(name);
+  repaint();
+}
+
+// Existing single-level group (used for Core + Cardio)
+function renderGroup(title, items, existingSet){
+  const isOpen = openGroups.has(title);
+
+  const head = el("div", {
+    class:"addExGroupHead",
+    onClick: () => toggleGroup(title)
+  }, [
+    el("div", { class:"addExGroupLeft" }, [
+      el("div", { class:"addExGroupTitle", text:title }),
+      el("div", { class:"addExGroupSub", text:`${items.length} exercise${items.length===1?"":"s"}` })
+    ]),
+    el("div", { class:"addExGroupCaret", text: isOpen ? "▾" : "▸" })
+  ]);
+
+  const body = el("div", {
+    class:"addExGroupBody",
+    style: isOpen ? "" : "display:none;"
+  });
+
+  items.forEach(x => body.appendChild(renderRow(x.type, x, existingSet)));
+
+  return el("div", { class:"addExGroup" }, [ head, body ]);
+}
+
+// NEW: Weightlifting → Muscle Group → Sub-muscle → Exercise
+function renderWeightliftingMuscleGroup(groupTitle, items, existingSet){
+  const key = `WL:${groupTitle}`;
+  const isOpen = openGroups.has(key);
+
+  const head = el("div", {
+    class:"addExGroupHead",
+    onClick: () => toggleGroup(key)
+  }, [
+    el("div", { class:"addExGroupLeft" }, [
+      el("div", { class:"addExGroupTitle", text: groupTitle }),
+      el("div", { class:"addExGroupSub", text:`${items.length} exercise${items.length===1?"":"s"}` })
+    ]),
+    el("div", { class:"addExGroupCaret", text: isOpen ? "▾" : "▸" })
+  ]);
+
+  const body = el("div", {
+    class:"addExGroupBody",
+    style: isOpen ? "" : "display:none;"
+  });
+
+  // Build sub-muscle buckets
+  const subMap = new Map(); // sub => []
+  items.forEach(x => {
+    const sub = weightliftingSubMuscle(x, groupTitle); // "" means "no sub header"
+    if(!subMap.has(sub)) subMap.set(sub, []);
+    subMap.get(sub).push(x);
+  });
+
+  // Sort sub groups in a stable, friendly order
+  const orderedSubs = Array.from(subMap.keys()).sort((a,b) => {
+    const ao = subOrderIndex(groupTitle, a);
+    const bo = subOrderIndex(groupTitle, b);
+    if(ao !== bo) return ao - bo;
+    return String(a||"").localeCompare(String(b||""));
+  });
+
+  orderedSubs.forEach(sub => {
+    const arr = subMap.get(sub) || [];
+    arr.sort((a,b) => (a.name||"").localeCompare(b.name||""));
+
+    // Only show a sub header when relevant
+    if(sub){
+      body.appendChild(
+        el("div", {
+          class:"addExSubHead",
+          style:"padding:10px 6px 6px; font-size:11px; letter-spacing:.2px; opacity:.8;"
+        }, [ sub ])
+      );
     }
 
-    function renderGroup(title, items, existingSet){
-      const isOpen = openGroups.has(title);
+    arr.forEach(x => body.appendChild(renderRow(x.type, x, existingSet)));
+  });
 
-      const head = el("div", {
-        class:"addExGroupHead",
-        onClick: () => toggleGroup(title)
-      }, [
-        el("div", { class:"addExGroupLeft" }, [
-          el("div", { class:"addExGroupTitle", text:title }),
-          el("div", { class:"addExGroupSub", text:`${items.length} exercise${items.length===1?"":"s"}` })
-        ]),
-        el("div", { class:"addExGroupCaret", text: isOpen ? "▾" : "▸" })
-      ]);
+  return el("div", { class:"addExGroup" }, [ head, body ]);
+}
 
-      const body = el("div", {
-        class:"addExGroupBody",
-        style: isOpen ? "" : "display:none;"
-      });
+// ------------------------------
+// Weightlifting grouping helpers
+// ------------------------------
+function normMuscleStr(s){
+  return String(s || "").toLowerCase();
+}
 
-      items.forEach(x => body.appendChild(renderRow(x.type, x, existingSet)));
+// Primary groups (exact order you requested)
+const WL_PRIMARY_ORDER = ["Chest", "Back", "Shoulders", "Legs", "Arms", "Full Body"];
 
-      return el("div", { class:"addExGroup" }, [ head, body ]);
+function weightliftingPrimaryGroup(x){
+  // If you ever add explicit fields later, we’ll honor them first:
+  if(x.primaryGroup) return String(x.primaryGroup);
+
+  const pm = normMuscleStr(x.primaryMuscle || "");
+  const sm = normMuscleStr(x.secondaryMuscle || "");
+  const nm = normMuscleStr(x.name || "");
+  const blob = `${pm} ${sm} ${nm}`;
+
+  // Core should NOT appear under Weightlifting (Core has its own category)
+  if(blob.includes("core") || blob.includes("abs") || blob.includes("oblique")){
+    return "Core";
+  }
+
+  // Chest
+  if(blob.includes("chest") || blob.includes("pec")){
+    return "Chest";
+  }
+
+  // Shoulders (Traps live here per your rule)
+  if(blob.includes("shoulder") || blob.includes("delt") || blob.includes("trap") || blob.includes("shrug")){
+    return "Shoulders";
+  }
+
+  // Legs
+  if(
+    blob.includes("leg") || blob.includes("quad") || blob.includes("hamstring") ||
+    blob.includes("glute") || blob.includes("calf") || blob.includes("adductor") || blob.includes("abductor") ||
+    blob.includes("squat") || blob.includes("lunge") || blob.includes("hip thrust")
+  ){
+    return "Legs";
+  }
+
+  // Arms
+  if(
+    blob.includes("bicep") || blob.includes("tricep") || blob.includes("forearm") ||
+    blob.includes("curl") || blob.includes("pushdown") || blob.includes("skull") || blob.includes("extension")
+  ){
+    return "Arms";
+  }
+
+  // Back
+  if(
+    blob.includes("back") || blob.includes("lat") || blob.includes("row") ||
+    blob.includes("pulldown") || blob.includes("pull-up") || blob.includes("chin-up")
+  ){
+    return "Back";
+  }
+
+  // Full Body
+  if(blob.includes("full body") || blob.includes("clean") || blob.includes("snatch") || blob.includes("thruster") || blob.includes("carry")){
+    return "Full Body";
+  }
+
+  // Fallback
+  return "Full Body";
+}
+
+function firstSecondaryToken(x){
+  // secondaryMuscle may look like: "Glutes • Hamstrings" or "Biceps / Forearms"
+  const s = String(x.secondaryMuscle || "").trim();
+  if(!s) return "";
+  return s
+    .split("•")[0]
+    .split("/")[0]
+    .split(",")[0]
+    .trim();
+}
+
+function weightliftingSubMuscle(x, primaryGroup){
+  // If you ever add explicit fields later, honor them:
+  if(x.subMuscle) return String(x.subMuscle);
+
+  // Prefer explicit secondaryMuscle if present (this is your “sub-muscle” concept)
+  const sec = firstSecondaryToken(x);
+  if(sec) return sec;
+
+  // Otherwise derive from primaryMuscle when it’s already specific (Quads, Triceps, etc.)
+  const pm = String(x.primaryMuscle || "").trim();
+  const low = pm.toLowerCase();
+
+  // If primaryMuscle is a broad group label, no sub header needed
+  const broad = ["chest","back","shoulders","legs","arms","full body"];
+  if(broad.includes(low)) return "";
+
+  // Detect common sub-muscles inside combined strings like "Back / Lats" or "Shoulders / Rear Delts"
+  const known = [
+    "Quads","Hamstrings","Glutes","Calves",
+    "Biceps","Triceps","Forearms",
+    "Lats","Rear Delts","Front Delts","Side Delts","Traps",
+    "Adductors","Abductors"
+  ];
+
+  for(const k of known){
+    if(low.includes(k.toLowerCase())) return k;
+  }
+
+  // Some shoulder moves imply delts/traps
+  const nm = normMuscleStr(x.name || "");
+  if(primaryGroup === "Shoulders"){
+    if(nm.includes("rear")) return "Rear Delts";
+    if(nm.includes("lateral")) return "Side Delts";
+    if(nm.includes("front")) return "Front Delts";
+    if(nm.includes("shrug")) return "Traps";
+  }
+
+  // If it’s not clearly a sub-muscle, don’t force one
+  return "";
+}
+
+function subOrderIndex(primaryGroup, sub){
+  if(!sub) return 0; // items with no sub header appear first within the group
+  const s = String(sub);
+
+  const orderByGroup = {
+    "Legs": ["Quads","Hamstrings","Glutes","Calves","Adductors","Abductors"],
+    "Arms": ["Biceps","Triceps","Forearms"],
+    "Back": ["Lats","Upper Back","Lower Back"],
+    "Shoulders": ["Front Delts","Side Delts","Rear Delts","Traps"]
+  };
+
+  const arr = orderByGroup[primaryGroup] || [];
+  const idx = arr.indexOf(s);
+  return idx >= 0 ? (idx + 1) : 99;
+}
+
+function repaint(){
+  scroller.innerHTML = "";
+  const existingSet = getExistingSetForDay();
+
+  // ✅ Unified library load
+  const libs = {
+    weightlifting: (state.exerciseLibrary?.weightlifting || []).slice(),
+    cardio:        (state.exerciseLibrary?.cardio || []).slice(),
+    core:          (state.exerciseLibrary?.core || []).slice()
+  };
+
+  const all = []
+    .concat(libs.weightlifting.map(x => ({...x, type:"weightlifting"})))
+    .concat(libs.cardio.map(x => ({...x, type:"cardio"})))
+    .concat(libs.core.map(x => ({...x, type:"core"})));
+
+  const q = normName(query || "");
+
+  // Search: flat list
+  if(q){
+    const hits = all
+      .filter(x => normName(x.name).includes(q))
+      .sort((a,b) => (a.name||"").localeCompare(b.name||""))
+      .slice(0, 80);
+
+    hits.forEach(x => scroller.appendChild(renderRow(x.type, x, existingSet)));
+    return;
+  }
+
+  // ------------------------------
+  // DEFAULT VIEW (Grouped)
+  // ------------------------------
+
+  // 1) Weightlifting grouped by Primary → Sub
+  const wlItems = libs.weightlifting.map(x => ({...x, type:"weightlifting"}));
+
+  // Move any “core-ish” weightlifting items into Core category (because Core has its own space)
+  const wlByPrimary = new Map();
+  const coreExtra = [];
+
+  wlItems.forEach(x => {
+    const g = weightliftingPrimaryGroup(x);
+    if(g === "Core"){
+      coreExtra.push(x);
+      return;
     }
+    if(!wlByPrimary.has(g)) wlByPrimary.set(g, []);
+    wlByPrimary.get(g).push(x);
+  });
 
+  WL_PRIMARY_ORDER.forEach(primary => {
+    const items = (wlByPrimary.get(primary) || []);
+    if(items.length){
+      scroller.appendChild(renderWeightliftingMuscleGroup(primary, items, existingSet));
+    }
+  });
+
+  // 2) Core (core library + any “core-ish” weightlifting moved here)
+  const coreItems = []
+    .concat(libs.core.map(x => ({...x, type:"core"})))
+    .concat(coreExtra.map(x => ({...x, type:"core"})));
+
+  if(coreItems.length){
+    coreItems.sort((a,b) => (a.name||"").localeCompare(b.name||""));
+    scroller.appendChild(renderGroup("Core", coreItems, existingSet));
+  }
+
+  // 3) Cardio
+  const cardioItems = libs.cardio.map(x => ({...x, type:"cardio"}));
+  if(cardioItems.length){
+    cardioItems.sort((a,b) => (a.name||"").localeCompare(b.name||""));
+    scroller.appendChild(renderGroup("Cardio", cardioItems, existingSet));
+  }
+}
     function repaint(){
       scroller.innerHTML = "";
       const existingSet = getExistingSetForDay();
