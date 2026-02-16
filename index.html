@@ -2690,12 +2690,44 @@ const RoutineTemplates = [
           { id: uid("ex"), type:"weightlifting", name:"Preacher Curl", equipment:"Machine", primaryMuscle:"Arms", secondaryMuscle:"Biceps", createdAt:Date.now() },
 
           // --- Bodyweight ---
-          { id: uid("ex"), type:"weightlifting", name:"Dip", equipment:"Bodyweight", primaryMuscle:"Arms", secondaryMuscle:"Triceps", createdAt:Date.now() },
-          { id: uid("ex"), type:"weightlifting", name:"Close-Grip Push-Up", equipment:"Bodyweight", primaryMuscle:"Arms", secondaryMuscle:"Triceps", createdAt:Date.now() },
-          { id: uid("ex"), type:"weightlifting", name:"Glute Bridge", equipment:"Bodyweight", primaryMuscle:"Legs", secondaryMuscle:"Glutes", createdAt:Date.now() },
-          { id: uid("ex"), type:"weightlifting", name:"Glute-Ham Raise", equipment:"Bodyweight", primaryMuscle:"Legs", secondaryMuscle:"Hamstrings", createdAt:Date.now() },
-          { id: uid("ex"), type:"weightlifting", name:"Wall Sit", equipment:"Bodyweight", primaryMuscle:"Legs", secondaryMuscle:"Quads", createdAt:Date.now() }
-          ];
+{ id: uid("ex"), type:"weightlifting", name:"Dip", equipment:"Bodyweight", primaryMuscle:"Arms", secondaryMuscle:"Triceps", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Close-Grip Push-Up", equipment:"Bodyweight", primaryMuscle:"Arms", secondaryMuscle:"Triceps", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Pull-Up", equipment:"Bodyweight", primaryMuscle:"Back", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Chin-Up", equipment:"Bodyweight", primaryMuscle:"Back", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Bench Dip", equipment:"Bodyweight", primaryMuscle:"Arms", secondaryMuscle:"Triceps", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Split Squat", equipment:"Bodyweight", primaryMuscle:"Legs", secondaryMuscle:"Quads", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Glute Bridge", equipment:"Bodyweight", primaryMuscle:"Legs", secondaryMuscle:"Glutes", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Glute-Ham Raise", equipment:"Bodyweight", primaryMuscle:"Legs", secondaryMuscle:"Hamstrings", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Wall Sit", equipment:"Bodyweight", primaryMuscle:"Legs", secondaryMuscle:"Quads", createdAt:Date.now() },
+
+// --- Additional Back ---
+{ id: uid("ex"), type:"weightlifting", name:"Straight-Arm Pulldown", equipment:"Cable", primaryMuscle:"Back", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"T-Bar Row", equipment:"Machine", primaryMuscle:"Back", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Chest-Supported Row", equipment:"Machine", primaryMuscle:"Back", createdAt:Date.now() },
+
+// --- Additional Shoulders ---
+{ id: uid("ex"), type:"weightlifting", name:"Machine Shoulder Press", equipment:"Machine", primaryMuscle:"Shoulders", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Reverse Pec Deck", equipment:"Machine", primaryMuscle:"Shoulders", secondaryMuscle:"Rear Delts", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Cable Rear Delt Fly", equipment:"Cable", primaryMuscle:"Shoulders", secondaryMuscle:"Rear Delts", createdAt:Date.now() },
+
+// --- Additional Arms ---
+{ id: uid("ex"), type:"weightlifting", name:"Incline Dumbbell Curl", equipment:"Dumbbell", primaryMuscle:"Arms", secondaryMuscle:"Biceps", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Cable Hammer Curl", equipment:"Cable", primaryMuscle:"Arms", secondaryMuscle:"Biceps", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"EZ-Bar Curl", equipment:"Barbell", primaryMuscle:"Arms", secondaryMuscle:"Biceps", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Overhead Dumbbell Triceps Extension", equipment:"Dumbbell", primaryMuscle:"Arms", secondaryMuscle:"Triceps", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Rope Tricep Pushdown", equipment:"Cable", primaryMuscle:"Arms", secondaryMuscle:"Triceps", createdAt:Date.now() },
+
+// --- Additional Legs ---
+{ id: uid("ex"), type:"weightlifting", name:"Reverse Lunge", equipment:"Dumbbell", primaryMuscle:"Legs", secondaryMuscle:"Quads", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Stiff-Leg Deadlift", equipment:"Barbell", primaryMuscle:"Legs", secondaryMuscle:"Hamstrings", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Back Extension", equipment:"Machine", primaryMuscle:"Legs", secondaryMuscle:"Glutes • Lower Back", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Cable Pull-Through", equipment:"Cable", primaryMuscle:"Legs", secondaryMuscle:"Glutes", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Adductor Machine", equipment:"Machine", primaryMuscle:"Legs", secondaryMuscle:"Inner Thigh", createdAt:Date.now() },
+{ id: uid("ex"), type:"weightlifting", name:"Abductor Machine", equipment:"Machine", primaryMuscle:"Legs", secondaryMuscle:"Glutes", createdAt:Date.now() },
+
+// --- Core Stability (weightlifting bucket) ---
+{ id: uid("ex"), type:"weightlifting", name:"Pallof Press", equipment:"Cable", primaryMuscle:"Core", secondaryMuscle:"Obliques", createdAt:Date.now() }
+];
         }
         // Normalize older weightlifting muscle labels to basic buckets
         normalizeWeightliftingMuscles();
