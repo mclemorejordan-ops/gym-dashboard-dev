@@ -5360,8 +5360,26 @@ Progress(){
   // Filters
   let routineId = ""; // "" = All routines
   const todayISO = Dates.todayISO();
-  let fromISO = Dates.addDaysISO(todayISO, -30);
-  let toISO = todayISO;
+
+  // ✅ If you logged sets with a manual date override (including future dates),
+  // default Progress "To" to the latest logged date so the chart/history populate.
+  function latestWorkoutDateISO(){
+    const arr = (state.logs?.workouts || []);
+    let max = "";
+    for(const e of arr){
+      const d = String(e?.dateISO || "");
+      // ISO YYYY-MM-DD strings compare correctly lexicographically
+      if(d && d > max) max = d;
+    }
+    return max || null;
+  }
+
+  const latestISO = latestWorkoutDateISO();
+  const defaultToISO = (latestISO && latestISO > todayISO) ? latestISO : todayISO;
+
+  let toISO = defaultToISO;
+  let fromISO = Dates.addDaysISO(toISO, -30);
+
 
   // Metric default per type
   let metric = defaultMetricForType(type);
