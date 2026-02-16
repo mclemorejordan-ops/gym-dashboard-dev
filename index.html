@@ -3183,6 +3183,55 @@ function __showFatalOverlay(title, detail){
 function __fatal(err, context){
   const detail = `[${context || "runtime"}]\n` + __formatErr(err);
   console.error("FATAL:", detail);
+
+  // Best-effort: render a fallback inside the app root so users never see a blank UI.
+  // This complements the overlay (which can fail in rare DOM/CSS edge cases).
+  try{
+    const root = document.getElementById("viewRoot");
+    if(root){
+      root.innerHTML = "";
+      root.appendChild(el("div", { class:"card" }, [
+        el("h2", { text:"Something went wrong" }),
+        el("div", { class:"note", text:"The app hit an unexpected error. Your data is still stored locally." }),
+        el("pre", {
+          style:"white-space:pre-wrap; font-size:12px; color: rgba(255,255,255,.85); background: rgba(0,0,0,.25); border:1px solid var(--hair); padding:10px; border-radius:12px; overflow:auto; max-height: 40vh;"
+        }, [detail]),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn",
+            onClick: async () => {
+              try{
+                if(navigator.clipboard?.writeText){
+                  await navigator.clipboard.writeText(detail);
+                }else{
+                  window.prompt("Copy error details:", detail);
+                }
+              }catch(_){
+                window.prompt("Copy error details:", detail);
+              }
+            }
+          }, ["Copy error"]),
+          el("button", {
+            class:"btn",
+            onClick: () => location.reload()
+          }, ["Reload"]),
+          el("button", {
+            class:"btn danger",
+            onClick: () => {
+              if(confirm("This will reset local app data on this device. Continue?")){
+                try{ Storage.reset(); }catch(_){ localStorage.removeItem("gymdash:v1"); }
+                location.reload();
+              }
+            }
+          }, ["Reset local data"])
+        ])
+      ]));
+    }
+  }catch(e){
+    console.error("Fatal in-app fallback failed:", e);
+  }
+
+  // Overlay as a secondary, always-on-top fallback
   __showFatalOverlay("Gym Dashboard crashed", detail);
 }
 
