@@ -1781,17 +1781,16 @@ const Storage = (() => {
   let __saveTimer = null;
   const SAVE_DEBOUNCE_MS = 300;
 
-  function load(){
-    try{
-      const raw = localStorage.getItem(KEY);
-      if(!raw) return deepClone(DefaultState);
-      return Object.assign(deepClone(DefaultState), JSON.parse(raw));
-    }catch(e){
-      console.warn("Storage.load failed:", e);
-      return deepClone(DefaultState);
-    }
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return deepClone(DefaultState());               // ✅ call DefaultState()
+    return Object.assign(deepClone(DefaultState()), JSON.parse(raw)); // ✅ call DefaultState()
+  }catch(e){
+    console.warn("Storage.load failed:", e);
+    return deepClone(DefaultState());                        // ✅ call DefaultState()
   }
-
+}
   function __writeNow(state){
     try{
       localStorage.setItem(KEY, JSON.stringify(state));
@@ -1899,7 +1898,7 @@ async function importBackupJSON(file){
     validateImportedState(incomingState);
 
     // ✅ Replace in-memory state
-    state = Object.assign(deepClone(DefaultState), incomingState);
+    state = Object.assign(deepClone(DefaultState()), incomingState);
 
     // ✅ Persist immediately (no debounce)
     Storage.flush(state);
