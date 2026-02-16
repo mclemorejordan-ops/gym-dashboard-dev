@@ -2,18 +2,15 @@
    - Network-first for index.html so users always get the newest UI when online
    - Cache fallback for offline
    - Exposes SKIP_WAITING so UI can force-apply an update
+   - ✅ Cache name is versioned via the SW script URL query param (?v=...)
 */
 
-const CACHE_NAME = "gymdash-shell-v2";
-const EXT_CACHE = "gymdash-ext-v1";
+// Version comes from the registered SW URL (e.g. ./sw.js?v=1.2.3)
+const __swUrl = new URL(self.location.href);
+const __swVersion = (__swUrl.searchParams.get("v") || "v1").trim() || "v1";
 
-// App shell (always available offline)
-const APP_SHELL = [
-  "./",
-  "./index.html",
-  "./manifest.webmanifest",
-  "./icon.svg"
-];
+const CACHE_NAME = `gymdash-shell-${__swVersion}`;
+const APP_SHELL = ["./", "./index.html"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -47,8 +44,10 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
+  if (url.origin !== self.location.origin) return;
+
   // Always fetch version.json fresh (we don't want it cached here)
-  if (url.origin === self.location.origin && url.pathname.endsWith("/version.json")) {
+  if (url.pathname.endsWith("/version.json")) {
     event.respondWith(fetch(req, { cache: "no-store" }));
     return;
   }
@@ -75,55 +74,12 @@ self.addEventListener("fetch", (event) => {
         if (cached) return cached;
 
         // Absolute last resort (should be rare)
-        return new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain" } });
-      })()
-    );
-    return;
-  }
-
-  // ✅ SAME-ORIGIN: serve cached shell assets when possible
-  if (url.origin === self.location.origin) {
-    // Serve shell assets cache-first
-    if (APP_SHELL.includes(url.pathname === "/" ? "./" : `.${url.pathname}`)) {
-      event.respondWith(
-        (async () => {
-          const cache = await caches.open(CACHE_NAME);
-          const match = await cache.match(req);
-          if (match) return match;
-          const fresh = await fetch(req);
-          if (fresh && fresh.ok) await cache.put(req, fresh.clone());
-          return fresh;
-        })()
-      );
-      return;
-    }
-    return; // allow default browser fetch for other same-origin requests
-  }
-
-  // ✅ CROSS-ORIGIN: runtime-cache Chart.js so Progress charts still work offline
-  if (url.hostname === "cdn.jsdelivr.net" && url.pathname.includes("/chart.js@4.4.3/")) {
-    event.respondWith(
-      (async () => {
-        const cache = await caches.open(EXT_CACHE);
-        const cached = await cache.match(req);
-
-        // Stale-while-revalidate:
-        // - return cached immediately if present
-        // - update cache in the background
-        const fetchPromise = fetch(req).then((res) => {
-          if (res && res.ok) cache.put(req, res.clone());
-          return res;
-        }).catch(() => null);
-
-        if (cached) return cached;
-
-        const fresh = await fetchPromise;
-        if (fresh) return fresh;
-
-        return new Response("", { status: 504 });
+        return new Response("Offline", {
+          status: 503,
+          headers: { "Content-Type": "text/plain" }
+        });
       })()
     );
     return;
   }
 });
-
