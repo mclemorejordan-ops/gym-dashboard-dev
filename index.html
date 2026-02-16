@@ -7533,40 +7533,56 @@ const addMultiBtn = el("button", {
       }
     }
 
-    function renderRow(type, x, existingSet){
-      const key = `${type}:${x.id}`;
-      const alreadyInDay = existingSet.has(key);
+function renderRow(type, x, existingSet){
+  const key = `${type}:${x.id}`;
+  const alreadyInDay = existingSet.has(key);
 
-      const row = el("div", { class:"item addExRow" });
-      const btn = el("button", { class:"mini" }, ["Add"]);
+  const row = el("div", { class:"item addExRow" });
+  const btn = el("button", { class:"mini" }, ["Add"]);
 
-      const metaParts = [];
-      if(type === "weightlifting"){
-        if(x.primaryMuscle) metaParts.push(String(x.primaryMuscle));
-        if(x.equipment) metaParts.push(String(x.equipment));
-      }else{
-        if(x.equipment) metaParts.push(String(x.equipment));
-      }
-      metaParts.push(ExerciseLibrary.typeLabel(type));
+  // Build meta (keep it descriptive so users still see “Quads / Triceps / etc.”)
+  const metaParts = [];
 
-      row.appendChild(
-        el("div", { class:"left" }, [
-          el("div", { class:"name", text:x.name }),
-          el("div", { class:"meta", text: metaParts.filter(Boolean).join(" • ") })
-        ])
-      );
-      row.appendChild(el("div", { class:"actions" }, [ btn ]));
+  if(type === "weightlifting"){
+    // Show full primaryMuscle string (do NOT truncate) so the user sees detail like:
+    // "Legs (Quads)" or "Chest / Triceps" or "Back / Glutes"
+    if(x.primaryMuscle) metaParts.push(String(x.primaryMuscle));
+    if(x.equipment) metaParts.push(String(x.equipment));
+  }else if(type === "core"){
+    // Core stays its own category but we still show what it hits.
+    // If primaryMuscle looks like "Core (Abs)", show "Abs" + equipment.
+    const s = String(x.primaryMuscle || "").trim();
+    const m = s.match(/\((.*?)\)/);
+    const target = (m && m[1]) ? m[1].trim() : (s ? s.replace(/^core\s*/i,"").trim() : "");
+    if(target) metaParts.push(target);
+    if(x.equipment) metaParts.push(String(x.equipment));
+  }else{
+    // Cardio: show modality + incline support + equipment when present
+    if(x.modality) metaParts.push(String(x.modality).toUpperCase());
+    if(x.supportsIncline) metaParts.push("Incline");
+    if(x.equipment) metaParts.push(String(x.equipment));
+  }
 
-      if(alreadyInDay){
-        row.classList.add("selected", "disabledRow");
-        btn.classList.add("added", "disabledBtn");
-        btn.textContent = "Added ✓";
-        btn.disabled = true;
-      }
+  metaParts.push(ExerciseLibrary.typeLabel(type));
 
-      btn.addEventListener("click", () => addExercise(type, x.id, key, btn, row));
-      return row;
-    }
+  row.appendChild(
+    el("div", { class:"left" }, [
+      el("div", { class:"name", text:x.name }),
+      el("div", { class:"meta", text: metaParts.filter(Boolean).join(" • ") })
+    ])
+  );
+  row.appendChild(el("div", { class:"actions" }, [ btn ]));
+
+  if(alreadyInDay){
+    row.classList.add("selected", "disabledRow");
+    btn.classList.add("added", "disabledBtn");
+    btn.textContent = "Added ✓";
+    btn.disabled = true;
+  }
+
+  btn.addEventListener("click", () => addExercise(type, x.id, key, btn, row));
+  return row;
+}
 
     function toggleGroup(name){
       if(openGroups.has(name)) openGroups.delete(name);
@@ -7665,38 +7681,44 @@ const addMultiBtn = el("button", {
         );
       }
 
-      function classifyWeightliftingGroup(x){
-        const mRaw = x?.primaryMuscle || "";
-        if(isCoreish(mRaw)) return "Core"; // core always owns core-ish items
+function classifyWeightliftingGroup(x){
+  const mRaw = x?.primaryMuscle || "";
+  if(isCoreish(mRaw)) return "Core"; // core always owns core-ish items
 
-        const m = normGroupBase(mRaw);
+  const m = normGroupBase(mRaw);
 
-        if(m.includes("full body")) return "Full Body";
+  if(m.includes("full body")) return "Full Body";
 
-        if(m.includes("chest") || m.includes("pec")) return "Chest";
-        if(m.includes("back") || m.includes("lat")) return "Back";
-        if(m.includes("shoulder") || m.includes("delt")) return "Shoulders";
+  if(m.includes("chest") || m.includes("pec")) return "Chest";
+  if(m.includes("back") || m.includes("lat")) return "Back";
 
-        // Arms bucket: biceps/triceps/forearms/grip
-        if(
-          m.includes("bicep") ||
-          m.includes("tricep") ||
-          m.includes("forearm") ||
-          m.includes("grip")
-        ) return "Arms";
+  // ✅ Traps are treated as Shoulders (your rule)
+  if(
+    m.includes("shoulder") ||
+    m.includes("delt") ||
+    m.includes("trap")
+  ) return "Shoulders";
 
-        // Legs bucket: legs/quads/hamstrings/glutes/calves/adductors
-        if(
-          m.includes("leg") ||
-          m.includes("quad") ||
-          m.includes("hamstring") ||
-          m.includes("glute") ||
-          m.includes("calf") ||
-          m.includes("adductor")
-        ) return "Legs";
+  // Arms bucket: biceps/triceps/forearms/grip
+  if(
+    m.includes("bicep") ||
+    m.includes("tricep") ||
+    m.includes("forearm") ||
+    m.includes("grip")
+  ) return "Arms";
 
-        return "Other";
-      }
+  // Legs bucket: legs/quads/hamstrings/glutes/calves/adductors
+  if(
+    m.includes("leg") ||
+    m.includes("quad") ||
+    m.includes("hamstring") ||
+    m.includes("glute") ||
+    m.includes("calf") ||
+    m.includes("adductor")
+  ) return "Legs";
+
+  return "Other";
+}
 
       // Build group containers (in the exact order you want)
       const groups = new Map([
