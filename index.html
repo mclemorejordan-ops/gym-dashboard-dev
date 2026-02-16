@@ -2343,6 +2343,71 @@ const RoutineTemplates = [
         days
       };
     }
+        // ────────────────────────────
+    // Repair: backfill missing exerciseId links
+    // - Fixes routines created before library seeding
+    // - Fixes logs saved with exerciseId:null
+    // ────────────────────────────
+    function repairExerciseLinks(){
+      let changed = false;
+
+      // Ensure structures exist
+      state.routines = state.routines || [];
+      state.logs = state.logs || { workouts: [], weight: [], protein: [] };
+      state.logs.workouts = state.logs.workouts || [];
+
+      function findLibByName(type, name){
+        const n = normName(name || "");
+        if(!n) return null;
+        return (state.exerciseLibrary?.[type] || []).find(x => normName(x.name) === n) || null;
+      }
+
+      function findRoutineExercise(routineId, routineExerciseId){
+        const r = (state.routines || []).find(rr => rr.id === routineId);
+        if(!r) return null;
+        for(const d of (r.days || [])){
+          const rx = (d.exercises || []).find(e => e.id === routineExerciseId);
+          if(rx) return rx;
+        }
+        return null;
+      }
+
+      // 1) Repair routine exercises: fill missing exerciseId from library using nameSnap
+      for(const r of (state.routines || [])){
+        for(const d of (r.days || [])){
+          for(const rx of (d.exercises || [])){
+            if(rx && !rx.exerciseId){
+              const libItem = findLibByName(rx.type, rx.nameSnap);
+              if(libItem){
+                rx.exerciseId = libItem.id;
+                rx.nameSnap = libItem.name; // keep snap aligned
+                changed = true;
+              }
+            }
+          }
+        }
+      }
+
+      // 2) Repair workout logs: fill missing exerciseId by looking up the routineExercise
+      for(const e of (state.logs.workouts || [])){
+        if(e && !e.exerciseId){
+          const rx = findRoutineExercise(e.routineId, e.routineExerciseId);
+          if(rx?.exerciseId){
+            e.exerciseId = rx.exerciseId;
+            changed = true;
+          }else if(rx?.nameSnap){
+            const libItem = findLibByName(e.type, rx.nameSnap);
+            if(libItem){
+              e.exerciseId = libItem.id;
+              changed = true;
+            }
+          }
+        }
+      }
+
+      if(changed) Storage.save(state);
+      return changed;
+    }
     /********************
      * 4) Exercise Library Module (Step 3)
      ********************/
@@ -2357,9 +2422,9 @@ const RoutineTemplates = [
         // Only seed if ALL empty
         const lib = state.exerciseLibrary || (state.exerciseLibrary = { weightlifting:[], cardio:[], core:[] });
         const empty = (lib.weightlifting?.length||0) === 0 && (lib.cardio?.length||0) === 0 && (lib.core?.length||0) === 0;
-        if(!empty) return;
 
-               lib.weightlifting = [
+        if(empty){
+          lib.weightlifting = [
           // --- Barbell (Chest/Shoulders/Back/Legs) ---
           { id: uid("ex"), type:"weightlifting", name:"Barbell Bench Press", equipment:"Barbell", primaryMuscle:"Chest", createdAt:Date.now() },
           { id: uid("ex"), type:"weightlifting", name:"Incline Barbell Bench Press", equipment:"Barbell", primaryMuscle:"Chest", createdAt:Date.now() },
@@ -2485,10 +2550,16 @@ const RoutineTemplates = [
           { id: uid("ex"), type:"core", name:"Ab Wheel Rollout", equipment:"Ab Wheel", primaryMuscle:"Core", createdAt:Date.now() },
           { id: uid("ex"), type:"core", name:"Barbell Rollout", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
           { id: uid("ex"), type:"core", name:"Barbell Overhead Hold", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() }
-        ];
+               ];
+        }
 
-        Storage.save(state);
+        // Always attempt to repair links (covers older data / edge cases)
+        const repaired = repairExerciseLinks();
+
+        // Save if we seeded OR repaired anything
+        if(empty || repaired) Storage.save(state);
       },
+
       list(type){
         return (state.exerciseLibrary?.[type] || []);
       },
@@ -3988,6 +4059,9 @@ else root.appendChild(el("div", { class:"card" }, [
             hideRestDays: !!hideRestDays
           };
 
+          // Seed library FIRST so template exercises can resolve to real exerciseIds
+          ExerciseLibrary.ensureSeeded();
+
           const routineName = RoutineTemplates.find(t => t.key === selectedTpl)?.name || "Routine";
           const routine = createRoutineFromTemplate(selectedTpl, routineName);
 
@@ -3995,8 +4069,9 @@ else root.appendChild(el("div", { class:"card" }, [
           state.routines = [routine];
           state.activeRoutineId = routine.id;
 
-          // Seed library if empty
-          ExerciseLibrary.ensureSeeded();
+          // Repair any missing links (older data / edge cases)
+          repairExerciseLinks();
+
 
           Storage.save(state);
           navigate("home");
