@@ -3789,6 +3789,8 @@ async function checkForUpdates(){
 
     const buildDate = String(data?.buildDate || data?.build || data?.date || "").trim() || null;
 
+    const prevLatest = __latestVersion;
+
     if(latest){
       __latestVersion = latest;
       localStorage.setItem(VERSION_LATEST_KEY, latest);
@@ -3799,6 +3801,15 @@ async function checkForUpdates(){
         localStorage.setItem(VERSION_APPLIED_KEY, latest);
       }
     }
+
+    // ✅ If version.json changed, force the SW registration to check for an updated SW script.
+    // This makes "version.json is the source of truth" actually trigger the update pipeline.
+    const versionChanged = !!(__latestVersion && __latestVersion !== prevLatest);
+
+    if(versionChanged && __swReg){
+      try{ await __swReg.update(); }catch(_){}
+    }
+
 
     __latestNotes = notes;
     localStorage.setItem(VERSION_NOTES_KEY, JSON.stringify(notes));
@@ -3888,13 +3899,20 @@ async function registerServiceWorker(){
 }
 
 function applyUpdateNow(){
+  // ✅ Prevent losing changes that are still pending in debounce
+  try{ Storage.flush(state); }catch(_){}
+
   // If an update is waiting, activate it (skip waiting). Otherwise, just reload.
-  if(__swReg && __swReg.waiting){
-    __swReg.waiting.postMessage({ type:"SKIP_WAITING" });
-    return;
-  }
+  try{
+    if(__swReg && __swReg.waiting){
+      __swReg.waiting.postMessage({ type:"SKIP_WAITING" });
+      return;
+    }
+  }catch(_){}
+
   location.reload();
 }
+
 
 function openVersionModal(){
   const status = !navigator.onLine
