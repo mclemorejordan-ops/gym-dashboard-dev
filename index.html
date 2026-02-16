@@ -1,10 +1,29 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f17" />
+
+      <!-- 🔒 Production Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy"
+        content="
+          default-src 'self';
+          script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+          style-src 'self' 'unsafe-inline';
+          img-src 'self' data:;
+          connect-src 'self' https://cdn.jsdelivr.net;
+          font-src 'self';
+          object-src 'none';
+          base-uri 'self';
+          form-action 'self';
+        ">
+
+  <!-- ✅ PWA manifest + icons -->
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <meta name="application-name" content="Gym Dashboard" />
 
   <!-- iOS Add to Home Screen -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,8 +33,9 @@
 
   <title>Gym Dashboard</title>
 
+
   <!-- Chart.js (used later in Progress/Weight) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <style>
 :root{
@@ -1730,6 +1750,48 @@ const STORAGE_KEY = "gymdash:v1";
 // version.json is the single source of truth for version display + release notes
 const REMOTE_VERSION_URL = "./version.json";
 
+// ─────────────────────────────
+// Schema versioning (production hardening)
+// ─────────────────────────────
+const SCHEMA_VERSION = 1;
+
+// Migrate/repair any saved state into the latest schema safely.
+// - Always merges into DefaultState() so new keys are never missing.
+// - Ensures critical containers are the right types.
+// - Lets you add future migrations without breaking old users.
+function migrateState(saved){
+  const base = DefaultState();
+
+  // If it's not a plain object, return defaults
+  if(!saved || typeof saved !== "object") return base;
+
+  // Merge onto defaults (so newly-added keys appear automatically)
+  const merged = Object.assign(base, saved);
+
+  // Normalize version
+  const v = (typeof merged.schemaVersion === "number") ? merged.schemaVersion : 0;
+
+  // Future migrations go here:
+  // if(v < 1){ ... set defaults/transform old fields ... }
+
+  // ✅ Hard guards for containers (prevents runtime crashes)
+  if(!Array.isArray(merged.routines)) merged.routines = [];
+  if(typeof merged.exerciseLibrary !== "object" || !merged.exerciseLibrary) merged.exerciseLibrary = { weightlifting:[], cardio:[], core:[] };
+  if(!Array.isArray(merged.exerciseLibrary.weightlifting)) merged.exerciseLibrary.weightlifting = [];
+  if(!Array.isArray(merged.exerciseLibrary.cardio)) merged.exerciseLibrary.cardio = [];
+  if(!Array.isArray(merged.exerciseLibrary.core)) merged.exerciseLibrary.core = [];
+  if(typeof merged.logs !== "object" || !merged.logs) merged.logs = { workouts:[], weight:[], protein:[] };
+  if(!Array.isArray(merged.logs.workouts)) merged.logs.workouts = [];
+  if(!Array.isArray(merged.logs.weight)) merged.logs.weight = [];
+  if(!Array.isArray(merged.logs.protein)) merged.logs.protein = [];
+  if(!Array.isArray(merged.attendance)) merged.attendance = [];
+
+  // Always stamp latest schema
+  merged.schemaVersion = SCHEMA_VERSION;
+
+  return merged;
+}
+
 // Version metadata only (does NOT affect user profile/state)
 const VERSION_LATEST_KEY   = "gymdash:latestVersion";     // last fetched version.json value
 const VERSION_APPLIED_KEY  = "gymdash:appliedVersion";    // last version applied on this device
@@ -1758,83 +1820,108 @@ const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date
       attendance: []
     });
 
-    const Storage = {
-      load(){
-        try{
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if(!raw) return DefaultState();
-          const parsed = JSON.parse(raw);
-          if(!parsed || typeof parsed !== "object") return DefaultState();
-          if(!("schemaVersion" in parsed)) return DefaultState();
-          return parsed;
-        }catch(e){
-          return DefaultState();
-        }
-      },
-      save(state){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      },
-      reset(){
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    };
-    /********************
-     * Backup / Import (Step 10)
-     ********************/
-    function downloadTextFile(filename, text, mime="application/json"){
-      const blob = new Blob([text], { type: mime });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 250);
+const Storage = {
+  load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return DefaultState();
+
+      const parsed = JSON.parse(raw);
+
+      // ✅ Always migrate/repair into latest schema
+      return migrateState(parsed);
+    }catch(e){
+      return DefaultState();
     }
+  },
 
-    function exportBackupJSON(){
-      // Keep export simple: full state snapshot
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        app: "gym-dashboard-dev",
-        data: state
-      };
-      return JSON.stringify(payload, null, 2);
+  save(state){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){
+      // QuotaExceededError or storage blocked in private modes
+      console.warn("Storage.save failed:", e);
+      handleStorageWriteError(e);
     }
+  },
 
-    function validateImportedState(obj){
-      // Accept either raw state or wrapped { data: state }
-      const imported = (obj && typeof obj === "object" && "data" in obj) ? obj.data : obj;
-
-      if(!imported || typeof imported !== "object") throw new Error("Invalid JSON object.");
-      if(typeof imported.schemaVersion !== "number") throw new Error("Invalid backup: missing schemaVersion.");
-
-      // Must contain expected top-level fields (loose validation)
-      if(!("profile" in imported)) throw new Error("Invalid backup: missing profile.");
-      if(!("routines" in imported)) throw new Error("Invalid backup: missing routines.");
-      if(!("exerciseLibrary" in imported)) throw new Error("Invalid backup: missing exerciseLibrary.");
-      if(!("logs" in imported)) throw new Error("Invalid backup: missing logs.");
-      if(!("attendance" in imported)) throw new Error("Invalid backup: missing attendance.");
-
-      return imported;
+  reset(){
+    try{
+      localStorage.removeItem(STORAGE_KEY);
+    }catch(e){
+      console.warn("Storage.reset failed:", e);
     }
+  }
+};
 
-    function importBackupJSON(jsonText){
-      let parsed;
-      try{
-        parsed = JSON.parse(jsonText);
-      }catch(e){
-        throw new Error("Could not parse JSON. Make sure it’s valid.");
-      }
+// ✅ Load state AFTER Storage exists
+let state = Storage.load();
 
-      const importedState = validateImportedState(parsed);
+/********************
+ * Backup / Import (Step 10)
+ ********************/
+function downloadTextFile(filename, text, mime="application/json"){
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 250);
+}
 
-      // Overwrite local storage + live state
-      state = importedState;
-      Storage.save(state);
-    }
-    let state = Storage.load();
+function exportBackupJSON(){
+  // Keep export simple: full state snapshot
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    app: "gym-dashboard-dev",
+    data: state
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+function validateImportedState(obj){
+  // Accept either raw state or wrapped { data: state }
+  const imported = (obj && typeof obj === "object" && "data" in obj) ? obj.data : obj;
+
+  if(!imported || typeof imported !== "object") throw new Error("Invalid JSON object.");
+  if(typeof imported.schemaVersion !== "number") throw new Error("Invalid backup: missing schemaVersion.");
+
+  // Must contain expected top-level fields (loose validation)
+  if(!("profile" in imported)) throw new Error("Invalid backup: missing profile.");
+  if(!("routines" in imported)) throw new Error("Invalid backup: missing routines.");
+  if(!("exerciseLibrary" in imported)) throw new Error("Invalid backup: missing exerciseLibrary.");
+  if(!("logs" in imported)) throw new Error("Invalid backup: missing logs.");
+  if(!("attendance" in imported)) throw new Error("Invalid backup: missing attendance.");
+
+  return migrateState(imported);
+}
+
+function importBackupJSON(jsonText){
+  let parsed;
+  try{
+    parsed = JSON.parse(jsonText);
+  }catch(e){
+    throw new Error("Could not parse JSON. Make sure it’s valid.");
+  }
+
+  const importedState = validateImportedState(parsed);
+
+  // Overwrite local storage + live state
+  state = importedState;
+  Storage.save(state);
+}
+
+// ✅ failsafe: prevent Storage.save from crashing if handler is missing
+function handleStorageWriteError(e){
+  try{
+    // Minimal user-safe warning; you can enhance later
+    console.warn("Storage write error:", e);
+  }catch(_){}
+}
+
 const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
   settings: {
     q: "",
@@ -1846,6 +1933,7 @@ const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
     equipment: "all"
   }
 });
+
     /********************
      * 2) Helpers
      ********************/
@@ -3311,11 +3399,37 @@ function unlockBodyScroll(){
   window.scrollTo(0, __modalScrollY);
 }
 
+// ─────────────────────────────
+// Modal (production hardening)
+// - Focus is moved into the modal when opened
+// - Tab/Shift+Tab are trapped inside the modal
+// - Focus is restored to the triggering element when closed
+// ─────────────────────────────
+let __modalLastFocus = null;
+let __modalKeydownHandler = null;
+
+function __getModalFocusables(sheet){
+  if(!sheet) return [];
+  const nodes = sheet.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  return Array.from(nodes).filter(el => {
+    // visible + enabled
+    const style = window.getComputedStyle(el);
+    if(style.visibility === "hidden" || style.display === "none") return false;
+    if(el.hasAttribute("disabled")) return false;
+    return true;
+  });
+}
+
 const Modal = {
   open({ title, bodyNode, center = true, size = "md" }){
-    const host = $("#modalHost");
-    const body = $("#modalBody");
+    const host  = $("#modalHost");
+    const body  = $("#modalBody");
     const sheet = host.querySelector(".sheet");
+
+    // Remember last focused element (so we can restore on close)
+    __modalLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     $("#modalTitle").textContent = title || "Modal";
 
@@ -3335,10 +3449,64 @@ const Modal = {
     host.setAttribute("aria-hidden", "false");
 
     lockBodyScroll();
+
+    // Focus management: move focus into modal (prefer Close button)
+    const closeBtn = $("#modalClose");
+    const focusablesNow = __getModalFocusables(sheet);
+    const first = closeBtn || focusablesNow[0] || sheet;
+
+    // Ensure sheet is focusable if nothing else is
+    if(sheet && !sheet.hasAttribute("tabindex")) sheet.setAttribute("tabindex", "-1");
+
+    // Use next tick so DOM is fully ready
+    setTimeout(() => {
+      try { first && first.focus && first.focus(); } catch(e){}
+    }, 0);
+
+    // Trap Tab navigation inside modal
+    __modalKeydownHandler = (e) => {
+      if(!host.classList.contains("show")) return;
+
+      // ESC should still work via your existing listeners, but keep safe here too
+      if(e.key === "Escape"){
+        e.preventDefault();
+        Modal.close();
+        return;
+      }
+
+      if(e.key !== "Tab") return;
+
+      const focusables = __getModalFocusables(sheet);
+      if(focusables.length === 0){
+        e.preventDefault();
+        sheet && sheet.focus && sheet.focus();
+        return;
+      }
+
+      const active = document.activeElement;
+      const firstEl = focusables[0];
+      const lastEl  = focusables[focusables.length - 1];
+
+      // Shift+Tab on first -> wrap to last
+      if(e.shiftKey && active === firstEl){
+        e.preventDefault();
+        lastEl.focus();
+        return;
+      }
+
+      // Tab on last -> wrap to first
+      if(!e.shiftKey && active === lastEl){
+        e.preventDefault();
+        firstEl.focus();
+        return;
+      }
+    };
+
+    document.addEventListener("keydown", __modalKeydownHandler, true);
   },
 
   close(){
-    const host = $("#modalHost");
+    const host  = $("#modalHost");
     const sheet = host.querySelector(".sheet");
 
     host.classList.remove("show");
@@ -3353,6 +3521,18 @@ const Modal = {
     }
 
     unlockBodyScroll();
+
+    // Remove keydown trap
+    if(__modalKeydownHandler){
+      document.removeEventListener("keydown", __modalKeydownHandler, true);
+      __modalKeydownHandler = null;
+    }
+
+    // Restore focus back to what opened the modal (if still in DOM)
+    if(__modalLastFocus && document.contains(__modalLastFocus)){
+      try { __modalLastFocus.focus(); } catch(e){}
+    }
+    __modalLastFocus = null;
   }
 };
     (function bindModalControls(){
@@ -5573,6 +5753,35 @@ statsHost.appendChild(el("div", { class:"pill" }, [
       return String(n);
     }
     return String(v);
+  }
+
+  // ✅ FIX: was referenced but missing — caused Progress to crash
+  function tableLine(entry){
+    try{
+      if(!entry) return "—";
+      const t = entry.type || type;           // fall back to current Progress tab type
+      const s = entry.summary || {};
+
+      if(t === "weightlifting"){
+        const bw  = (s.bestWeight != null) ? `${formatMetricValue("weightlifting","topWeight", s.bestWeight)} top` : "";
+        const brm = (s.best1RM != null)    ? `${formatMetricValue("weightlifting","est1RM",    s.best1RM)} est1RM` : "";
+        const bv  = (s.totalVolume != null)? `${formatMetricValue("weightlifting","volume",   s.totalVolume)} vol` : "";
+        return [bw, brm, bv].filter(Boolean).join(" • ") || "—";
+      }
+
+      if(t === "cardio"){
+        const pace = (s.paceSecPerUnit != null) ? `${formatMetricValue("cardio","pace", s.paceSecPerUnit)} pace` : "";
+        const dist = (s.distance != null)       ? `${formatMetricValue("cardio","distance", s.distance)} dist` : "";
+        const time = (s.timeSec != null)        ? `${formatMetricValue("cardio","timeSec", s.timeSec)} time` : "";
+        return [pace, dist, time].filter(Boolean).join(" • ") || "—";
+      }
+
+      // core
+      const vol = (s.totalVolume != null) ? `${formatMetricValue("core","volume", s.totalVolume)} vol` : "";
+      return vol || "—";
+    }catch(_){
+      return "—";
+    }
   }
 
 },  // ✅ end Progress()
