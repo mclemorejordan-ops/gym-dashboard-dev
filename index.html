@@ -2850,6 +2850,15 @@ const RoutineTemplates = [
       const found = (state.exerciseLibrary?.[type] || []).find(x => x.id === exerciseId);
       return found?.name || fallback || "Unknown exercise";
     }
+        // Core primaryMuscle display (Option A): "Core (Abs)" → "Abs"
+    function coreTargetLabel(primaryMuscle){
+      const s = String(primaryMuscle || "").trim();
+      const m = s.match(/\((.*?)\)/);          // grabs text inside parentheses
+      const inner = (m && m[1]) ? m[1].trim() : "";
+      if(inner) return inner;                   // "Abs", "Obliques", "Lower Abs"
+      if(s.toLowerCase().includes("core")) return "Core";
+      return "";
+    }
     /********************
      * 4c) Protein (Today) Helpers (Step 5)
      ********************/
