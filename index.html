@@ -1731,6 +1731,19 @@ const STORAGE_KEY = "gymdash:v1";
 // version.json is the single source of truth for version display + release notes
 const REMOTE_VERSION_URL = "./version.json";
 
+// ────────────────────────────
+// Update check rate-limit (Phase 2.1)
+// ────────────────────────────
+const UPDATE_CHECK_MIN_MS = 10 * 60 * 1000; // 10 minutes
+let __lastUpdateCheckAt = 0;
+let __updateCheckPromise = null;
+
+function __shouldCheckUpdates(force){
+  if(force) return true;
+  const now = Date.now();
+  return (now - __lastUpdateCheckAt) >= UPDATE_CHECK_MIN_MS;
+}
+
 // Version metadata only (does NOT affect user profile/state)
 const VERSION_LATEST_KEY   = "gymdash:latestVersion";     // last fetched version.json value
 const VERSION_APPLIED_KEY  = "gymdash:appliedVersion";    // last version applied on this device
@@ -3589,61 +3602,59 @@ function setHeaderPills(){
     syncPill.classList.add("ok");
   }
 }
+async function checkForUpdates(opts){
+  const force = !!(opts && opts.force);
 
-async function checkForUpdates(){
-  // Fetch version.json (single source of truth for version + notes)
-  if(!navigator.onLine){
-    setHeaderPills();
-    return { ok:false, reason:"offline" };
+  // Coalesce calls (prevents spamming fetch on rapid navigation / multiple triggers)
+  if(__updateCheckPromise) return __updateCheckPromise;
+
+  // Rate-limit auto checks (navigate/boot). Manual checks always bypass.
+  if(!__shouldCheckUpdates(force)){
+    // Still update the pill state (SW state can change independently of version.json)
+    try{ setHeaderPills(); }catch(_){}
+    return Promise.resolve(false);
   }
-  try{
-    const url = `${REMOTE_VERSION_URL}?t=${Date.now()}`;
-    const res = await fetch(url, { cache: "no-store" });
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
 
-    const latest = String(data?.version || "").trim() || null;
-    const notesRaw = Array.isArray(data?.notes) ? data.notes : [];
-    const notes = notesRaw
-      .map(x => String(x || "").trim())
-      .filter(Boolean)
-      .slice(0, 12); // keep it tight in UI
+  __lastUpdateCheckAt = Date.now();
 
-    const buildDate = String(data?.buildDate || data?.build || data?.date || "").trim() || null;
+  __updateCheckPromise = (async () => {
+    try{
+      const url = `${REMOTE_VERSION_URL}?t=${Date.now()}`;
+      const res = await fetch(url, { cache: "no-store" });
+      if(!res.ok) throw new Error(`version.json fetch failed: ${res.status}`);
 
-    if(latest){
-      __latestVersion = latest;
-      localStorage.setItem(VERSION_LATEST_KEY, latest);
+      const data = await res.json();
 
-      // First run: initialize applied version so modal has a baseline
-      if(!__appliedVersion){
-        __appliedVersion = latest;
-        localStorage.setItem(VERSION_APPLIED_KEY, latest);
+      // Expected fields: version, notes[], buildDate/build/date
+      const latestVersion = String(data.version || "").trim();
+      const notes = Array.isArray(data.notes) ? data.notes : [];
+      const buildDate = data.buildDate || data.build || data.date || "";
+
+      if(latestVersion){
+        __latestVersion = latestVersion;
+        try{ localStorage.setItem("gymdash:latestVersion", __latestVersion); }catch(_){}
       }
+
+      __latestNotes = notes;
+      __latestBuildDate = buildDate ? String(buildDate) : "";
+
+      try{ localStorage.setItem("gymdash:latestNotes", JSON.stringify(__latestNotes || [])); }catch(_){}
+      try{ localStorage.setItem("gymdash:latestBuildDate", String(__latestBuildDate || "")); }catch(_){}
+
+      // Refresh UI
+      setHeaderPills();
+      return true;
+    }catch(e){
+      console.warn("checkForUpdates failed:", e);
+      try{ setHeaderPills(); }catch(_){}
+      return false;
+    }finally{
+      __updateCheckPromise = null;
     }
+  })();
 
-    __latestNotes = notes;
-    localStorage.setItem(VERSION_NOTES_KEY, JSON.stringify(notes));
-
-    __latestBuildDate = buildDate;
-    if(buildDate) localStorage.setItem(VERSION_BUILD_KEY, buildDate);
-
-    setHeaderPills();
-    return {
-      ok:true,
-      latestVersion: __latestVersion,
-      appliedVersion: __appliedVersion,
-      notes: __latestNotes,
-      buildDate: __latestBuildDate,
-      swUpdateWaiting: __hasSwUpdateWaiting(),
-      swInstalling: __swInstalling
-    };
-  }catch(e){
-    setHeaderPills();
-    return { ok:false, reason:"fetch_failed" };
-  }
+  return __updateCheckPromise;
 }
-
 async function registerServiceWorker(){
   if(!("serviceWorker" in navigator)) return;
 
@@ -3740,13 +3751,15 @@ function openVersionModal(){
       el("div", { style:"height:12px" }),
       notesNode,
       el("div", { class:"btnrow" }, [
-        el("button", {
-          class:"btn",
-          onClick: async () => {
-            const r = await checkForUpdates();
-            showToast(r.ok ? "Checked version.json" : "Couldn’t check updates");
-          }
-        }, ["Check for updates"]),
+      el("button", {
+        class:"btn",
+        onClick: async () => {
+          const ok = await checkForUpdates({ force: true });
+          showToast(ok ? "Checked version.json" : "Couldn’t check updates");
+          // Refresh modal content to reflect any new version/notes/status
+          try{ openVersionModal(); }catch(_){}
+        }
+      }, ["Check for updates"]),
         el("button", {
           class:"btn primary",
           onClick: () => applyUpdateNow()
@@ -3755,7 +3768,6 @@ function openVersionModal(){
     ])
   });
 }
-
 let __headerPillsBound = false;
 function bindHeaderPills(){
   if(__headerPillsBound) return;
@@ -3766,7 +3778,7 @@ function bindHeaderPills(){
 
   if(syncPill){
     syncPill.addEventListener("click", async () => {
-      await checkForUpdates();
+      await checkForUpdates({ force: true }); // ✅ manual action: always fetch
       openVersionModal();
     });
   }
@@ -3775,8 +3787,16 @@ function bindHeaderPills(){
     verPill.addEventListener("click", () => openVersionModal());
   }
 
-  window.addEventListener("online",  () => { setHeaderPills(); checkForUpdates(); });
-  window.addEventListener("offline", () => { setHeaderPills(); });
+  // ✅ When coming online: refresh pill state immediately, then do a rate-limited update check
+  window.addEventListener("online", () => {
+    setHeaderPills();
+    checkForUpdates(); // ✅ NOT forced (rate-limited)
+  });
+
+  // ✅ When going offline: just reflect offline state
+  window.addEventListener("offline", () => {
+    setHeaderPills();
+  });
 }
     function navigate(routeKey){
   try{
