@@ -2766,34 +2766,26 @@ const RoutineTemplates = [
           { id: uid("ex"), type:"weightlifting", name:"Farmer’s Carry", equipment:"Dumbbell", primaryMuscle:"Full Body", createdAt:Date.now() }
           ];
 
-lib.core = [
-  // ─────────────────────────────
-  // CORE (App Core Library)
-  // ─────────────────────────────
-  { id: uid("ex"), type:"core", name:"Plank", equipment:"Bodyweight", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Side Plank", equipment:"Bodyweight", primaryMuscle:"Core (Obliques)", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Dead Bug", equipment:"Bodyweight", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
+            lib.core = [
+            // ─────────────────────────────
+            // CORE (App Core Library)
+            // ─────────────────────────────
+            { id: uid("ex"), type:"core", name:"Plank", equipment:"Bodyweight", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
+            { id: uid("ex"), type:"core", name:"Side Plank", equipment:"Bodyweight", primaryMuscle:"Core (Obliques)", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"core", name:"Bicycle Crunch", equipment:"Bodyweight", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Mountain Climbers", equipment:"Bodyweight", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
+            { id: uid("ex"), type:"core", name:"Dead Bug", equipment:"Bodyweight", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"core", name:"Decline Sit-Up", equipment:"Bench", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Russian Twist", equipment:"Dumbbell", primaryMuscle:"Core (Obliques)", createdAt:Date.now() },
+            { id: uid("ex"), type:"core", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"core", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
+            { id: uid("ex"), type:"core", name:"Hanging Knee Raise", equipment:"Bar", primaryMuscle:"Core (Lower Abs)", createdAt:Date.now() },
+            { id: uid("ex"), type:"core", name:"Toe-to-Bar", equipment:"Bar", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
 
-  // ✅ FIX: add Cable Woodchopper into Core list
-  { id: uid("ex"), type:"core", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core (Obliques)", createdAt:Date.now() },
+            // ✅ Add here so it appears in the Core category (not under weightlifting)
+            { id: uid("ex"), type:"core", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core (Obliques)", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"core", name:"Hanging Knee Raise", equipment:"Bar", primaryMuscle:"Core (Lower Abs)", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Hanging Leg Raise", equipment:"Bar", primaryMuscle:"Core (Lower Abs)", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Toe-to-Bar", equipment:"Bar", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
-
-  { id: uid("ex"), type:"core", name:"Ab Wheel Rollout", equipment:"Ab Wheel", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
-
-  // Keep a separate name to avoid collision with weightlifting "Pallof Press"
-  { id: uid("ex"), type:"core", name:"Pallof Press (Core)", equipment:"Cable", primaryMuscle:"Core (Obliques)", createdAt:Date.now() }
-];
+            // Keep a separate name to avoid collision with weightlifting "Pallof Press"
+            { id: uid("ex"), type:"core", name:"Pallof Press (Core)", equipment:"Cable", primaryMuscle:"Core (Obliques)", createdAt:Date.now() }
+          ];
         }
         // Normalize older weightlifting muscle labels to basic buckets
         normalizeWeightliftingMuscles();
