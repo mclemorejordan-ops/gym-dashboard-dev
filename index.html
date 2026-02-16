@@ -1836,12 +1836,15 @@ const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date
 },
 
       save(state){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      },
-      reset(){
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    };
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){
+    // QuotaExceededError or storage blocked in private modes
+    console.warn("Storage.save failed:", e);
+    handleStorageWriteError(e);
+  }
+},
+
     /********************
      * Backup / Import (Step 10)
      ********************/
