@@ -1844,6 +1844,56 @@ const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date
     handleStorageWriteError(e);
   }
 },
+      // ─────────────────────────────
+// Storage quota / write failure UX (production hardening)
+// ─────────────────────────────
+let __storageErrorShown = false;
+
+function handleStorageWriteError(err){
+  if(__storageErrorShown) return;
+  __storageErrorShown = true;
+
+  const msg = String(err && (err.message || err.name) ? (err.message || err.name) : err);
+
+  Modal.open({
+    title: "Storage full",
+    bodyNode: el("div", {}, [
+      el("div", { class:"note", text:
+        "Your device/browser storage is full, so the app could not save your latest changes. " +
+        "Your data is still in memory for this session, but it may be lost if the app closes."
+      }),
+      el("div", { class:"note", text:
+        "Recommended: Export a backup now, then clear space (or reset local data if needed)."
+      }),
+      el("div", { class:"btnrow" }, [
+        el("button", {
+          class:"btn",
+          onClick: () => {
+            try{
+              const json = exportBackupJSON();
+              downloadTextFile(
+                `gym-dashboard-backup-${(new Date().toISOString().slice(0,10))}.json`,
+                json
+              );
+            }catch(e2){
+              alert("Export failed: " + String(e2 && e2.message ? e2.message : e2));
+            }
+          }
+        }, ["Export backup"]),
+        el("button", {
+          class:"btn danger",
+          onClick: () => {
+            try{ Storage.reset(); }catch(_){}
+            location.reload();
+          }
+        }, ["Reset local data"])
+      ]),
+      el("pre", {
+        style:"white-space:pre-wrap; font-size:12px; color: rgba(255,255,255,.85); background: rgba(0,0,0,.25); border:1px solid var(--hair); padding:10px; border-radius:12px; overflow:auto; max-height: 25vh;"
+      }, [msg])
+    ])
+  });
+}
 
     /********************
      * Backup / Import (Step 10)
