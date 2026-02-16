@@ -1852,7 +1852,14 @@ function load(){
 
     let state = Storage.load();
     window.state = state; // important because your Storage module flush listeners use window.state
-
+    // ────────────────────────────
+    // UI-only ephemeral state (NOT persisted)
+    // Needed by Settings() + Library management views
+    // ────────────────────────────
+    const UIState = window.UIState || (window.UIState = {
+      settings: {},
+      libraryManage: {}
+    });
     /********************
      * Backup / Import (Step 10)
      ********************/
