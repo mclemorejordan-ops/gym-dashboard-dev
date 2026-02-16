@@ -2946,17 +2946,22 @@ const LogEngine = {
   }
 };
 
-    function formatTime(sec){
-      const s = Math.max(0, Math.floor(Number(sec) || 0));
-      const m = Math.floor(s / 60);
-      const r = s % 60;
-      return `${m}:${String(r).padStart(2,"0")}`;
-    }
+function round2(n){
+  return Math.round((Number(n) || 0) * 100) / 100;
+}
 
-    function formatPace(paceSecPerUnit){
-      if(paceSecPerUnit === null || !Number.isFinite(paceSecPerUnit)) return "—";
-      return `${formatTime(paceSecPerUnit)} / unit`;
-    }
+function formatTime(sec){
+  const s = Math.max(0, Math.floor(Number(sec) || 0));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2,"0")}`;
+}
+
+function formatPace(paceSecPerUnit){
+  if(paceSecPerUnit === null || !Number.isFinite(paceSecPerUnit)) return "—";
+  return `${formatTime(paceSecPerUnit)} / unit`;
+}
+
 // ────────────────────────────
 // Charts Manager (single source of truth)
 // ────────────────────────────
