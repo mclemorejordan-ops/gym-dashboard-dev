@@ -1771,27 +1771,78 @@ const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date
       },
       attendance: []
     });
+// ────────────────────────────
+// Storage Module (Debounced Writes - Phase 2.2)
+// ────────────────────────────
+const Storage = (() => {
 
-    const Storage = {
-      load(){
-        try{
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if(!raw) return DefaultState();
-          const parsed = JSON.parse(raw);
-          if(!parsed || typeof parsed !== "object") return DefaultState();
-          if(!("schemaVersion" in parsed)) return DefaultState();
-          return parsed;
-        }catch(e){
-          return DefaultState();
-        }
-      },
-      save(state){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      },
-      reset(){
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    };
+  const KEY = "gymdash:v1";
+
+  let __saveTimer = null;
+  const SAVE_DEBOUNCE_MS = 300;
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(!raw) return deepClone(DefaultState);
+      return Object.assign(deepClone(DefaultState), JSON.parse(raw));
+    }catch(e){
+      console.warn("Storage.load failed:", e);
+      return deepClone(DefaultState);
+    }
+  }
+
+  function __writeNow(state){
+    try{
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }catch(e){
+      console.warn("Storage.write failed:", e);
+    }
+  }
+
+  function scheduleSave(state){
+    if(__saveTimer) clearTimeout(__saveTimer);
+    __saveTimer = setTimeout(() => {
+      __writeNow(state);
+      __saveTimer = null;
+    }, SAVE_DEBOUNCE_MS);
+  }
+
+  function flush(state){
+    if(__saveTimer){
+      clearTimeout(__saveTimer);
+      __saveTimer = null;
+    }
+    __writeNow(state);
+  }
+
+  function reset(){
+    try{
+      localStorage.removeItem(KEY);
+    }catch(e){
+      console.warn("Storage.reset failed:", e);
+    }
+  }
+
+  // Auto flush on tab close / background
+  window.addEventListener("beforeunload", () => {
+    if(window.state) flush(window.state);
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if(document.visibilityState === "hidden" && window.state){
+      flush(window.state);
+    }
+  });
+
+  return {
+    load,
+    save: scheduleSave,   // ⚡ Debounced by default
+    flush,                // 🔥 Immediate write
+    reset
+  };
+
+})();
     /********************
      * Backup / Import (Step 10)
      ********************/
@@ -1806,17 +1857,21 @@ const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 250);
     }
+function exportBackupJSON(){
+  // ✅ Ensure the latest in-memory changes are persisted before exporting
+  try{ Storage.flush(state); }catch(_){}
 
-    function exportBackupJSON(){
-      // Keep export simple: full state snapshot
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        app: "gym-dashboard-dev",
-        data: state
-      };
-      return JSON.stringify(payload, null, 2);
-    }
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    app: "gym-dashboard",
+    state
+  };
 
+  downloadTextFile(
+    `gym-dashboard-backup-${(new Date().toISOString().slice(0,10))}.json`,
+    JSON.stringify(payload, null, 2)
+  );
+}
     function validateImportedState(obj){
       // Accept either raw state or wrapped { data: state }
       const imported = (obj && typeof obj === "object" && "data" in obj) ? obj.data : obj;
@@ -1833,33 +1888,36 @@ const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date
 
       return imported;
     }
+async function importBackupJSON(file){
+  try{
+    const text = await file.text();
+    const parsed = JSON.parse(text);
 
-    function importBackupJSON(jsonText){
-      let parsed;
-      try{
-        parsed = JSON.parse(jsonText);
-      }catch(e){
-        throw new Error("Could not parse JSON. Make sure it’s valid.");
-      }
+    // Accept either {state:{...}} wrapper or direct state object
+    const incomingState = parsed && parsed.state ? parsed.state : parsed;
 
-      const importedState = validateImportedState(parsed);
+    validateImportedState(incomingState);
 
-      // Overwrite local storage + live state
-      state = importedState;
-      Storage.save(state);
-    }
-    let state = Storage.load();
-const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
-  settings: {
-    q: "",
-    open: { "profile": true, "library": false, "backup": false, "data": false, "debug": false }
-  },
-  libraryManage: {
-    q: "",
-    type: "weightlifting",
-    equipment: "all"
+    // ✅ Replace in-memory state
+    state = Object.assign(deepClone(DefaultState), incomingState);
+
+    // ✅ Persist immediately (no debounce)
+    Storage.flush(state);
+
+    // ✅ Re-render app
+    navigate("home");
+  }catch(e){
+    Modal.open({
+      title: "Import failed",
+      bodyNode: el("div", {}, [
+        el("div", { class:"note", text:"Could not import that file. See details below." }),
+        el("pre", {
+          style:"white-space:pre-wrap; font-size:12px; color: rgba(255,255,255,.85); background: rgba(0,0,0,.25); border:1px solid var(--hair); padding:10px; border-radius:12px; overflow:auto; max-height: 45vh;"
+        }, [String(e && e.message ? e.message : e)])
+      ])
+    });
   }
-});
+}
     /********************
      * 2) Helpers
      ********************/
@@ -3710,16 +3768,20 @@ async function registerServiceWorker(){
     console.warn("Service worker registration failed:", e);
   }
 }
-
 function applyUpdateNow(){
-  // If an update is waiting, activate it (skip waiting). Otherwise, just reload.
-  if(__swReg && __swReg.waiting){
-    __swReg.waiting.postMessage({ type:"SKIP_WAITING" });
-    return;
-  }
+  // ✅ Prevent losing changes that are still pending in debounce
+  try{ Storage.flush(state); }catch(_){}
+
+  try{
+    if(__swReg && __swReg.waiting){
+      __swReg.waiting.postMessage({ type: "SKIP_WAITING" });
+      return;
+    }
+  }catch(_){}
+
+  // Fallback
   location.reload();
 }
-
 function openVersionModal(){
   const status = !navigator.onLine
     ? "You’re offline. Updates can’t be checked right now."
