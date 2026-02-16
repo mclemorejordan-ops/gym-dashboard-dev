@@ -7713,9 +7713,12 @@ function renderCategoryGroup(label, subtext, bodyNodes){
   });
 
   (bodyNodes || []).forEach(n => body.appendChild(n));
-
   return el("div", { class:"addExGroup" }, [head, body]);
 }
+
+// Always show the three top-level sections.
+// Default open Weightlifting; Cardio/Core stay closed unless user opens them.
+if(!openGroups.has(catKey("Weightlifting"))) openGroups.add(catKey("Weightlifting"));
 
 // Build Weightlifting → by primary muscle
 const wl = libs.weightlifting
@@ -7725,6 +7728,14 @@ const wl = libs.weightlifting
      (a.name||"").localeCompare(b.name||""))
   );
 
+// ✅ FIX: byMuscle must exist before we call Array.from(byMuscle.keys())
+const byMuscle = new Map();
+wl.forEach(x => {
+  const g = String(x.primaryMuscle || "Other").trim() || "Other";
+  if(!byMuscle.has(g)) byMuscle.set(g, []);
+  byMuscle.get(g).push(x);
+});
+
 // Standard muscle order (instead of alphabetical)
 const MUSCLE_ORDER = ["Chest","Back","Legs","Shoulders","Arms","Core","Full Body"];
 function muscleRank(name){
@@ -7732,14 +7743,14 @@ function muscleRank(name){
   return (i >= 0) ? i : 999; // unknowns go last
 }
 
-// Replace alphabetical with ranked sort (and keep alpha for ties/unknowns)
+// ✅ IMPORTANT: define muscleNames in this repaint() scope (so it is never undefined)
 const muscleNames = Array.from(byMuscle.keys()).sort((a,b) => {
   const ra = muscleRank(a), rb = muscleRank(b);
   if(ra !== rb) return ra - rb;
   return String(a).localeCompare(String(b));
 });
 
-// Nested nodes that go inside Weightlifting section
+// Nested nodes inside Weightlifting
 const weightliftingNodes = [];
 if(muscleNames.length){
   muscleNames.forEach(name => {
@@ -7750,42 +7761,39 @@ if(muscleNames.length){
   weightliftingNodes.push(el("div", { class:"note", text:"No weightlifting exercises found." }));
 }
 
-// Cardio list (flat rows inside Cardio section)
+// Cardio list (flat rows inside Cardio)
 const cardioItems = libs.cardio
   .map(x => ({...x, type:"cardio"}))
   .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
 
-const cardioNodes = cardioItems.length
-  ? cardioItems.map(x => renderRow("cardio", x, existingSet))
-  : [el("div", { class:"note", text:"No cardio exercises found." })];
+const cardioNodes = [];
+if(cardioItems.length){
+  const wrap = el("div", { class:"list" });
+  cardioItems.forEach(x => wrap.appendChild(renderRow("cardio", x, existingSet)));
+  cardioNodes.push(wrap);
+} else {
+  cardioNodes.push(el("div", { class:"note", text:"No cardio exercises found." }));
+}
 
-// Core list (flat rows inside Core section)
+// Core list (flat rows inside Core)
 const coreItems = libs.core
   .map(x => ({...x, type:"core"}))
   .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
 
-const coreNodes = coreItems.length
-  ? coreItems.map(x => renderRow("core", x, existingSet))
-  : [el("div", { class:"note", text:"No core exercises found." })];
+const coreNodes = [];
+if(coreItems.length){
+  const wrap = el("div", { class:"list" });
+  coreItems.forEach(x => wrap.appendChild(renderRow("core", x, existingSet)));
+  coreNodes.push(wrap);
+} else {
+  coreNodes.push(el("div", { class:"note", text:"No core exercises found." }));
+}
 
-// Default open behavior:
-// - Weightlifting opens if a muscle matched the day label OR if user hasn't opened anything yet
-const wlKey = catKey("Weightlifting");
-const cKey  = catKey("Cardio");
-const coKey = catKey("Core");
-
-// If a muscle auto-open was seeded earlier (openGroups has a muscle name),
-// ensure Weightlifting section itself is also open so the user can see it.
-if(muscleNames.some(m => openGroups.has(m))) openGroups.add(wlKey);
-
-// If nothing has been opened yet this session, open Weightlifting by default.
-if(openGroups.size === 0) openGroups.add(wlKey);
-
-// Render top-level sections
+// Render the three top-level sections in order
 scroller.appendChild(
   renderCategoryGroup(
     "Weightlifting",
-    `${wl.length} exercise${wl.length===1?"":"s"} • grouped by muscle`,
+    muscleNames.length ? `${muscleNames.length} muscle group${muscleNames.length===1?"":"s"}` : "0 muscle groups",
     weightliftingNodes
   )
 );
@@ -7809,13 +7817,10 @@ scroller.appendChild(
     coreNodes
   )
 );
-}
 
-      if(!muscleNames.length && !cardioItems.length && !coreItems.length){
-        scroller.appendChild(el("div", { class:"note", text:"No exercises yet. Seed the library or add exercises in Settings." }));
-      }
-
-      updateCount();
+// Final empty-state fallback (all categories empty)
+if(!muscleNames.length && !cardioItems.length && !coreItems.length){
+  scroller.appendChild(el("div", { class:"note", text:"No exercises yet. Seed the library or add exercises in Settings." }));
     }
 
     // Bottom bar content
