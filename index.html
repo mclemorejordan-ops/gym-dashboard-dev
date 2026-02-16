@@ -7476,14 +7476,29 @@ const addMultiBtn = el("button", {
       const btn = el("button", { class:"mini" }, ["Add"]);
 
       const metaParts = [];
-      if(type === "weightlifting"){
-        if(x.primaryMuscle) metaParts.push(String(x.primaryMuscle));
-        if(x.secondaryMuscle) metaParts.push(String(x.secondaryMuscle));
-        if(x.equipment) metaParts.push(String(x.equipment));
-      }else{
-        if(x.equipment) metaParts.push(String(x.equipment));
-      }
-      metaParts.push(ExerciseLibrary.typeLabel(type));
+
+if(type === "weightlifting"){
+  if(x.primaryMuscle) metaParts.push(String(x.primaryMuscle));
+  if(x.secondaryMuscle) metaParts.push(String(x.secondaryMuscle));
+  if(x.equipment) metaParts.push(String(x.equipment));
+  metaParts.push(ExerciseLibrary.typeLabel(type));
+}
+else if(type === "core"){
+  // Option A: "Core (Abs)" → "Abs"
+  const s = String(x.primaryMuscle || "").trim();
+  const m = s.match(/\((.*?)\)/);
+  const inner = (m && m[1]) ? m[1].trim() : "";
+  if(inner) metaParts.push(inner);
+  if(x.equipment) metaParts.push(String(x.equipment));
+  metaParts.push(ExerciseLibrary.typeLabel(type));
+}
+else if(type === "cardio"){
+  if(x.equipment) metaParts.push(String(x.equipment));
+  metaParts.push(ExerciseLibrary.typeLabel(type));
+}
+else{
+  metaParts.push(ExerciseLibrary.typeLabel(type));
+}
 
       row.appendChild(
         el("div", { class:"left" }, [
