@@ -3798,24 +3798,24 @@ function __getModalFocusables(sheet){
 }
 
 const Modal = {
-  open({ title, bodyNode, center = true, size = "md" }){
-    const host  = $("#modalHost");
-    const body  = $("#modalBody");
-    const sheet = host.querySelector(".sheet");
+open({ title, bodyNode, centered = false }){
+  const host = $("#modalHost");
+  const sheet = host.querySelector(".sheet");
 
-    // Remember last focused element (so we can restore on close)
-    __modalLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  $("#modalTitle").textContent = title || "Modal";
 
-    $("#modalTitle").textContent = title || "Modal";
+  const body = $("#modalBody");
+  body.innerHTML = "";
+  if(bodyNode) body.appendChild(bodyNode);
 
-    // Position mode
-    host.classList.toggle("center", !!center);
+  // 🔥 NEW: center support
+  host.classList.toggle("center", !!centered);
 
-    // Size mode
-    if(sheet){
-      sheet.classList.remove("sm", "md", "lg");
-      sheet.classList.add(size);
-    }
+  host.classList.add("show");
+  host.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modalOpen");
+},
+
 
     body.innerHTML = "";
     if(bodyNode) body.appendChild(bodyNode);
@@ -4230,6 +4230,7 @@ function openVersionModal(){
 
   Modal.open({
     title: "About",
+    centered: true,   // 🔥 this is the key
     bodyNode: el("div", { class:"grid" }, [
       el("div", { class:"note", text:`Version (version.json): ${__latestVersion ? "v"+__latestVersion : "—"}` }),
       el("div", { class:"note", text:`Applied on device: ${__appliedVersion ? "v"+__appliedVersion : "—"}` }),
