@@ -7642,16 +7642,17 @@ const addMultiBtn = el("button", {
           // Highlight each secondary muscle
           secs.forEach(sm => pushSecondary(sm));
         }else{
-          // Fallback: parse legacy "Primary / Secondary" format
-          if(rawPrimary.includes("/")){
-            const parsed = rawPrimary.split("/").slice(1).join("/").trim();
-            if(parsed) const bucket = normalizeBucket(x.primaryMuscle);
-metaNodes.push(
-  el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: parsed })
-);
+         // Fallback: parse legacy "Primary / Secondary" format
+if(rawPrimary.includes("/")){
+  const parsed = rawPrimary.split("/").slice(1).join("/").trim();
+  if(parsed){
+    const bucket = normalizeBucket(x.primaryMuscle);
+    metaNodes.push(
+      el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: parsed })
+    );
+  }
+}
 
-          }
-        }
 
         // Equipment
         if(x.equipment) pushText(x.equipment);
