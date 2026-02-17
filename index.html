@@ -2007,6 +2007,224 @@ const VERSION_BUILD_KEY    = "gymdash:latestBuildDate";   // optional build date
       },
       attendance: []
     });
+// ────────────────────────────
+// Auto Backup Vault (Rolling Snapshots - IndexedDB)
+// Keeps recent snapshots so users can restore if something goes wrong.
+// ────────────────────────────
+const EXPORT_META_KEY = "gymdash:lastExportAt";
+
+// tiny helpers (kept OUTSIDE state to avoid schema churn)
+function getLastExportAt(){
+  const v = Number(localStorage.getItem(EXPORT_META_KEY) || 0);
+  return Number.isFinite(v) ? v : 0;
+}
+function setLastExportAt(ts){
+  try{ localStorage.setItem(EXPORT_META_KEY, String(ts||Date.now())); }catch(_){}
+}
+
+const BackupVault = (() => {
+  const DB_NAME = "gymdash-backups";
+  const DB_VERSION = 1;
+  const STORE = "snapshots";
+  const META = "meta";
+
+  // policy
+  const KEEP = 20;                    // keep last N
+  const THROTTLE_MS = 5 * 60 * 1000;  // 5 min
+
+  let _dbP = null;
+
+  function _openDB(){
+    if(_dbP) return _dbP;
+    _dbP = new Promise((resolve, reject) => {
+      try{
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if(!db.objectStoreNames.contains(STORE)){
+            const os = db.createObjectStore(STORE, { keyPath: "id" });
+            os.createIndex("createdAt", "createdAt");
+          }
+          if(!db.objectStoreNames.contains(META)){
+            db.createObjectStore(META, { keyPath: "k" });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error("IndexedDB open failed"));
+      }catch(e){
+        reject(e);
+      }
+    });
+    return _dbP;
+  }
+
+  async function _getMeta(db, k){
+    return new Promise((resolve) => {
+      try{
+        const tx = db.transaction(META, "readonly");
+        const st = tx.objectStore(META);
+        const req = st.get(k);
+        req.onsuccess = () => resolve(req.result ? req.result.v : null);
+        req.onerror = () => resolve(null);
+      }catch(_){ resolve(null); }
+    });
+  }
+
+  async function _setMeta(db, k, v){
+    return new Promise((resolve) => {
+      try{
+        const tx = db.transaction(META, "readwrite");
+        tx.objectStore(META).put({ k, v });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      }catch(_){ resolve(false); }
+    });
+  }
+
+  async function _putSnapshot(db, snap){
+    return new Promise((resolve) => {
+      try{
+        const tx = db.transaction(STORE, "readwrite");
+        tx.objectStore(STORE).put(snap);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      }catch(_){ resolve(false); }
+    });
+  }
+
+  async function _listSnapshots(db, limit=KEEP){
+    return new Promise((resolve) => {
+      try{
+        const out = [];
+        const tx = db.transaction(STORE, "readonly");
+        const idx = tx.objectStore(STORE).index("createdAt");
+        const req = idx.openCursor(null, "prev"); // newest first
+        req.onsuccess = () => {
+          const cur = req.result;
+          if(!cur || out.length >= limit){
+            resolve(out);
+            return;
+          }
+          out.push(cur.value);
+          cur.continue();
+        };
+        req.onerror = () => resolve(out);
+      }catch(_){ resolve([]); }
+    });
+  }
+
+  async function _deleteByIds(db, ids){
+    return new Promise((resolve) => {
+      try{
+        const tx = db.transaction(STORE, "readwrite");
+        const st = tx.objectStore(STORE);
+        ids.forEach(id => { try{ st.delete(id); }catch(_){ } });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      }catch(_){ resolve(false); }
+    });
+  }
+
+  async function _prune(db){
+    const all = await _listSnapshots(db, 9999);
+    if(all.length <= KEEP) return;
+    const excess = all.slice(KEEP);
+    const ids = excess.map(s => s.id);
+    await _deleteByIds(db, ids);
+  }
+
+  function _safeCounts(s){
+    return {
+      routines: (s?.routines || []).length,
+      workouts: (s?.logs?.workouts || []).length,
+      weight: (s?.logs?.weight || []).length,
+      protein: (s?.logs?.protein || []).length,
+      attendance: (s?.attendance || []).length
+    };
+  }
+
+  async function _createSnapshot(s, reason){
+    const createdAt = Date.now();
+    const snap = {
+      id: `auto_${createdAt}_${Math.random().toString(16).slice(2)}`,
+      createdAt,
+      reason: String(reason || "auto"),
+      schemaVersion: Number(s?.schemaVersion || 0),
+      counts: _safeCounts(s),
+      state: s
+    };
+    return snap;
+  }
+
+  // public
+  async function maybeSnapshot(s, reason="save"){
+    try{
+      const db = await _openDB();
+      const last = Number(await _getMeta(db, "lastSnapshotAt") || 0) || 0;
+      const now = Date.now();
+      if(now - last < THROTTLE_MS) return false;
+
+      const snap = await _createSnapshot(s, reason);
+      const ok = await _putSnapshot(db, snap);
+      if(ok){
+        await _setMeta(db, "lastSnapshotAt", now);
+        await _prune(db);
+      }
+      return ok;
+    }catch(_){
+      return false;
+    }
+  }
+
+  async function forceSnapshot(s, reason="force"){
+    try{
+      const db = await _openDB();
+      const snap = await _createSnapshot(s, reason);
+      const ok = await _putSnapshot(db, snap);
+      if(ok){
+        await _setMeta(db, "lastSnapshotAt", Date.now());
+        await _prune(db);
+      }
+      return ok;
+    }catch(_){
+      return false;
+    }
+  }
+
+  async function list(limit=KEEP){
+    try{
+      const db = await _openDB();
+      return await _listSnapshots(db, limit);
+    }catch(_){ return []; }
+  }
+
+  async function get(id){
+    try{
+      const db = await _openDB();
+      return await new Promise((resolve) => {
+        const tx = db.transaction(STORE, "readonly");
+        const req = tx.objectStore(STORE).get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    }catch(_){ return null; }
+  }
+
+  async function clear(){
+    try{
+      const db = await _openDB();
+      return await new Promise((resolve) => {
+        const tx = db.transaction([STORE, META], "readwrite");
+        tx.objectStore(STORE).clear();
+        tx.objectStore(META).put({ k:"lastSnapshotAt", v:0 });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      });
+    }catch(_){ return false; }
+  }
+
+  return { maybeSnapshot, forceSnapshot, list, get, clear, KEEP, THROTTLE_MS };
+})();
 
 const Storage = {
   load(){
@@ -2026,12 +2244,15 @@ const Storage = {
   save(state){
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      // Auto-snapshot (non-blocking) — protects against bad imports/updates/resets
+      try{ BackupVault.maybeSnapshot(state, "save"); }catch(_){}
     }catch(e){
       // QuotaExceededError or storage blocked in private modes
       console.warn("Storage.save failed:", e);
       handleStorageWriteError(e);
     }
   },
+
 
   reset(){
     try{
@@ -2088,6 +2309,9 @@ function validateImportedState(obj){
 }
 
 function importBackupJSON(jsonText){
+  // Safety net: snapshot current state BEFORE overwrite (best-effort, non-blocking)
+  try{ BackupVault.forceSnapshot(state, "pre-import"); }catch(_){}
+
   let parsed;
   try{
     parsed = JSON.parse(jsonText);
@@ -2100,6 +2324,9 @@ function importBackupJSON(jsonText){
   // Overwrite local storage + live state
   state = importedState;
   Storage.save(state);
+
+  // Snapshot the newly imported state as well (best-effort)
+  try{ BackupVault.forceSnapshot(state, "post-import"); }catch(_){}
 }
 
 // ✅ failsafe: prevent Storage.save from crashing if handler is missing
@@ -4449,6 +4676,7 @@ else root.appendChild(el("div", { class:"card" }, [
                         el("button", {
                           class:"btn danger",
                           onClick: () => {
+                            try{ BackupVault.forceSnapshot(state, "pre-reset"); }catch(_){ }
                             Storage.reset();
                             state = Storage.load();
                             Modal.close();
@@ -6804,7 +7032,28 @@ state.profile.hideRestDays = !!hideRestDays;
 
         const backupBody = el("div", {}, [
           el("div", { class:"note", text:"Export your full app data as JSON. Import will overwrite your current data in this browser." }),
+
+          // ───────────────
+          // Export reminder
+          // ───────────────
           el("div", { style:"height:10px" }),
+          (() => {
+            const last = (typeof getLastExportAt === "function") ? getLastExportAt() : 0;
+            const never = !last || !Number.isFinite(last);
+            const label = never
+              ? "Last file backup: Never exported"
+              : `Last file backup: ${new Date(last).toLocaleString()}`;
+            const sub = never
+              ? "Recommendation: export a file backup occasionally (helps if iOS clears storage / app is deleted)."
+              : "Tip: auto backups protect against mistakes/bugs; file backups protect against phone/browser storage being wiped.";
+            return el("div", { class:"note", text: `${label}\n${sub}` });
+          })(),
+
+          el("div", { style:"height:10px" }),
+
+          // ───────────────
+          // Export
+          // ───────────────
           el("div", { class:"btnrow" }, [
             el("button", {
               class:"btn primary",
@@ -6813,6 +7062,10 @@ state.profile.hideRestDays = !!hideRestDays;
                   const txt = exportBackupJSON();
                   const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
                   downloadTextFile(`gym-dashboard-backup_${stamp}.json`, txt);
+
+                  // ✅ track export for reminder UI (best-effort)
+                  try{ if(typeof setLastExportAt === "function") setLastExportAt(Date.now()); }catch(_){}
+                  showToast("Backup exported");
                 }catch(e){
                   Modal.open({
                     title:"Export failed",
@@ -6825,6 +7078,7 @@ state.profile.hideRestDays = !!hideRestDays;
                 }
               }
             }, ["Export JSON backup"]),
+
             el("button", {
               class:"btn",
               onClick: () => {
@@ -6843,6 +7097,127 @@ state.profile.hideRestDays = !!hideRestDays;
               }
             }, ["View JSON"])
           ]),
+
+          // ───────────────
+          // Auto backups (rolling snapshots)
+          // ───────────────
+          el("div", { style:"height:14px" }),
+          el("div", { class:"note", text:"Auto backups (recommended): the app keeps rolling snapshots so you can restore if something breaks." }),
+          el("div", { style:"height:8px" }),
+
+          el("div", { class:"btnrow" }, [
+            el("button", {
+              class:"btn",
+              onClick: async () => {
+                try{
+                  if(typeof BackupVault === "undefined" || !BackupVault.list){
+                    Modal.open({
+                      title: "Auto backups unavailable",
+                      bodyNode: el("div", {}, [
+                        el("div", { class:"note", text:"Auto backups are not enabled in this build." }),
+                        el("div", { style:"height:12px" }),
+                        el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+                      ])
+                    });
+                    return;
+                  }
+
+                  const snaps = await BackupVault.list(20);
+
+                  const listNode = (snaps && snaps.length)
+                    ? el("div", { style:"display:grid; gap:10px;" }, snaps.map(snap => {
+                        const dt = new Date(Number(snap.createdAt || 0) || Date.now()).toLocaleString();
+                        const c = snap.counts || {};
+                        const countsLine = `Routines: ${c.routines ?? "—"} • Workouts: ${c.workouts ?? "—"} • Weight: ${c.weight ?? "—"} • Protein: ${c.protein ?? "—"} • Attendance: ${c.attendance ?? "—"}`;
+
+                        return el("div", { class:"setLink", onClick: () => {
+                          confirmModal({
+                            title: "Restore auto backup",
+                            note: `Restore snapshot from:\n${dt}\n\n${countsLine}\n\nThis will overwrite your current data in this browser.`,
+                            confirmText: "Restore",
+                            danger: true,
+                            onConfirm: () => {
+                              try{
+                                const restored = migrateState(snap.state);
+                                state = restored;
+                                Storage.save(state);
+                                showToast("Auto backup restored");
+                                Modal.close();
+                                navigate("home");
+                              }catch(e){
+                                Modal.open({
+                                  title:"Restore failed",
+                                  bodyNode: el("div", {}, [
+                                    el("div", { class:"note", text: e.message || "Could not restore this snapshot." }),
+                                    el("div", { style:"height:12px" }),
+                                    el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+                                  ])
+                                });
+                              }
+                            }
+                          });
+                        }}, [
+                          el("div", { class:"l" }, [
+                            el("div", { class:"a", text: dt }),
+                            el("div", { class:"b", text: countsLine })
+                          ]),
+                          el("div", { style:"opacity:.8", text:"→" })
+                        ]);
+                      }))
+                    : el("div", { class:"note", text:"No auto backups found yet. They are created automatically as you use the app (throttled)." });
+
+                  Modal.open({
+                    title: "Restore from Auto Backup",
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"note", text:"Pick a snapshot to restore. This is a safety net for bad imports, bugs, or accidental clears." }),
+                      el("div", { style:"height:10px" }),
+                      listNode,
+                      el("div", { style:"height:12px" }),
+                      el("button", { class:"btn primary", onClick: Modal.close }, ["Done"])
+                    ])
+                  });
+
+                }catch(e){
+                  Modal.open({
+                    title:"Could not load auto backups",
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"note", text: e.message || "Could not read auto backups." }),
+                      el("div", { style:"height:12px" }),
+                      el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+                    ])
+                  });
+                }
+              }
+            }, ["Restore from Auto Backup"]),
+
+            el("button", {
+              class:"btn danger",
+              onClick: () => {
+                confirmModal({
+                  title: "Clear auto backups",
+                  note: "Deletes ALL auto backup snapshots stored on this device. This cannot be undone.",
+                  confirmText: "Clear auto backups",
+                  danger: true,
+                  onConfirm: async () => {
+                    try{
+                      if(typeof BackupVault !== "undefined" && BackupVault.clear){
+                        await BackupVault.clear();
+                        showToast("Auto backups cleared");
+                      }else{
+                        showToast("Auto backups not available");
+                      }
+                    }catch(_){
+                      showToast("Could not clear auto backups");
+                    }
+                  }
+                });
+              }
+            }, ["Clear Auto Backups"])
+          ]),
+
+          // ───────────────
+          // Import options
+          // ───────────────
           el("div", { style:"height:14px" }),
           el("div", { class:"note", text:"Import options:" }),
           el("div", { style:"height:8px" }),
@@ -6851,9 +7226,9 @@ state.profile.hideRestDays = !!hideRestDays;
             el("button", { class:"btn danger", onClick: openImportFileModal }, ["Import (upload file)"])
           ]),
           el("div", { style:"height:10px" }),
-          el("div", { class:"note", text:"Tip: Export a backup before you import." })
+          el("div", { class:"note", text:"Tip: Export a file backup occasionally. Auto backups help you recover from mistakes/bugs, but a file backup is safer if iOS clears storage." })
         ]);
-
+           
         const dataBody = el("div", {}, [
           el("div", { class:"note", text:"Repair tools and targeted clears." }),
           el("div", { style:"height:10px" }),
