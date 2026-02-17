@@ -397,7 +397,22 @@ select.glassSelect{
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
+/* Fix white iOS select background + enforce glass style */
+select,
+select.glassSelect{
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,.08) !important;
+  color: rgba(255,255,255,.92) !important;
+  border: 1px solid rgba(255,255,255,.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
 
+/* Fix dropdown option text visibility */
+select option{
+  color: #000;   /* iOS dropdown list must stay readable */
+}
     .toggle{
       display:flex;
       align-items:center;
