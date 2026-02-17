@@ -2788,10 +2788,13 @@ lib.core = [
   { id: uid("ex"), type:"core", name:"Hollow Body Hold", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
   { id: uid("ex"), type:"core", name:"Dragon Flag", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
   { id: uid("ex"), type:"core", name:"Medicine Ball Slam", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Medicine Ball Russian Twist", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() }
-  { id: uid("ex"), type:"weightlifting", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Medicine Ball Russian Twist", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() },
+
+  // Cable (Core) — keep these in Core (not Weightlifting)
+  { id: uid("ex"), type:"core", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
 ];
+
     // ────────────────────────────
 // Seed: Secondary muscles + Cardio primary muscle
 // (drives Add Exercise meta line + search + tags)
