@@ -6980,98 +6980,102 @@ state.profile.hideRestDays = !!hideRestDays;
             }, ["Reset local data"])
           ])
         ]);
-        // --- Support / Report an issue (Formspree) ---
+      // --- Support / Report an issue (Formspree) ---
+const supportForm = el("form", {
+  action: "https://formspree.io/f/xreakwzg",
+  method: "POST"
+}, [
+  el("label", {}, [
+    el("span", { text:"Type" }),
+    el("select", { class:"glassSelect", name:"issue_type" }, [
+      el("option", { value:"bug", text:"Bug" }),
+      el("option", { value:"feature", text:"Feature request" }),
+      el("option", { value:"data", text:"Data issue" }),
+      el("option", { value:"other", text:"Other" })
+    ])
+  ]),
+
+  el("div", { style:"height:10px" }),
+
+  el("label", {}, [
+    el("span", { text:"Your email (optional)" }),
+    el("input", { name:"email", type:"email", placeholder:"name@email.com", autocomplete:"email" })
+  ]),
+
+  el("div", { style:"height:10px" }),
+
+  el("label", {}, [
+    el("span", { text:"Subject" }),
+    el("input", { name:"subject", type:"text", placeholder:"Short summary" })
+  ]),
+
+  el("div", { style:"height:10px" }),
+
+  el("label", {}, [
+    el("span", { text:"Message" }),
+    el("textarea", {
+      name:"message",
+      placeholder:"What happened? Steps to reproduce? What did you expect?",
+      style:"width:100%; min-height:160px; border-radius:14px; padding:12px; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: rgba(255,255,255,.92); font-size:12px; outline:none; resize:vertical;"
+    })
+  ]),
+
+  el("div", { style:"height:12px" }),
+
+  el("div", { class:"btnrow" }, [
+    el("button", { class:"btn primary", type:"submit" }, ["Send report"]),
+    el("button", {
+      class:"btn",
+      type:"button",
+      onClick: (ev) => {
+        const form = ev.target.closest("form");
+        if(form) form.reset();
+      }
+    }, ["Clear"])
+  ])
+]);
+
+// ✅ Attach submit handler using the real DOM API (reliable)
+supportForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const form = e.currentTarget;
+  const fd = new FormData(form);
+
+  // Auto-attach diagnostics (safe + helpful)
+  fd.set("app_version_latest", String(__latestVersion || ""));
+  fd.set("app_version_applied", String(__appliedVersion || ""));
+  fd.set("route", String(currentRoute || ""));
+  fd.set("user_agent", String(navigator.userAgent || ""));
+  fd.set("ts", new Date().toISOString());
+
+  try{
+    const r = await fetch(form.action, {
+      method: "POST",
+      body: fd,
+      headers: { "Accept": "application/json" }
+    });
+
+    if(r.ok){
+      form.reset();
+      showToast("Sent — thank you!");
+    }else{
+      let msg = "Could not send.";
+      try{
+        const j = await r.json();
+        if(j?.errors?.[0]?.message) msg = j.errors[0].message;
+      }catch(_){}
+      showToast(msg);
+    }
+  }catch(_){
+    showToast("Network error — try again.");
+  }
+});
+
 const supportBody = el("div", {}, [
   el("div", { class:"note", text:"Report a bug or request a feature. This sends a message directly to the developer." }),
   el("div", { style:"height:10px" }),
-
-  el("form", {
-    action: "https://formspree.io/f/xreakwzg",
-    method: "POST",
-    onSubmit: (e) => {
-      e.preventDefault();
-
-      const form = e.target;
-      const fd = new FormData(form);
-
-      // Auto-attach diagnostics (safe + helpful)
-      fd.set("app_version_latest", (__latestVersion || "").toString());
-      fd.set("app_version_applied", (__appliedVersion || "").toString());
-      fd.set("route", (currentRoute || "").toString());
-      fd.set("user_agent", (navigator.userAgent || "").toString());
-      fd.set("ts", new Date().toISOString());
-
-      fetch(form.action, {
-        method: "POST",
-        body: fd,
-        headers: { "Accept": "application/json" }
-      })
-      .then(async (r) => {
-        if(r.ok){
-          form.reset();
-          showToast("Sent — thank you!");
-        }else{
-          let msg = "Could not send.";
-          try{
-            const j = await r.json();
-            if(j?.errors?.[0]?.message) msg = j.errors[0].message;
-          }catch(_){}
-          showToast(msg);
-        }
-      })
-      .catch(() => showToast("Network error — try again."));
-    }
-  }, [
-    el("label", {}, [
-      el("span", { text:"Type" }),
-      el("select", { class:"glassSelect", name:"issue_type" }, [
-        el("option", { value:"bug", text:"Bug" }),
-        el("option", { value:"feature", text:"Feature request" }),
-        el("option", { value:"data", text:"Data issue" }),
-        el("option", { value:"other", text:"Other" })
-      ])
-    ]),
-
-    el("div", { style:"height:10px" }),
-
-    el("label", {}, [
-      el("span", { text:"Your email (optional)" }),
-      el("input", { name:"email", type:"email", placeholder:"name@email.com", autocomplete:"email" })
-    ]),
-
-    el("div", { style:"height:10px" }),
-
-    el("label", {}, [
-      el("span", { text:"Subject" }),
-      el("input", { name:"subject", type:"text", placeholder:"Short summary" })
-    ]),
-
-    el("div", { style:"height:10px" }),
-
-    el("label", {}, [
-      el("span", { text:"Message" }),
-      el("textarea", {
-        name:"message",
-        placeholder:"What happened? Steps to reproduce? What did you expect?",
-        style:"width:100%; min-height: 160px; border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: rgba(255,255,255,.92); font-size: 12px; outline:none; resize: vertical;"
-      })
-    ]),
-
-    el("div", { style:"height:12px" }),
-
-    el("div", { class:"btnrow" }, [
-      el("button", { class:"btn primary", type:"submit" }, ["Send report"]),
-      el("button", {
-        class:"btn",
-        type:"button",
-        onClick: (ev) => {
-          // ✅ clear safely (no undefined 'e')
-          const form = ev.target.closest("form");
-          if(form) form.reset();
-        }
-      }, ["Clear"])
-    ])
-  ])
+  supportForm
 ]);
         // --- Search Bar ---
         const searchInput = el("input", {
