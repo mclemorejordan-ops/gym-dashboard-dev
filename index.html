@@ -3798,30 +3798,31 @@ function __getModalFocusables(sheet){
 }
 
 const Modal = {
-  open({ title, bodyNode, centered = false }){
+  open({ title, bodyNode, center = true, size = "md" }){
     const host  = $("#modalHost");
-    const sheet = host.querySelector(".sheet");
     const body  = $("#modalBody");
+    const sheet = host.querySelector(".sheet");
 
-    // Remember last focused element (restore on close)
-    __modalLastFocus = (document.activeElement instanceof HTMLElement)
-      ? document.activeElement
-      : null;
+    // Remember last focused element (so we can restore on close)
+    __modalLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     $("#modalTitle").textContent = title || "Modal";
 
-    // Content
+    // Position mode
+    host.classList.toggle("center", !!center);
+
+    // Size mode
+    if(sheet){
+      sheet.classList.remove("sm", "md", "lg");
+      sheet.classList.add(size);
+    }
+
     body.innerHTML = "";
     if(bodyNode) body.appendChild(bodyNode);
 
-    // ✅ Center support (uses your existing CSS: .modalHost.center)
-    host.classList.toggle("center", !!centered);
-
-    // Show
     host.classList.add("show");
     host.setAttribute("aria-hidden", "false");
 
-    // Lock background scroll (your existing helpers)
     lockBodyScroll();
 
     // Focus management: move focus into modal (prefer Close button)
@@ -3832,7 +3833,7 @@ const Modal = {
     // Ensure sheet is focusable if nothing else is
     if(sheet && !sheet.hasAttribute("tabindex")) sheet.setAttribute("tabindex", "-1");
 
-    // Next tick so DOM is ready
+    // Use next tick so DOM is fully ready
     setTimeout(() => {
       try { first && first.focus && first.focus(); } catch(e){}
     }, 0);
@@ -3841,6 +3842,7 @@ const Modal = {
     __modalKeydownHandler = (e) => {
       if(!host.classList.contains("show")) return;
 
+      // ESC should still work via your existing listeners, but keep safe here too
       if(e.key === "Escape"){
         e.preventDefault();
         Modal.close();
@@ -3881,15 +3883,18 @@ const Modal = {
   close(){
     const host  = $("#modalHost");
     const sheet = host.querySelector(".sheet");
-    const body  = $("#modalBody");
 
     host.classList.remove("show");
     host.classList.remove("center");
     host.setAttribute("aria-hidden", "true");
 
-    body.innerHTML = "";
+    $("#modalBody").innerHTML = "";
 
-    // Unlock background scroll
+    // Reset size classes
+    if(sheet){
+      sheet.classList.remove("sm", "md", "lg");
+    }
+
     unlockBodyScroll();
 
     // Remove keydown trap
@@ -3898,18 +3903,11 @@ const Modal = {
       __modalKeydownHandler = null;
     }
 
-    // Restore focus
+    // Restore focus back to what opened the modal (if still in DOM)
     if(__modalLastFocus && document.contains(__modalLastFocus)){
       try { __modalLastFocus.focus(); } catch(e){}
     }
     __modalLastFocus = null;
-
-    // Optional: keep your old class if you used it elsewhere
-    document.body.classList.remove("modalOpen");
-
-    // Optional: remove tabindex if you want to keep sheet pristine
-    // (safe to leave as-is)
-    // if(sheet) sheet.removeAttribute("tabindex");
   }
 };
     (function bindModalControls(){
@@ -4232,7 +4230,6 @@ function openVersionModal(){
 
   Modal.open({
     title: "About",
-    centered: true,   // 🔥 this is the key
     bodyNode: el("div", { class:"grid" }, [
       el("div", { class:"note", text:`Version (version.json): ${__latestVersion ? "v"+__latestVersion : "—"}` }),
       el("div", { class:"note", text:`Applied on device: ${__appliedVersion ? "v"+__appliedVersion : "—"}` }),
@@ -7605,90 +7602,84 @@ const addMultiBtn = el("button", {
     }
 
         function renderRow(type, x, existingSet){
-          const key = `${type}:${x.id}`;
-          const alreadyInDay = existingSet.has(key);
+      const key = `${type}:${x.id}`;
+      const alreadyInDay = existingSet.has(key);
 
-          const row = el("div", { class:"item addExRow" });
-          const btn = el("button", { class:"mini" }, ["Add"]);
+      const row = el("div", { class:"item addExRow" });
+      const btn = el("button", { class:"mini" }, ["Add"]);
 
-          // Build meta as DOM nodes so we can highlight secondary muscles
-          const metaNodes = [];
+      // Build meta as DOM nodes so we can highlight secondary muscles
+      const metaNodes = [];
 
-          // Helpers
-          const pushSep = () => metaNodes.length ? metaNodes.push(document.createTextNode(" • ")) : null;
+      // Helpers
+      const pushSep = () => metaNodes.length ? metaNodes.push(document.createTextNode(" • ")) : null;
+      const pushText = (t) => {
+        const s = String(t || "").trim();
+        if(!s) return;
+        pushSep();
+        metaNodes.push(document.createTextNode(s));
+      };
+        const pushSecondary = (t) => {
+        const s = String(t || "").trim();
+        if(!s) return;
+        pushSep();
+        const bucket = normalizeBucket(x.primaryMuscle);
+        metaNodes.push(
+          el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: s })
+        );
+      };
 
-          const pushText = (t) => {
-            const s = String(t || "").trim();
-            if(!s) return;
-            pushSep();
-            metaNodes.push(document.createTextNode(s));
-          };
+      if(type === "weightlifting"){
+        // Primary muscle (support legacy "Chest / Triceps" formatting)
+        const rawPrimary = String(x.primaryMuscle || "").trim();
+        const primaryOnly = rawPrimary.includes("/") ? rawPrimary.split("/")[0].trim() : rawPrimary;
+        if(primaryOnly) pushText(primaryOnly);
 
-          const pushSecondary = (t) => {
-            const s = String(t || "").trim();
-            if(!s) return;
-            pushSep();
-            const bucket = normalizeBucket(x.primaryMuscle);
-            metaNodes.push(
-              el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: s })
-            );
-          };
+        // Secondary muscles (preferred: array)
+        const secs = Array.isArray(x.secondaryMuscles) ? x.secondaryMuscles.filter(Boolean) : [];
+        if(secs.length){
+          // Highlight each secondary muscle
+          secs.forEach(sm => pushSecondary(sm));
+        }else{
+          // Fallback: parse legacy "Primary / Secondary" format
+          if(rawPrimary.includes("/")){
+            const parsed = rawPrimary.split("/").slice(1).join("/").trim();
+            if(parsed) const bucket = normalizeBucket(x.primaryMuscle);
+metaNodes.push(
+  el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: parsed })
+);
 
-          if(type === "weightlifting"){
-            // Primary muscle (support legacy "Chest / Triceps" formatting)
-            const rawPrimary = String(x.primaryMuscle || "").trim();
-            const primaryOnly = rawPrimary.includes("/") ? rawPrimary.split("/")[0].trim() : rawPrimary;
-            if(primaryOnly) pushText(primaryOnly);
-
-            // Secondary muscles (preferred: array)
-            const secs = Array.isArray(x.secondaryMuscles) ? x.secondaryMuscles.filter(Boolean) : [];
-
-            if(secs.length){
-              // Highlight each secondary muscle
-              secs.forEach(sm => pushSecondary(sm));
-            } else {
-              // Fallback: parse legacy "Primary / Secondary" format
-              if(rawPrimary.includes("/")){
-                const parsed = rawPrimary.split("/").slice(1).join("/").trim();
-                if(parsed){
-                  const bucket = normalizeBucket(x.primaryMuscle);
-                  metaNodes.push(
-                    el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: parsed })
-                  );
-                }
-              }
-            }
-
-            // Equipment
-            if(x.equipment) pushText(x.equipment);
-
-          } else {
-            // Cardio/Core keep current meta style
-            if(x.equipment) pushText(x.equipment);
           }
-
-          // Type label always last
-          pushText(ExerciseLibrary.typeLabel(type));
-
-          row.appendChild(
-            el("div", { class:"left" }, [
-              el("div", { class:"name", text:x.name }),
-              el("div", { class:"meta" }, metaNodes.length ? metaNodes : [document.createTextNode("")])
-            ])
-          );
-
-          row.appendChild(el("div", { class:"actions" }, [ btn ]));
-
-          if(alreadyInDay){
-            row.classList.add("selected", "disabledRow");
-            btn.classList.add("added", "disabledBtn");
-            btn.textContent = "Added ✓";
-            btn.disabled = true;
-          }
-
-          btn.addEventListener("click", () => addExercise(type, x.id, key, btn, row));
-          return row;
         }
+
+        // Equipment
+        if(x.equipment) pushText(x.equipment);
+      }else{
+        // Cardio/Core keep current meta style
+        if(x.equipment) pushText(x.equipment);
+      }
+
+      // Type label always last
+      pushText(ExerciseLibrary.typeLabel(type));
+
+      row.appendChild(
+        el("div", { class:"left" }, [
+          el("div", { class:"name", text:x.name }),
+          el("div", { class:"meta" }, metaNodes.length ? metaNodes : [document.createTextNode("")])
+        ])
+      );
+      row.appendChild(el("div", { class:"actions" }, [ btn ]));
+
+      if(alreadyInDay){
+        row.classList.add("selected", "disabledRow");
+        btn.classList.add("added", "disabledBtn");
+        btn.textContent = "Added ✓";
+        btn.disabled = true;
+      }
+
+      btn.addEventListener("click", () => addExercise(type, x.id, key, btn, row));
+      return row;
+    }
 
     function toggleGroup(name){
       if(openGroups.has(name)) openGroups.delete(name);
