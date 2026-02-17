@@ -7434,7 +7434,7 @@ const addMultiBtn = el("button", {
     });
   }
 
-function openAddExercise(routineId, dayId, opts={}){
+  function openAddExercise(routineId, dayId, opts={}){
     // Compact, phone-first "Add Exercise" modal
     // - Active day context (top)
     // - Fixed search bar
@@ -7467,26 +7467,49 @@ function openAddExercise(routineId, dayId, opts={}){
     // Collapsed/expanded groups (session only)
     const openGroups = new Set();
 
-    // Normalize primary muscle labels so we don't create split groups like "Back / Biceps"
-    // (we'll handle true secondary-muscle grouping later).
-    function primaryGroupLabel(raw){
-      const s = String(raw || "").trim();
-      if(!s) return "Other";
-      // Take the first segment before common separators
-      // e.g. "Back / Biceps" -> "Back", "Biceps / Forearms" -> "Biceps"
-      return s.split("/")[0].split(",")[0].trim() || "Other";
+    // ✅ Primary muscle normalization (Option B)
+    // - If primary is "X / Y", use "X"
+    // - Bucket certain primaries into Arms / Legs / Shoulders
+    function normalizePrimaryMuscle(raw){
+      const src = String(raw || "").trim();
+      if(!src) return "Other";
+
+      // Strip anything after first "/"
+      const first = src.split("/")[0].trim();
+
+      const k = normName(first);
+
+      // Arms buckets
+      if(k === "biceps" || k === "forearms" || k === "triceps") return "Arms";
+
+      // Legs buckets (including explicit "legs (...)" variants)
+      if(
+        k === "calves" ||
+        k === "glutes" ||
+        k === "hamstrings" ||
+        k === "quads" ||
+        k === "adductors" ||
+        k === "legs (adductors)" ||
+        k === "legs (hamstrings)" ||
+        k === "legs (quads)"
+      ) return "Legs";
+
+      // Shoulders buckets
+      if(k === "traps") return "Shoulders";
+      if(k === "shoulder" || k === "shoulders") return "Shoulders";
+
+      // Keep as-is (but stripped)
+      return first || "Other";
     }
 
     // If day label hints a muscle, open that group by default
     (function seedOpenGroupFromDay(){
       const hint = normName(dayLabel || "");
       const mus = (state.exerciseLibrary?.weightlifting || [])
-        .map(x => primaryGroupLabel(x.primaryMuscle))
+        .map(x => normalizePrimaryMuscle(x.primaryMuscle))
         .filter(Boolean);
 
-      // Deduplicate while preserving order
-      const uniq = Array.from(new Set(mus));
-      const match = uniq.find(m => hint && hint.includes(normName(m)));
+      const match = mus.find(m => hint && hint.includes(normName(m)));
       if(match) openGroups.add(match);
     })();
 
@@ -7554,7 +7577,8 @@ function openAddExercise(routineId, dayId, opts={}){
 
       const metaParts = [];
       if(type === "weightlifting"){
-        if(x.primaryMuscle) metaParts.push(primaryGroupLabel(x.primaryMuscle));
+        const pm = normalizePrimaryMuscle(x.primaryMuscle);
+        if(pm) metaParts.push(String(pm));
         if(x.equipment) metaParts.push(String(x.equipment));
       }else{
         if(x.equipment) metaParts.push(String(x.equipment));
@@ -7650,17 +7674,17 @@ function openAddExercise(routineId, dayId, opts={}){
         return;
       }
 
-      // Weightlifting grouped by PRIMARY muscle only (tap to expand)
+      // ✅ Weightlifting grouped by NORMALIZED primaryMuscle
       const wl = libs.weightlifting
-        .map(x => ({...x, type:"weightlifting"}))
+        .map(x => ({...x, type:"weightlifting", primaryMuscle: normalizePrimaryMuscle(x.primaryMuscle)}))
         .sort((a,b) =>
-          (primaryGroupLabel(a.primaryMuscle).localeCompare(primaryGroupLabel(b.primaryMuscle)) ||
+          (String(a.primaryMuscle||"").localeCompare(String(b.primaryMuscle||"")) ||
            (a.name||"").localeCompare(b.name||""))
         );
 
       const byMuscle = new Map();
       wl.forEach(x => {
-        const g = primaryGroupLabel(x.primaryMuscle);
+        const g = String(x.primaryMuscle || "Other").trim() || "Other";
         if(!byMuscle.has(g)) byMuscle.set(g, []);
         byMuscle.get(g).push(x);
       });
