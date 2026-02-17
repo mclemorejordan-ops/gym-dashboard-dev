@@ -90,7 +90,7 @@ Example:
 
 ``` json
 {
-  "version": "2.0",
+  "version": "2.6",
   "buildDate": "2026-02-16",
   "notes": ["App has officially completed build"]
 }
