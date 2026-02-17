@@ -929,6 +929,18 @@ input, select, textarea{
       border-radius: 14px;
     }
     .addExRow .name{ max-width: 64vw; }
+   
+    /* Secondary muscle highlight in Add Exercise meta line */
+    .addExRow .meta .secMuscle{
+      display:inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 900;
+      letter-spacing: .1px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      transform: translateY(-.5px);
+    }
 
     .addExBottom{
       display:flex;
@@ -7526,26 +7538,64 @@ const addMultiBtn = el("button", {
       }
     }
 
-    function renderRow(type, x, existingSet){
+        function renderRow(type, x, existingSet){
       const key = `${type}:${x.id}`;
       const alreadyInDay = existingSet.has(key);
 
       const row = el("div", { class:"item addExRow" });
       const btn = el("button", { class:"mini" }, ["Add"]);
 
-      const metaParts = [];
+      // Build meta as DOM nodes so we can highlight secondary muscles
+      const metaNodes = [];
+
+      // Helpers
+      const pushSep = () => metaNodes.length ? metaNodes.push(document.createTextNode(" • ")) : null;
+      const pushText = (t) => {
+        const s = String(t || "").trim();
+        if(!s) return;
+        pushSep();
+        metaNodes.push(document.createTextNode(s));
+      };
+      const pushSecondary = (t) => {
+        const s = String(t || "").trim();
+        if(!s) return;
+        pushSep();
+        metaNodes.push(el("span", { class:"secMuscle", text: s }));
+      };
+
       if(type === "weightlifting"){
-        if(x.primaryMuscle) metaParts.push(String(x.primaryMuscle));
-        if(x.equipment) metaParts.push(String(x.equipment));
+        // Primary muscle (support legacy "Chest / Triceps" formatting)
+        const rawPrimary = String(x.primaryMuscle || "").trim();
+        const primaryOnly = rawPrimary.includes("/") ? rawPrimary.split("/")[0].trim() : rawPrimary;
+        if(primaryOnly) pushText(primaryOnly);
+
+        // Secondary muscles (preferred: array)
+        const secs = Array.isArray(x.secondaryMuscles) ? x.secondaryMuscles.filter(Boolean) : [];
+        if(secs.length){
+          // Highlight each secondary muscle
+          secs.forEach(sm => pushSecondary(sm));
+        }else{
+          // Fallback: parse legacy "Primary / Secondary" format
+          if(rawPrimary.includes("/")){
+            const parsed = rawPrimary.split("/").slice(1).join("/").trim();
+            if(parsed) pushSecondary(parsed);
+          }
+        }
+
+        // Equipment
+        if(x.equipment) pushText(x.equipment);
       }else{
-        if(x.equipment) metaParts.push(String(x.equipment));
+        // Cardio/Core keep current meta style
+        if(x.equipment) pushText(x.equipment);
       }
-      metaParts.push(ExerciseLibrary.typeLabel(type));
+
+      // Type label always last
+      pushText(ExerciseLibrary.typeLabel(type));
 
       row.appendChild(
         el("div", { class:"left" }, [
           el("div", { class:"name", text:x.name }),
-          el("div", { class:"meta", text: metaParts.filter(Boolean).join(" • ") })
+          el("div", { class:"meta" }, metaNodes.length ? metaNodes : [document.createTextNode("")])
         ])
       );
       row.appendChild(el("div", { class:"actions" }, [ btn ]));
