@@ -2638,7 +2638,7 @@ lib.weightlifting = [
   { id: uid("ex"), type:"weightlifting", name:"Dumbbell Romanian Deadlift", equipment:"Dumbbell", primaryMuscle:"Hamstrings", createdAt:Date.now() },
   { id: uid("ex"), type:"weightlifting", name:"Dumbbell Sumo Squat", equipment:"Dumbbell", primaryMuscle:"Glutes", createdAt:Date.now() },
   { id: uid("ex"), type:"weightlifting", name:"Dumbbell Hip Thrust", equipment:"Dumbbell", primaryMuscle:"Glutes", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Calf Raise", equipment:"Dumbbell", primaryMuscle:"Calves", createdAt:Date.now() },
+  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Calf Raise", equipment:"Dumbbell", primaryMuscle:"Legs", secondaryMuscle:"Calves", createdAt:Date.now() },
 
   { id: uid("ex"), type:"weightlifting", name:"Dumbbell Curl", equipment:"Dumbbell", primaryMuscle:"Biceps", createdAt:Date.now() },
   { id: uid("ex"), type:"weightlifting", name:"Incline Dumbbell Curl", equipment:"Dumbbell", primaryMuscle:"Biceps", createdAt:Date.now() },
@@ -2663,7 +2663,7 @@ lib.weightlifting = [
   // ✅ normalize to match your Legs(Quads) convention so meta reads right
   { id: uid("ex"), type:"weightlifting", name:"Leg Extension", equipment:"Machine", primaryMuscle:"Legs (Quads)", createdAt:Date.now() },
   { id: uid("ex"), type:"weightlifting", name:"Leg Curl", equipment:"Machine", primaryMuscle:"Legs (Hamstrings)", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Seated Calf Raise", equipment:"Machine", primaryMuscle:"Calves", createdAt:Date.now() },
+  { id: uid("ex"), type:"weightlifting", name:"Seated Calf Raise", equipment:"Machine", primaryMuscle:"Legs", secondaryMuscle:"Calves", createdAt:Date.now() },
   { id: uid("ex"), type:"weightlifting", name:"Smith Machine Squat", equipment:"Machine", primaryMuscle:"Legs (Quads)", createdAt:Date.now() },
 
   { id: uid("ex"), type:"weightlifting", name:"Cable Chest Fly", equipment:"Cable", primaryMuscle:"Chest", createdAt:Date.now() },
@@ -2693,8 +2693,8 @@ lib.weightlifting = [
   { id: uid("ex"), type:"weightlifting", name:"Hack Squat", equipment:"Machine", primaryMuscle:"Legs (Quads)", createdAt:Date.now() },
   { id: uid("ex"), type:"weightlifting", name:"Hip Abduction", equipment:"Machine", primaryMuscle:"Glutes", createdAt:Date.now() },
   { id: uid("ex"), type:"weightlifting", name:"Hip Adduction", equipment:"Machine", primaryMuscle:"Legs (Adductors)", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Standing Calf Raise", equipment:"Machine", primaryMuscle:"Calves", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Donkey Calf Raise", equipment:"Machine", primaryMuscle:"Calves", createdAt:Date.now() },
+  { id: uid("ex"), type:"weightlifting", name:"Standing Calf Raise", equipment:"Machine", primaryMuscle:"Legs", secondaryMuscle:"Calves", createdAt:Date.now() },
+  { id: uid("ex"), type:"weightlifting", name:"Donkey Calf Raise", equipment:"Machine", primaryMuscle:"Legs", secondaryMuscle:"Calves", createdAt:Date.now() },
 
   { id: uid("ex"), type:"weightlifting", name:"Preacher Curl", equipment:"Machine", primaryMuscle:"Biceps", createdAt:Date.now() },
   { id: uid("ex"), type:"weightlifting", name:"Cable Rope Hammer Curl", equipment:"Cable", primaryMuscle:"Biceps / Forearms", createdAt:Date.now() },
