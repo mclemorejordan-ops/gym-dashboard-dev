@@ -87,20 +87,18 @@ body{
       margin: 0 auto;
     }
 header{
-      position: sticky;
-      top: 0;
-      z-index: 60;
-      backdrop-filter: blur(var(--blur));
-      /* Fade to transparent so it blends into the BODY canvas like one theme */
-      background: linear-gradient(
-        to bottom,
-        var(--glassStrong) 0%,
-        rgba(16,20,30,.62) 60%,
-        rgba(16,20,30,0) 100%
-      );
-      /* Header owns the safe-area top so the theme covers the whole iPhone app */
-      padding: calc(env(safe-area-inset-top) + 12px) 0 10px 0;
-    }
+  position: sticky;
+  top: 0;
+  z-index: 60;
+
+  /* Use SAME background stack as body */
+  background:
+    radial-gradient(1200px 700px at 20% -10%, rgba(124,92,255,24), transparent 60%),
+    radial-gradient(900px 600px at 90% 10%, rgba(55,214,122,14), transparent 55%),
+    var(--bg);
+
+  padding: calc(env(safe-area-inset-top) + 12px) 0 10px 0;
+}
     .topbar{
       display:flex;
       align-items:center;
