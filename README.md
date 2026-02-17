@@ -170,7 +170,7 @@ No build tools required. No backend required. Static hosting ready.
 
 # Current Release
 
-Version: 2.0 Build Date: 2026-02-16
+Version: 2.6 Build Date: 2026-02-16
 
 ------------------------------------------------------------------------
 
