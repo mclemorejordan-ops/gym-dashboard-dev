@@ -2723,10 +2723,6 @@ lib.weightlifting = [
   { id: uid("ex"), type:"weightlifting", name:"Cable Overhead Tricep Extension", equipment:"Cable", primaryMuscle:"Arms", createdAt:Date.now() },
   { id: uid("ex"), type:"weightlifting", name:"Cable Bicep Curl", equipment:"Cable", primaryMuscle:"Arms", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Pallof Press", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
-
   { id: uid("ex"), type:"weightlifting", name:"Cable Kickback", equipment:"Cable", primaryMuscle:"Legs", createdAt:Date.now() },
   { id: uid("ex"), type:"weightlifting", name:"Cable Pull-Through", equipment:"Cable", primaryMuscle:"Legs", createdAt:Date.now() },
 
@@ -2765,6 +2761,11 @@ lib.cardio = [
 lib.core = [
   { id: uid("ex"), type:"core", name:"Plank", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
   { id: uid("ex"), type:"core", name:"Side Plank", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
+    // --- Cable (Core) ---
+  { id: uid("ex"), type:"core", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Cable Pallof Press", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
+
   { id: uid("ex"), type:"core", name:"Weighted Sit-Up", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
   { id: uid("ex"), type:"core", name:"Russian Twist", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
   { id: uid("ex"), type:"core", name:"Dumbbell Side Bend", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
@@ -2788,6 +2789,8 @@ lib.core = [
   { id: uid("ex"), type:"core", name:"Dragon Flag", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
   { id: uid("ex"), type:"core", name:"Medicine Ball Slam", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() },
   { id: uid("ex"), type:"core", name:"Medicine Ball Russian Twist", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() }
+  { id: uid("ex"), type:"weightlifting", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"weightlifting", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
 ];
     // ────────────────────────────
 // Seed: Secondary muscles + Cardio primary muscle
@@ -2844,8 +2847,8 @@ const SECONDARY_BY_NAME = {
   "Dumbbell High Pull": ["Traps"],
   "Dumbbell Shrug": ["Traps"],
   "Dumbbell Reverse Fly": ["Rear Delts"],
-  "Single-Arm Dumbbell Row": ["Lats"],
-  "Dumbbell Chest Supported Row": ["Lats"],
+  "Single-Arm Dumbbell Row": ["Biceps"],
+  "Dumbbell Chest Supported Row": ["Biceps"],
   "Goblet Squat": ["Quads"],
   "Dumbbell Lunge": ["Glutes"],
   "Walking Lunge": ["Glutes"],
@@ -2969,10 +2972,33 @@ function applySecondaryAndCardioPrimary(arr, primaryForAll=null){
 
 applySecondaryAndCardioPrimary(lib.weightlifting);
 applySecondaryAndCardioPrimary(lib.cardio, "Cardio");
-applySecondaryAndCardioPrimary(lib.core);
+applySecondaryAndCardioPrimary(lib.core, "Core");
 
         }
+        // ────────────────────────────
+        // Always hydrate secondaryMuscles + normalize primaries (even when library already exists)
+        // This fixes older seeded data where secondaryMuscles were missing.
+        // ────────────────────────────
+        (function hydrateLibraryMeta(){
+          const libNow = state.exerciseLibrary || {};
+          const types = ["weightlifting","cardio","core"];
 
+          types.forEach(t => {
+            (libNow[t] || []).forEach(ex => {
+              // Force stable primaries for Cardio/Core to prevent accidental new groups (e.g., "Abs")
+              if(t === "cardio") ex.primaryMuscle = "Cardio";
+              if(t === "core") ex.primaryMuscle = "Core";
+
+              // Only populate secondaryMuscles when missing/empty (don't overwrite user custom edits)
+              const existing = Array.isArray(ex.secondaryMuscles) ? ex.secondaryMuscles.filter(Boolean) : [];
+              if(existing.length === 0){
+                const sec = SECONDARY_BY_NAME[ex.name];
+                ex.secondaryMuscles = Array.isArray(sec) ? sec.slice() : [];
+              }
+            });
+          });
+        })();
+        
         // Always attempt to repair links (covers older data / edge cases)
         const repaired = repairExerciseLinks();
 
@@ -7674,9 +7700,15 @@ const addMultiBtn = el("button", {
       const src = String(raw || "").trim();
       if(!src) return "Other";
 
-      // Strip anything after first "/"
-      const first = src.split("/")[0].trim();
-      const k = normName(first);
+      // Option B: strip anything after the primary to avoid split/compound groups.
+      // Accept common separators users might type: "/", ",", "|", "•", "&", "+"
+      // Example: "Back / Biceps" -> "Back", "Chest, Shoulders, Triceps" -> "Chest"
+      const primaryPart = src
+        .replace(/[•&+|]/g, "/")
+        .split(/[\/,:]/)[0]
+        .trim();
+
+      const k = normName(primaryPart);
 
       // Arms buckets
       if(k === "biceps" || k === "forearms" || k === "triceps") return "Arms";
@@ -7697,8 +7729,11 @@ const addMultiBtn = el("button", {
       if(k === "traps") return "Shoulders";
       if(k === "shoulder" || k === "shoulders") return "Shoulders";
 
-      // Keep as-is (but stripped)
-      return first || "Other";
+      // Core buckets (prevents "Abs/Abdominals" from creating a new group)
+      if(k === "abs" || k === "ab" || k === "abdominals" || k === "abdominal") return "Core";
+
+      // Keep as-is (but primary-only)
+      return primaryPart || "Other";
     }
 
     function getSecondaryList(ex){
@@ -7953,7 +7988,6 @@ const addMultiBtn = el("button", {
       if(cardioItems.length){
         scroller.appendChild(el("div", { style:"height:10px" }));
         scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Cardio" }));
-        if(!openGroups.has("Cardio")) openGroups.add("Cardio");
         scroller.appendChild(renderGroup("Cardio", cardioItems, existingSet));
       }
 
@@ -7964,7 +7998,6 @@ const addMultiBtn = el("button", {
       if(coreItems.length){
         scroller.appendChild(el("div", { style:"height:10px" }));
         scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Core" }));
-        if(!openGroups.has("Core")) openGroups.add("Core");
         scroller.appendChild(renderGroup("Core", coreItems, existingSet));
       }
 
