@@ -390,6 +390,13 @@ input, select, textarea{
       border-color: rgba(124,92,255,.40);
       box-shadow: 0 0 0 4px rgba(124,92,255,.14);
     }
+    /* Glass select (used in Exercise Library Add/Edit modal) */
+select.glassSelect{
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.16);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
 
     .toggle{
       display:flex;
@@ -2790,27 +2797,65 @@ lib.core = [
       list(type){
         return (state.exerciseLibrary?.[type] || []);
       },
+            list(type){
+        return (state.exerciseLibrary?.[type] || []);
+      },
+
+      // Category-only check (kept for UI filters, but add/update will enforce GLOBAL)
       existsByName(type, name, excludeId=null){
         const n = normName(name);
         return this.list(type).some(x => normName(x.name) === n && x.id !== excludeId);
       },
+
+      // ✅ NEW: global check across ALL types
+      existsByNameGlobal(name, excludeId=null){
+        const n = normName(name);
+        for(const t of this.typeKeys){
+          if(this.list(t).some(x => normName(x.name) === n && x.id !== excludeId)) return true;
+        }
+        return false;
+      },
+
       add(type, data){
-        if(this.existsByName(type, data.name)) throw new Error("Exercise already exists in this category.");
+        // ✅ GLOBAL duplicate prevention (no cross-type duplicates)
+        if(this.existsByNameGlobal(data.name)) throw new Error("Exercise already exists in your library.");
         const ex = { id: uid("ex"), type, createdAt: Date.now(), ...data };
         state.exerciseLibrary[type].push(ex);
         Storage.save(state);
         return ex;
       },
+
+      // ✅ NEW: add while preserving a specific id (needed when changing Type during Edit)
+      addWithId(type, ex){
+        if(!ex?.id) throw new Error("Missing exercise id.");
+        if(this.existsByNameGlobal(ex.name, ex.id)) throw new Error("Exercise already exists in your library.");
+        const next = { ...ex, type };
+        state.exerciseLibrary[type].push(next);
+        Storage.save(state);
+        return next;
+      },
+
       update(type, id, patch){
         const arr = this.list(type);
         const idx = arr.findIndex(x => x.id === id);
         if(idx < 0) throw new Error("Exercise not found.");
-        const nextName = patch.name ?? arr[idx].name;
-        if(this.existsByName(type, nextName, id)) throw new Error("Another exercise with that name already exists.");
-        arr[idx] = { ...arr[idx], ...patch };
+
+        const nextName = (patch?.name ?? arr[idx].name);
+        // ✅ GLOBAL duplicate prevention (exclude self)
+        if(this.existsByNameGlobal(nextName, id)) throw new Error("Another exercise with that name already exists.");
+
+        // Normalize secondaryMuscles to an array if provided
+        let nextPatch = { ...patch };
+        if("secondaryMuscles" in nextPatch){
+          const sm = nextPatch.secondaryMuscles;
+          nextPatch.secondaryMuscles = Array.isArray(sm) ? sm.filter(Boolean) : [];
+        }
+
+        arr[idx] = { ...arr[idx], ...nextPatch };
         Storage.save(state);
         return arr[idx];
       },
+
       remove(type, id){
         const arr = this.list(type);
         const idx = arr.findIndex(x => x.id === id);
@@ -7115,160 +7160,210 @@ state.profile.hideRestDays = !!hideRestDays;
       }
     });
   }
-function openAddEditModal(existing){
-  const isEdit = !!existing;
+  function openAddEditModal(existing){
+    const isEdit = !!existing;
 
-  // Default selection:
-  // - Edit: use existing.type if present
-  // - Add: use current filter ui.type
-  const initialType = (existing?.type || ui.type || "weightlifting");
+    // Track whether the user manually changed Type (so Smart Default doesn't fight them)
+    let userChangedType = false;
 
-  const name = el("input", { type:"text", value: existing?.name || "", placeholder:"Exercise name" });
+    // Default type:
+    // - Edit: existing.type (if present) else current ui.type
+    // - Add: current ui.type
+    const initialType = (existing?.type || ui.type || "weightlifting");
 
-  // Lightweight per-type optional fields
-  const equip = el("input", { type:"text", value: existing?.equipment || "", placeholder:"e.g., Dumbbell, Barbell, Machine" });
-  const primary = el("input", { type:"text", value: existing?.primaryMuscle || "", placeholder:"e.g., Chest, Back, Legs" });
+    const name = el("input", { type:"text", value: existing?.name || "", placeholder:"Exercise name" });
+    const equip = el("input", { type:"text", value: existing?.equipment || "", placeholder:"e.g., Dumbbell, Barbell, Machine" });
 
-  // ✅ Glass dropdown for Type (Weightlifting / Cardio / Core)
-  const typeSelect = el("select", {});
-  ExerciseLibrary.typeKeys.forEach(t => {
-    typeSelect.appendChild(el("option", { value: t, text: ExerciseLibrary.typeLabel(t) }));
-  });
-  typeSelect.value = initialType;
+    // Weightlifting-only fields
+    const primary = el("input", { type:"text", value: existing?.primaryMuscle || "", placeholder:"e.g., Chest, Back, Legs" });
+    const secondary = el("input", {
+      type:"text",
+      value: Array.isArray(existing?.secondaryMuscles) ? existing.secondaryMuscles.join(", ") : "",
+      placeholder:"e.g., Triceps, Shoulders"
+    });
 
-  // Show/hide Primary Muscle depending on selected type
-  const primaryWrap = el("div", { style:"margin-top:10px" }, [
-    el("label", {}, [ el("span", { text:"Primary muscle" }), primary ])
-  ]);
-  function refreshPrimaryVisibility(){
-    primaryWrap.style.display = (typeSelect.value === "weightlifting") ? "block" : "none";
-  }
-  typeSelect.addEventListener("change", refreshPrimaryVisibility);
-  refreshPrimaryVisibility();
+    // ✅ Type dropdown (glass-style via CSS class)
+    const typeSelect = el("select", { class:"glassSelect" });
+    ExerciseLibrary.typeKeys.forEach(t => {
+      typeSelect.appendChild(el("option", { value: t, text: ExerciseLibrary.typeLabel(t) }));
+    });
+    typeSelect.value = initialType;
 
-  // If user changes an exercise's type, we must move it between library buckets
-  // AND update routines/logs that reference {exerciseId,type}.
-  function migrateExerciseTypeEverywhere(oldType, newType, exerciseId){
-    if(!oldType || !newType || oldType === newType) return;
+    typeSelect.addEventListener("change", () => {
+      userChangedType = true;
+      refreshWeightliftingVisibility();
+    });
 
-    // Update routine slots
-    (state.routines || []).forEach(r => {
-      (r.days || []).forEach(d => {
-        (d.exercises || []).forEach(rx => {
-          if(rx && rx.exerciseId === exerciseId && rx.type === oldType){
-            rx.type = newType;
-          }
+    // Smart default: guess type from name
+    function guessTypeFromName(raw){
+      const s = normName(String(raw || ""));
+
+      // Core signals
+      const coreHits = [
+        "plank","crunch","sit up","sit-up","rollout","ab wheel","hollow","dead bug","leg raise","knee raise",
+        "russian twist","bicycle","pallof","side plank","hanging"
+      ];
+      for(const k of coreHits){
+        if(s.includes(normName(k))) return "core";
+      }
+
+      // Cardio signals
+      const cardioHits = [
+        "treadmill","run","running","incline walk","walk","bike","cycling","row","rower","ski erg","elliptical",
+        "stairmaster","jump rope","sprint","interval","assault bike","sled"
+      ];
+      for(const k of cardioHits){
+        if(s.includes(normName(k))) return "cardio";
+      }
+
+      // Default
+      return "weightlifting";
+    }
+
+    // When typing name: auto-suggest type (ONLY if user hasn't manually changed it)
+    name.addEventListener("input", (e) => {
+      if(userChangedType) return;
+      const nm = String(e.target.value || "");
+      const suggested = guessTypeFromName(nm);
+      typeSelect.value = suggested;
+      refreshWeightliftingVisibility();
+    });
+
+    // Weightlifting-only wrapper UI
+    const wlWrap = el("div", { style:"margin-top:10px; display:none;" }, [
+      el("div", { class:"row2" }, [
+        el("label", {}, [ el("span", { text:"Primary muscle" }), primary ]),
+        el("label", {}, [ el("span", { text:"Secondary muscles" }), secondary ])
+      ]),
+      el("div", { class:"note", text:"Secondary muscles: comma-separated (e.g., Triceps, Shoulders)" })
+    ]);
+
+    function refreshWeightliftingVisibility(){
+      wlWrap.style.display = (typeSelect.value === "weightlifting") ? "block" : "none";
+    }
+    refreshWeightliftingVisibility();
+
+    // If type changes on edit, we must migrate references (routine slots + logs)
+    function migrateExerciseTypeEverywhere(oldType, newType, exerciseId){
+      if(!oldType || !newType || oldType === newType) return;
+
+      // Routine slots
+      (state.routines || []).forEach(r => {
+        (r.days || []).forEach(d => {
+          (d.exercises || []).forEach(rx => {
+            if(rx && rx.exerciseId === exerciseId && rx.type === oldType){
+              rx.type = newType;
+            }
+          });
         });
       });
-    });
 
-    // Update workout logs
-    (state.logs?.workouts || []).forEach(e => {
-      if(e && e.exerciseId === exerciseId && e.type === oldType){
-        e.type = newType;
-      }
-    });
-  }
+      // Workout logs
+      (state.logs?.workouts || []).forEach(e => {
+        if(e && e.exerciseId === exerciseId && e.type === oldType){
+          e.type = newType;
+        }
+      });
+    }
 
-  Modal.open({
-    title: isEdit ? "Edit exercise" : "Add exercise",
-    bodyNode: el("div", {}, [
-      // ✅ Type dropdown (glass select)
-      el("label", {}, [ el("span", { text:"Type" }), typeSelect ]),
-      el("div", { style:"height:10px" }),
+    Modal.open({
+      title: isEdit ? "Edit exercise" : "Add exercise",
+      bodyNode: el("div", {}, [
+        el("label", {}, [ el("span", { text:"Type" }), typeSelect ]),
+        el("div", { style:"height:10px" }),
 
-      el("div", { class:"row2" }, [
-        el("label", {}, [ el("span", { text:"Name" }), name ]),
-        el("label", {}, [ el("span", { text:"Equipment" }), equip ])
-      ]),
+        el("div", { class:"row2" }, [
+          el("label", {}, [ el("span", { text:"Name" }), name ]),
+          el("label", {}, [ el("span", { text:"Equipment" }), equip ])
+        ]),
 
-      primaryWrap,
+        wlWrap,
 
-      el("div", { style:"height:12px" }),
-      el("div", { class:"btnrow" }, [
-        el("button", {
-          class:"btn primary",
-          onClick: () => {
-            const nm = (name.value || "").trim();
-            if(!nm) return showToast("Name is required");
+        el("div", { style:"height:12px" }),
+        el("div", { class:"btnrow" }, [
+          el("button", {
+            class:"btn primary",
+            onClick: () => {
+              const nm = (name.value || "").trim();
+              if(!nm) return showToast("Name is required");
 
-            const chosenType = (typeSelect.value || "weightlifting");
-            const oldType = (existing?.type || ui.type || "weightlifting");
+              const chosenType = (typeSelect.value || "weightlifting");
+              const oldType = (existing?.type || ui.type || "weightlifting");
 
-            // Build patch/data
-            const patch = {
-              name: nm,
-              equipment: (equip.value || "").trim()
-            };
-            if(chosenType === "weightlifting"){
-              patch.primaryMuscle = (primary.value || "").trim();
-            }else{
-              // Avoid carrying irrelevant weightlifting-only field into other types
-              patch.primaryMuscle = undefined;
-            }
+              // Parse secondary muscles
+              const secArr = (secondary.value || "")
+                .split(",")
+                .map(x => x.trim())
+                .filter(Boolean);
 
-            try{
-              if(isEdit){
-                // If type changed: move exercise bucket + update references
-                if(chosenType !== oldType){
-                  // Prevent duplicates in the new bucket
-                  if(ExerciseLibrary.existsByName(chosenType, nm, existing.id)){
-                    return showToast("Another exercise with that name already exists.");
-                  }
+              // Build patch/data
+              const patch = {
+                name: nm,
+                equipment: (equip.value || "").trim()
+              };
 
-                  // Remove from old bucket
-                  ExerciseLibrary.remove(oldType, existing.id);
-
-                  // Re-add into new bucket (preserve same id)
-                  const moved = {
-                    id: existing.id,
-                    type: chosenType,
-                    createdAt: existing.createdAt || Date.now(),
-                    ...patch
-                  };
-                  // ExerciseLibrary.add generates an id normally, so we push directly safely
-                  state.exerciseLibrary = state.exerciseLibrary || { weightlifting:[], cardio:[], core:[] };
-                  state.exerciseLibrary[chosenType].push(moved);
-
-                  // Update routines + logs that referenced oldType for this exerciseId
-                  migrateExerciseTypeEverywhere(oldType, chosenType, existing.id);
-
-                  // Keep UI filter in sync so user sees it immediately
-                  ui.type = chosenType;
-                }else{
-                  // Normal edit in-place
-                  ExerciseLibrary.update(oldType, existing.id, patch);
-                }
+              if(chosenType === "weightlifting"){
+                patch.primaryMuscle = (primary.value || "").trim();
+                patch.secondaryMuscles = secArr;
               }else{
-                // Add new
-                const data = {
-                  name: nm,
-                  equipment: (equip.value || "").trim()
-                };
-                if(chosenType === "weightlifting"){
-                  data.primaryMuscle = (primary.value || "").trim();
-                }
-                ExerciseLibrary.add(chosenType, data);
-
-                // Optional: hop filter to the chosen type so they see it right away
-                ui.type = chosenType;
+                // Keep non-weightlifting clean
+                patch.primaryMuscle = undefined;
+                patch.secondaryMuscles = [];
               }
 
-              Storage.save(state);
-              Modal.close();
-              showToast(isEdit ? "Updated" : "Added");
-              renderView();
-            }catch(e){
-              showToast(e?.message || "Could not save exercise");
-            }
-          }
-        }, [isEdit ? "Save" : "Add"]),
+              try{
+                if(isEdit){
+                  // If Type changed: remove from old bucket, add to new bucket preserving id
+                  if(chosenType !== oldType){
+                    // GLOBAL duplicate check (exclude self)
+                    if(ExerciseLibrary.existsByNameGlobal(nm, existing.id)){
+                      return showToast("Another exercise with that name already exists.");
+                    }
 
-        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+                    // Remove from old
+                    ExerciseLibrary.remove(oldType, existing.id);
+
+                    // Add to new (preserve id + createdAt)
+                    ExerciseLibrary.addWithId(chosenType, {
+                      id: existing.id,
+                      createdAt: existing.createdAt || Date.now(),
+                      ...patch
+                    });
+
+                    // Update routines + logs
+                    migrateExerciseTypeEverywhere(oldType, chosenType, existing.id);
+
+                    // Update current filter so user sees it immediately
+                    ui.type = chosenType;
+                    ui.equipment = "all";
+                  }else{
+                    // Normal edit in-place
+                    ExerciseLibrary.update(oldType, existing.id, patch);
+                  }
+                }else{
+                  // Add new (GLOBAL duplicate prevention happens inside ExerciseLibrary.add)
+                  ExerciseLibrary.add(chosenType, patch);
+
+                  // Optional UX: jump filter to the chosen type
+                  ui.type = chosenType;
+                  ui.equipment = "all";
+                }
+
+                Storage.save(state);
+                Modal.close();
+                showToast(isEdit ? "Updated" : "Added");
+                renderView();
+              }catch(e){
+                showToast(e?.message || "Could not save exercise");
+              }
+            }
+          }, [isEdit ? "Save" : "Add"]),
+
+          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+        ])
       ])
-    ])
-  });
-}
+    });
+  }
 
   return root;
 };
