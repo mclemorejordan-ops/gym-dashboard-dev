@@ -930,17 +930,22 @@ input, select, textarea{
     }
     .addExRow .name{ max-width: 64vw; }
    
-    /* Secondary muscle highlight in Add Exercise meta line */
-    .addExRow .meta .secMuscle{
-      display:inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-weight: 900;
-      letter-spacing: .1px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.08);
-      transform: translateY(-.5px);
-    }
+   /* Secondary muscle highlight in Add Exercise meta line */
+.addExRow .meta .secMuscle{
+  display:inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: .2px;
+
+  /* Accent color styling */
+  color: var(--accent, #7c5cff);
+  background: rgba(124,92,255,.12);
+  border: 1px solid rgba(124,92,255,.35);
+
+  transform: translateY(-.5px);
+}
+
 
     .addExBottom{
       display:flex;
