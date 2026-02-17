@@ -923,12 +923,30 @@ input, select, textarea{
       gap: 8px;
     }
 
-    /* Slightly tighter rows inside this modal */
-    .addExRow{
-      padding: 10px;
-      border-radius: 14px;
-    }
-    .addExRow .name{ max-width: 64vw; }
+/* Slightly tighter rows inside this modal */
+.addExRow{
+  padding: 10px;
+  border-radius: 14px;
+}
+.addExRow .name{ max-width: 64vw; }
+
+.addExTags{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.addExTag{
+  font-size: 11px;
+  font-weight: 850;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.88);
+  letter-spacing: .1px;
+  white-space: nowrap;
+}
 
     .addExBottom{
       display:flex;
@@ -2771,6 +2789,188 @@ lib.core = [
   { id: uid("ex"), type:"core", name:"Medicine Ball Slam", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() },
   { id: uid("ex"), type:"core", name:"Medicine Ball Russian Twist", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() }
 ];
+    // ────────────────────────────
+// Seed: Secondary muscles + Cardio primary muscle
+// (drives Add Exercise meta line + search + tags)
+// ────────────────────────────
+const SECONDARY_BY_NAME = {
+  // Weightlifting
+  "Barbell Bench Press": ["Triceps"],
+  "Incline Barbell Bench Press": ["Shoulders"],
+  "Decline Barbell Bench Press": ["Triceps"],
+  "Close-Grip Bench Press": ["Triceps"],
+  "Barbell Floor Press": ["Triceps"],
+  "Barbell Overhead Press": ["Triceps"],
+  "Upright Row": ["Traps"],
+  "Barbell Push Press": ["Legs"],
+  "Barbell Landmine Press": ["Chest"],
+  "Barbell Bent Over Row": ["Lats"],
+  "Pendlay Row": ["Lats"],
+  "Barbell Incline Row": ["Rear Delts"],
+  "Barbell Landmine Row": ["Lats"],
+  "Barbell Deadlift": ["Glutes"],
+  "Rack Pull": ["Glutes"],
+  "Romanian Deadlift": ["Hamstrings"],
+  "Barbell Good Morning": ["Hamstrings"],
+  "Sumo Deadlift": ["Glutes"],
+  "Back Squat": ["Quads"],
+  "Front Squat": ["Quads"],
+  "Barbell Hack Squat": ["Quads"],
+  "Barbell Lunge": ["Glutes"],
+  "Barbell Reverse Lunge": ["Glutes"],
+  "Barbell Hip Thrust": ["Glutes"],
+  "Barbell Glute Bridge": ["Glutes"],
+  "Barbell Calf Raise": ["Calves"],
+  "Barbell Curl": ["Biceps"],
+  "Reverse Curl": ["Forearms"],
+  "Barbell Skull Crusher": ["Triceps"],
+  "Barbell Thruster": ["Shoulders"],
+  "Power Clean": ["Legs"],
+  "Hang Clean": ["Legs"],
+
+  "Dumbbell Bench Press": ["Triceps"],
+  "Incline Dumbbell Press": ["Shoulders"],
+  "Decline Dumbbell Press": ["Triceps"],
+  "Dumbbell Fly": ["Chest"],
+  "Dumbbell Pullover": ["Lats"],
+  "Dumbbell Floor Press": ["Triceps"],
+  "Dumbbell Shoulder Press": ["Triceps"],
+  "Arnold Press": ["Front Delts"],
+  "Dumbbell Lateral Raise": ["Side Delts"],
+  "Dumbbell Front Raise": ["Front Delts"],
+  "Dumbbell Rear Delt Fly": ["Rear Delts"],
+  "Dumbbell Incline Lateral Raise": ["Side Delts"],
+  "Dumbbell Z Press": ["Core"],
+  "Dumbbell High Pull": ["Traps"],
+  "Dumbbell Shrug": ["Traps"],
+  "Dumbbell Reverse Fly": ["Rear Delts"],
+  "Single-Arm Dumbbell Row": ["Lats"],
+  "Dumbbell Chest Supported Row": ["Lats"],
+  "Goblet Squat": ["Quads"],
+  "Dumbbell Lunge": ["Glutes"],
+  "Walking Lunge": ["Glutes"],
+  "Bulgarian Split Squat": ["Quads"],
+  "Dumbbell Reverse Lunge": ["Glutes"],
+  "Dumbbell Step-Up": ["Glutes"],
+  "Dumbbell Romanian Deadlift": ["Hamstrings"],
+  "Dumbbell Sumo Squat": ["Glutes"],
+  "Dumbbell Hip Thrust": ["Glutes"],
+  "Dumbbell Glute Bridge": ["Glutes"],
+  "Dumbbell Calf Raise": ["Calves"],
+  "Dumbbell Curl": ["Biceps"],
+  "Incline Dumbbell Curl": ["Biceps"],
+  "Hammer Curl": ["Brachialis"],
+  "Concentration Curl": ["Biceps"],
+  "Overhead Tricep Extension": ["Triceps"],
+  "Dumbbell Skull Crusher": ["Triceps"],
+  "Tricep Kickback": ["Triceps"],
+  "Dumbbell Thruster": ["Shoulders"],
+  "Dumbbell Snatch": ["Shoulders"],
+  "Dumbbell Clean and Press": ["Shoulders"],
+  "Dumbbell Swings": ["Glutes"],
+  "Farmers Carry": ["Forearms"],
+  "Dumbbell Suitcase Carry": ["Obliques"],
+
+  "Chest Press": ["Triceps"],
+  "Pec Deck": ["Chest"],
+  "Machine Chest Fly": ["Chest"],
+  "Lat Pulldown": ["Lats"],
+  "Seated Row": ["Lats"],
+  "Assisted Pull-Up": ["Lats"],
+  "Leg Press": ["Quads"],
+  "Hack Squat Machine": ["Quads"],
+  "Smith Machine Squat": ["Quads"],
+  "Leg Extension": ["Quads"],
+  "Leg Curl": ["Hamstrings"],
+  "Hip Abduction Machine": ["Glutes"],
+  "Hip Adduction Machine": ["Adductors"],
+  "Seated Calf Raise": ["Calves"],
+  "Standing Calf Raise Machine": ["Calves"],
+  "Machine Shoulder Press": ["Triceps"],
+  "Machine Preacher Curl": ["Biceps"],
+  "Machine Tricep Dip": ["Triceps"],
+
+  "Cable Chest Fly": ["Chest"],
+  "Cable Crossover": ["Chest"],
+  "Cable Row": ["Lats"],
+  "Face Pull": ["Rear Delts"],
+  "Cable Lateral Raise": ["Side Delts"],
+  "Cable Front Raise": ["Front Delts"],
+  "Cable Reverse Fly": ["Rear Delts"],
+  "Cable Upright Row": ["Traps"],
+  "Cable Tricep Pushdown": ["Triceps"],
+  "Cable Overhead Tricep Extension": ["Triceps"],
+  "Cable Bicep Curl": ["Biceps"],
+  "Cable Woodchopper": ["Obliques"],
+  "Cable Crunch": ["Abs"],
+  "Cable Pallof Press": ["Obliques"],
+  "Cable Kickback": ["Glutes"],
+  "Cable Pull-Through": ["Glutes"],
+
+  "Push-Up": ["Triceps"],
+  "Pull-Up": ["Lats"],
+  "Chin-Up": ["Biceps"],
+  "Dips": ["Triceps"],
+  "Pike Push-Up": ["Triceps"],
+  "Bodyweight Squat": ["Quads"],
+  "Nordic Hamstring Curl": ["Hamstrings"],
+  "Glute Bridge": ["Glutes"],
+
+  // Cardio
+  "Treadmill Run": ["Legs"],
+  "Incline Walk": ["Glutes"],
+  "Sprint Intervals": ["Legs"],
+  "Outdoor Run": ["Legs"],
+  "Stairmaster": ["Glutes"],
+  "Stationary Bike": ["Quads"],
+  "Assault Bike": ["Full Body"],
+  "Row Machine": ["Back"],
+  "Row Sprint": ["Full Body"],
+  "Ski Erg": ["Shoulders"],
+  "Elliptical": ["Legs"],
+  "Battle Ropes": ["Shoulders"],
+  "Sled Push": ["Legs"],
+  "Sled Pull": ["Back"],
+  "Jump Rope": ["Calves"],
+
+  // Core
+  "Plank": ["Abs"],
+  "Side Plank": ["Obliques"],
+  "Weighted Sit-Up": ["Abs"],
+  "Russian Twist": ["Obliques"],
+  "Dumbbell Side Bend": ["Obliques"],
+  "Renegade Row": ["Lats"],
+  "Plank Pull-Through": ["Abs"],
+  "Hanging Leg Raise": ["Abs"],
+  "Hanging Knee Raise": ["Abs"],
+  "Weighted Leg Raise": ["Abs"],
+  "Bicycle Crunch": ["Abs"],
+  "Decline Sit-Up": ["Abs"],
+  "Ab Wheel Rollout": ["Abs"],
+  "Stability Ball Crunch": ["Abs"],
+  "Stability Ball Rollout": ["Abs"],
+  "Barbell Rollout": ["Abs"],
+  "Barbell Overhead Hold": ["Shoulders"],
+  "Landmine Rotation": ["Obliques"],
+  "V-Up": ["Abs"],
+  "Hollow Body Hold": ["Abs"],
+  "Dragon Flag": ["Abs"],
+  "Medicine Ball Slam": ["Full Body"],
+  "Medicine Ball Russian Twist": ["Obliques"]
+};
+
+function applySecondaryAndCardioPrimary(arr, primaryForAll=null){
+  (arr || []).forEach(ex => {
+    if(primaryForAll) ex.primaryMuscle = primaryForAll;
+    const sec = SECONDARY_BY_NAME[ex.name];
+    ex.secondaryMuscles = Array.isArray(sec) ? sec.slice() : [];
+  });
+}
+
+applySecondaryAndCardioPrimary(lib.weightlifting);
+applySecondaryAndCardioPrimary(lib.cardio, "Cardio");
+applySecondaryAndCardioPrimary(lib.core);
+
         }
 
         // Always attempt to repair links (covers older data / edge cases)
@@ -7434,7 +7634,7 @@ const addMultiBtn = el("button", {
     });
   }
 
-  function openAddExercise(routineId, dayId, opts={}){
+    function openAddExercise(routineId, dayId, opts={}){
     // Compact, phone-first "Add Exercise" modal
     // - Active day context (top)
     // - Fixed search bar
@@ -7476,7 +7676,6 @@ const addMultiBtn = el("button", {
 
       // Strip anything after first "/"
       const first = src.split("/")[0].trim();
-
       const k = normName(first);
 
       // Arms buckets
@@ -7500,6 +7699,30 @@ const addMultiBtn = el("button", {
 
       // Keep as-is (but stripped)
       return first || "Other";
+    }
+
+    function getSecondaryList(ex){
+      const arr = Array.isArray(ex?.secondaryMuscles) ? ex.secondaryMuscles.filter(Boolean) : [];
+      // Auto-hide duplicates (secondary == primary bucket)
+      const primary = normalizePrimaryMuscle(ex?.primaryMuscle);
+      return arr.filter(s => normName(s) !== normName(primary));
+    }
+
+    function tagHue(str){
+      // deterministic tiny hash -> hue
+      const s = String(str || "");
+      let h = 0;
+      for(let i=0;i<s.length;i++) h = ((h<<5) - h) + s.charCodeAt(i);
+      h = Math.abs(h) % 360;
+      return h;
+    }
+
+    function makeTag(label){
+      const hue = tagHue(label);
+      return el("span", {
+        class:"addExTag",
+        style:`background: hsla(${hue}, 80%, 60%, .16); border-color: hsla(${hue}, 80%, 60%, .30); color: hsla(${hue}, 90%, 92%, 1);`
+      }, [label]);
     }
 
     // If day label hints a muscle, open that group by default
@@ -7575,22 +7798,26 @@ const addMultiBtn = el("button", {
       const row = el("div", { class:"item addExRow" });
       const btn = el("button", { class:"mini" }, ["Add"]);
 
-      const metaParts = [];
-      if(type === "weightlifting"){
-        const pm = normalizePrimaryMuscle(x.primaryMuscle);
-        if(pm) metaParts.push(String(pm));
-        if(x.equipment) metaParts.push(String(x.equipment));
-      }else{
-        if(x.equipment) metaParts.push(String(x.equipment));
-      }
-      metaParts.push(ExerciseLibrary.typeLabel(type));
+      const equipment = x.equipment ? String(x.equipment) : "";
+      const typeLabel = ExerciseLibrary.typeLabel(type);
 
-      row.appendChild(
-        el("div", { class:"left" }, [
-          el("div", { class:"name", text:x.name }),
-          el("div", { class:"meta", text: metaParts.filter(Boolean).join(" • ") })
-        ])
-      );
+      // Secondary muscles -> tags (mini colored)
+      const secondary = getSecondaryList(x);
+
+      // Meta line requested: Equipment • Type (secondary is shown as tags)
+      const metaTextParts = [];
+      if(equipment) metaTextParts.push(equipment);
+      metaTextParts.push(typeLabel);
+
+      const left = el("div", { class:"left" }, [
+        el("div", { class:"name", text:x.name }),
+        (secondary.length
+          ? el("div", { class:"addExTags" }, secondary.map(makeTag))
+          : null),
+        el("div", { class:"meta", text: metaTextParts.filter(Boolean).join(" • ") })
+      ].filter(Boolean));
+
+      row.appendChild(left);
       row.appendChild(el("div", { class:"actions" }, [ btn ]));
 
       if(alreadyInDay){
@@ -7653,11 +7880,22 @@ const addMultiBtn = el("button", {
       const q = normName(query || "");
 
       // Search: flat list (fast + compact)
+      // ✅ Search includes: name + primary + secondary muscles + equipment + cardio modality
       if(q){
         const hits = all
-          .filter(x => normName(x.name).includes(q))
+          .filter(x => {
+            const sec = Array.isArray(x.secondaryMuscles) ? x.secondaryMuscles.join(" ") : "";
+            const hay = normName([
+              x.name || "",
+              x.primaryMuscle || "",
+              sec,
+              x.equipment || "",
+              x.modality || ""
+            ].join(" "));
+            return hay.includes(q);
+          })
           .sort((a,b) => (a.name||"").localeCompare(b.name||""))
-          .slice(0, 60);
+          .slice(0, 80);
 
         if(hits.length === 0){
           scroller.appendChild(el("div", { class:"note", text:"No matches. Try a different keyword." }));
@@ -7674,27 +7912,34 @@ const addMultiBtn = el("button", {
         return;
       }
 
-      // ✅ Weightlifting grouped by NORMALIZED primaryMuscle
+      // Weightlifting grouped by NORMALIZED primaryMuscle (Primary-only)
       const wl = libs.weightlifting
-        .map(x => ({...x, type:"weightlifting", primaryMuscle: normalizePrimaryMuscle(x.primaryMuscle)}))
+        .map(x => ({...x, type:"weightlifting", __group: normalizePrimaryMuscle(x.primaryMuscle)}))
         .sort((a,b) =>
-          (String(a.primaryMuscle||"").localeCompare(String(b.primaryMuscle||"")) ||
+          (String(a.__group||"").localeCompare(String(b.__group||"")) ||
            (a.name||"").localeCompare(b.name||""))
         );
 
       const byMuscle = new Map();
       wl.forEach(x => {
-        const g = String(x.primaryMuscle || "Other").trim() || "Other";
+        const g = String(x.__group || "Other").trim() || "Other";
         if(!byMuscle.has(g)) byMuscle.set(g, []);
         byMuscle.get(g).push(x);
       });
 
-      const muscleNames = Array.from(byMuscle.keys()).sort((a,b)=>a.localeCompare(b));
+      // Custom group order (Option B)
+      const ORDER = ["Chest","Back","Shoulders","Arms","Legs","Full Body","Core","Other"];
+      const muscleNames = Array.from(byMuscle.keys()).sort((a,b)=>{
+        const ia = ORDER.indexOf(a);
+        const ib = ORDER.indexOf(b);
+        if(ia !== -1 || ib !== -1){
+          return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        }
+        return a.localeCompare(b);
+      });
 
       if(muscleNames.length){
         scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Weightlifting (by muscle)" }));
-
-        // Default-open: if we seeded a match, it will already be in openGroups
         muscleNames.forEach(name => {
           const items = byMuscle.get(name) || [];
           scroller.appendChild(renderGroup(name, items, existingSet));
@@ -7708,7 +7953,7 @@ const addMultiBtn = el("button", {
       if(cardioItems.length){
         scroller.appendChild(el("div", { style:"height:10px" }));
         scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Cardio" }));
-        if(!openGroups.has("Cardio")) openGroups.add("Cardio"); // feels better to open by default
+        if(!openGroups.has("Cardio")) openGroups.add("Cardio");
         scroller.appendChild(renderGroup("Cardio", cardioItems, existingSet));
       }
 
@@ -7719,7 +7964,7 @@ const addMultiBtn = el("button", {
       if(coreItems.length){
         scroller.appendChild(el("div", { style:"height:10px" }));
         scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Core" }));
-        if(!openGroups.has("Core")) openGroups.add("Core"); // open by default
+        if(!openGroups.has("Core")) openGroups.add("Core");
         scroller.appendChild(renderGroup("Core", coreItems, existingSet));
       }
 
