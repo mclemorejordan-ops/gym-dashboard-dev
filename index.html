@@ -4964,10 +4964,80 @@ const root = el("div", { class:"routinePage" });
 
   let routine = Routines.getActive();
   if(!routine){
+
+    function openRoutineRecovery(){
+      const body = el("div", {}, [
+        el("div", { class:"note", text:"Choose a template to instantly recreate a routine. If you previously deleted everything, this is the fastest recovery." }),
+        el("div", { style:"height:12px" })
+      ]);
+
+      const list = el("div", { class:"list" });
+
+      (RoutineTemplates || []).forEach(tpl => {
+        list.appendChild(el("div", {
+          class:"item",
+          onClick: () => {
+            try{
+              Routines.addFromTemplate(tpl.key, tpl.name); // seeds library + saves + sets active
+              Modal.close();
+              showToast(`Created: ${tpl.name}`);
+              renderView(); // re-render current route (Routine)
+            }catch(e){
+              Modal.open({
+                title:"Could not create routine",
+                bodyNode: el("div", {}, [
+                  el("div", { class:"note", text: e?.message || "Something went wrong while creating a routine." }),
+                  el("div", { style:"height:12px" }),
+                  el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+                ])
+              });
+            }
+          }
+        }, [
+          el("div", { class:"left" }, [
+            el("div", { class:"name", text: tpl.name }),
+            el("div", { class:"meta", text: tpl.desc || "Template" })
+          ]),
+          el("div", { class:"actions" }, [
+            el("div", { class:"meta", text:"Create" })
+          ])
+        ]));
+      });
+
+      body.appendChild(list);
+
+      body.appendChild(el("div", { style:"height:14px" }));
+      body.appendChild(el("div", { class:"btnrow" }, [
+        el("button", { class:"btn", onClick: () => { Modal.close(); navigate("settings"); } }, ["Go to Settings"]),
+        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+      ]));
+
+      Modal.open({
+        title:"Create a routine",
+        center: true,
+        bodyNode: body
+      });
+    }
+
     root.appendChild(el("div", { class:"card" }, [
       el("h2", { text:"Routine" }),
-      el("div", { class:"note", text:"No active routine found. Create one in Settings." })
+      el("div", { class:"note", text:"No active routine found. Create one now (you don’t need Settings)." }),
+      el("div", { style:"height:12px" }),
+      el("div", { class:"btnrow" }, [
+        el("button", { class:"btn primary", onClick: openRoutineRecovery }, ["Create routine"]),
+        el("button", {
+          class:"btn",
+          onClick: () => {
+            // Helpful shortcut: jump to Backup & Restore section
+            UIState.settings = UIState.settings || {};
+            UIState.settings.open = UIState.settings.open || {};
+            UIState.settings.open.backup = true;
+            navigate("settings");
+          }
+        }, ["Backup & Restore"])
+      ])
     ]));
+
     return root;
   }
 
@@ -7018,6 +7088,183 @@ state.profile.hideRestDays = !!hideRestDays;
           ])
         ]);
 
+                // ────────────────────────────
+        // Routines section (Recovery + Management)
+        // ────────────────────────────
+        function openCreateRoutineModal(afterCreateRoute=null){
+          const body = el("div", {}, [
+            el("div", { class:"note", text:"Pick a template to create a routine. This will set it as your active routine." }),
+            el("div", { style:"height:12px" })
+          ]);
+
+          const list = el("div", { style:"display:grid; gap:10px;" });
+
+          (RoutineTemplates || []).forEach(tpl => {
+            list.appendChild(el("div", {
+              class:"setLink",
+              onClick: () => {
+                try{
+                  const r = Routines.addFromTemplate(tpl.key, tpl.name);
+                  Modal.close();
+                  showToast(`Created: ${r.name}`);
+                  if(afterCreateRoute) navigate(afterCreateRoute);
+                  else renderView();
+                }catch(e){
+                  Modal.open({
+                    title:"Could not create routine",
+                    bodyNode: el("div", {}, [
+                      el("div", { class:"note", text: e?.message || "Something went wrong while creating a routine." }),
+                      el("div", { style:"height:12px" }),
+                      el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+                    ])
+                  });
+                }
+              }
+            }, [
+              el("div", { class:"l" }, [
+                el("div", { class:"a", text: tpl.name }),
+                el("div", { class:"b", text: tpl.desc || "Template" })
+              ]),
+              el("div", { style:"opacity:.85", text:"+" })
+            ]));
+          });
+
+          body.appendChild(list);
+
+          body.appendChild(el("div", { style:"height:14px" }));
+          body.appendChild(el("div", { class:"btnrow" }, [
+            el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+          ]));
+
+          Modal.open({
+            title:"Create routine",
+            center:true,
+            bodyNode: body
+          });
+        }
+
+        function openRenameRoutineModal(routine){
+          const input = el("input", { type:"text", value: routine?.name || "" });
+
+          Modal.open({
+            title:"Rename routine",
+            bodyNode: el("div", {}, [
+              el("div", { class:"note", text:"Update the routine name." }),
+              el("div", { style:"height:10px" }),
+              input,
+              el("div", { style:"height:12px" }),
+              el("div", { class:"btnrow" }, [
+                el("button", {
+                  class:"btn primary",
+                  onClick: () => {
+                    try{
+                      Routines.rename(routine.id, input.value || "");
+                      Modal.close();
+                      showToast("Renamed");
+                      renderView();
+                    }catch(e){
+                      showToast(e?.message || "Rename failed");
+                    }
+                  }
+                }, ["Save"]),
+                el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+              ])
+            ])
+          });
+        }
+
+        const routinesBody = el("div", {}, [
+          el("div", { class:"note", text:"Manage routines here. If you accidentally deleted everything, create a new routine below." }),
+          el("div", { style:"height:10px" }),
+
+          el("div", { class:"btnrow" }, [
+            el("button", { class:"btn primary", onClick: () => openCreateRoutineModal("routine") }, ["+ Create routine"]),
+            el("button", { class:"btn", onClick: () => navigate("routine") }, ["Open Routine"]),
+            el("button", { class:"btn", onClick: () => navigate("routine_editor") }, ["Routine Editor"])
+          ]),
+
+          el("div", { style:"height:12px" }),
+
+          (() => {
+            const all = Routines.getAll() || [];
+            const activeId = state.activeRoutineId || null;
+
+            if(all.length === 0){
+              return el("div", { class:"note", text:"No routines found. Tap “Create routine” to get started." });
+            }
+
+            const list = el("div", { style:"display:grid; gap:10px;" });
+
+            all.forEach(r => {
+              const isActive = (r.id === activeId);
+              const meta = isActive ? "Active" : "Saved";
+
+              list.appendChild(el("div", { class:"setRow" }, [
+                el("div", {}, [
+                  el("div", { style:"font-weight:850;", text: r.name || "Routine" }),
+                  el("div", { class:"meta", text: meta })
+                ]),
+                el("div", { class:"btnrow", style:"justify-content:flex-end; flex-wrap:wrap;" }, [
+
+                  el("button", {
+                    class:"btn" + (isActive ? " primary" : ""),
+                    onClick: () => {
+                      try{
+                        Routines.setActive(r.id);
+                        showToast("Active routine set");
+                        renderView();
+                      }catch(e){
+                        showToast(e?.message || "Could not set active");
+                      }
+                    }
+                  }, [isActive ? "Active" : "Set active"]),
+
+                  el("button", {
+                    class:"btn",
+                    onClick: () => openRenameRoutineModal(r)
+                  }, ["Rename"]),
+
+                  el("button", {
+                    class:"btn",
+                    onClick: () => {
+                      try{
+                        Routines.duplicate(r.id);
+                        showToast("Routine duplicated");
+                        renderView();
+                      }catch(e){
+                        showToast(e?.message || "Duplicate failed");
+                      }
+                    }
+                  }, ["Duplicate"]),
+
+                  el("button", {
+                    class:"btn danger",
+                    onClick: () => {
+                      confirmModal({
+                        title:"Delete routine",
+                        note:`Delete “${r.name || "Routine"}”? This cannot be undone.\n\nTip: Auto Backups can restore if needed.`,
+                        confirmText:"Delete",
+                        danger:true,
+                        onConfirm: () => {
+                          try{
+                            Routines.remove(r.id);
+                            showToast("Routine deleted");
+                            renderView();
+                          }catch(e){
+                            showToast(e?.message || "Delete failed");
+                          }
+                        }
+                      });
+                    }
+                  }, ["Delete"])
+                ])
+              ]));
+            });
+
+            return list;
+          })()
+        ]);
+           
         const libraryBody = el("div", {}, [
           el("div", { class:"setLink", onClick: () => navigate("exercise_library") }, [
             el("div", { class:"l" }, [
@@ -7476,6 +7723,13 @@ const root = el("div", { class:"settingsWrap" }, [
       keywords:["name","protein","week","rest","goal"],
       bodyNode: profileBody
     }),
+      makeSection({
+      key:"routines",
+      title:"Routines",
+      subtitle:"Create, set active, rename, duplicate, delete",
+      keywords:["routine","routines","template","active","edit","duplicate","delete","create"],
+      bodyNode: routinesBody
+    }),
     makeSection({
       key:"library",
       title:"Exercise Library",
@@ -7893,12 +8147,71 @@ Views.RoutineEditor = function(){
   const active = Routines.getActive();
 
   if(!active){
+
+    function openRoutineRecovery(){
+      const body = el("div", {}, [
+        el("div", { class:"note", text:"Choose a template to recreate a routine. This will set it as active and reopen the editor." }),
+        el("div", { style:"height:12px" })
+      ]);
+
+      const list = el("div", { class:"list" });
+
+      (RoutineTemplates || []).forEach(tpl => {
+        list.appendChild(el("div", {
+          class:"item",
+          onClick: () => {
+            try{
+              Routines.addFromTemplate(tpl.key, tpl.name);
+              Modal.close();
+              showToast(`Created: ${tpl.name}`);
+              renderView(); // RoutineEditor will re-render with the new active routine
+            }catch(e){
+              Modal.open({
+                title:"Could not create routine",
+                bodyNode: el("div", {}, [
+                  el("div", { class:"note", text: e?.message || "Something went wrong while creating a routine." }),
+                  el("div", { style:"height:12px" }),
+                  el("button", { class:"btn primary", onClick: Modal.close }, ["OK"])
+                ])
+              });
+            }
+          }
+        }, [
+          el("div", { class:"left" }, [
+            el("div", { class:"name", text: tpl.name }),
+            el("div", { class:"meta", text: tpl.desc || "Template" })
+          ]),
+          el("div", { class:"actions" }, [
+            el("div", { class:"meta", text:"Create" })
+          ])
+        ]));
+      });
+
+      body.appendChild(list);
+
+      body.appendChild(el("div", { style:"height:14px" }));
+      body.appendChild(el("div", { class:"btnrow" }, [
+        el("button", { class:"btn", onClick: () => { Modal.close(); navigate("routine"); } }, ["Back to Routine"]),
+        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+      ]));
+
+      Modal.open({
+        title:"Create a routine",
+        center: true,
+        bodyNode: body
+      });
+    }
+
     root.appendChild(el("div", { class:"card" }, [
       el("h2", { text:"Routine Editor" }),
-      el("div", { class:"note", text:"No active routine found. Go back and select a routine." }),
+      el("div", { class:"note", text:"No active routine found. Create one to continue." }),
       el("div", { style:"height:12px" }),
-      el("button", { class:"btn primary", onClick: () => navigate("routine") }, ["Back to Routine"])
+      el("div", { class:"btnrow" }, [
+        el("button", { class:"btn primary", onClick: openRoutineRecovery }, ["Create routine"]),
+        el("button", { class:"btn", onClick: () => navigate("routine") }, ["Back to Routine"])
+      ])
     ]));
+
     return root;
   }
 
