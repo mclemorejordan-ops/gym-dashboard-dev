@@ -923,30 +923,12 @@ input, select, textarea{
       gap: 8px;
     }
 
-/* Slightly tighter rows inside this modal */
-.addExRow{
-  padding: 10px;
-  border-radius: 14px;
-}
-.addExRow .name{ max-width: 64vw; }
-
-.addExTags{
-  display:flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-}
-.addExTag{
-  font-size: 11px;
-  font-weight: 850;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.88);
-  letter-spacing: .1px;
-  white-space: nowrap;
-}
+    /* Slightly tighter rows inside this modal */
+    .addExRow{
+      padding: 10px;
+      border-radius: 14px;
+    }
+    .addExRow .name{ max-width: 64vw; }
 
     .addExBottom{
       display:flex;
@@ -2578,174 +2560,6 @@ const RoutineTemplates = [
       if(changed) Storage.save(state);
       return changed;
     }
-    // Seed: Secondary muscles + Cardio primary muscle
-// (drives Add Exercise meta line + search + tags)
-// ────────────────────────────
-const SECONDARY_BY_NAME = {
-  // Weightlifting
-  "Barbell Bench Press": ["Triceps"],
-  "Incline Barbell Bench Press": ["Shoulders"],
-  "Decline Barbell Bench Press": ["Triceps"],
-  "Close-Grip Bench Press": ["Triceps"],
-  "Barbell Floor Press": ["Triceps"],
-  "Barbell Overhead Press": ["Triceps"],
-  "Upright Row": ["Traps"],
-  "Barbell Push Press": ["Legs"],
-  "Barbell Landmine Press": ["Chest"],
-  "Barbell Bent Over Row": ["Lats"],
-  "Pendlay Row": ["Lats"],
-  "Barbell Incline Row": ["Rear Delts"],
-  "Barbell Landmine Row": ["Lats"],
-  "Barbell Deadlift": ["Glutes"],
-  "Rack Pull": ["Glutes"],
-  "Romanian Deadlift": ["Hamstrings"],
-  "Barbell Good Morning": ["Hamstrings"],
-  "Sumo Deadlift": ["Glutes"],
-  "Back Squat": ["Quads"],
-  "Front Squat": ["Quads"],
-  "Barbell Hack Squat": ["Quads"],
-  "Barbell Lunge": ["Glutes"],
-  "Barbell Reverse Lunge": ["Glutes"],
-  "Barbell Hip Thrust": ["Glutes"],
-  "Barbell Glute Bridge": ["Glutes"],
-  "Barbell Calf Raise": ["Calves"],
-  "Barbell Curl": ["Biceps"],
-  "Reverse Curl": ["Forearms"],
-  "Barbell Skull Crusher": ["Triceps"],
-  "Barbell Thruster": ["Shoulders"],
-  "Power Clean": ["Legs"],
-  "Hang Clean": ["Legs"],
-
-  "Dumbbell Bench Press": ["Triceps"],
-  "Incline Dumbbell Press": ["Shoulders"],
-  "Decline Dumbbell Press": ["Triceps"],
-  "Dumbbell Fly": ["Chest"],
-  "Dumbbell Pullover": ["Lats"],
-  "Dumbbell Floor Press": ["Triceps"],
-  "Dumbbell Shoulder Press": ["Triceps"],
-  "Arnold Press": ["Front Delts"],
-  "Dumbbell Lateral Raise": ["Side Delts"],
-  "Dumbbell Front Raise": ["Front Delts"],
-  "Dumbbell Rear Delt Fly": ["Rear Delts"],
-  "Dumbbell Incline Lateral Raise": ["Side Delts"],
-  "Dumbbell Z Press": ["Core"],
-  "Dumbbell High Pull": ["Traps"],
-  "Dumbbell Shrug": ["Traps"],
-  "Dumbbell Reverse Fly": ["Rear Delts"],
-  "Single-Arm Dumbbell Row": ["Biceps"],
-  "Dumbbell Chest Supported Row": ["Biceps"],
-  "Goblet Squat": ["Quads"],
-  "Dumbbell Lunge": ["Glutes"],
-  "Walking Lunge": ["Glutes"],
-  "Bulgarian Split Squat": ["Quads"],
-  "Dumbbell Reverse Lunge": ["Glutes"],
-  "Dumbbell Step-Up": ["Glutes"],
-  "Dumbbell Romanian Deadlift": ["Hamstrings"],
-  "Dumbbell Sumo Squat": ["Glutes"],
-  "Dumbbell Hip Thrust": ["Glutes"],
-  "Dumbbell Glute Bridge": ["Glutes"],
-  "Dumbbell Calf Raise": ["Calves"],
-  "Dumbbell Curl": ["Biceps"],
-  "Incline Dumbbell Curl": ["Biceps"],
-  "Hammer Curl": ["Brachialis"],
-  "Concentration Curl": ["Biceps"],
-  "Overhead Tricep Extension": ["Triceps"],
-  "Dumbbell Skull Crusher": ["Triceps"],
-  "Tricep Kickback": ["Triceps"],
-  "Dumbbell Thruster": ["Shoulders"],
-  "Dumbbell Snatch": ["Shoulders"],
-  "Dumbbell Clean and Press": ["Shoulders"],
-  "Dumbbell Swings": ["Glutes"],
-  "Farmers Carry": ["Forearms"],
-  "Dumbbell Suitcase Carry": ["Obliques"],
-
-  "Chest Press": ["Triceps"],
-  "Pec Deck": ["Chest"],
-  "Machine Chest Fly": ["Chest"],
-  "Lat Pulldown": ["Lats"],
-  "Seated Row": ["Lats"],
-  "Assisted Pull-Up": ["Lats"],
-  "Leg Press": ["Quads"],
-  "Hack Squat Machine": ["Quads"],
-  "Smith Machine Squat": ["Quads"],
-  "Leg Extension": ["Quads"],
-  "Leg Curl": ["Hamstrings"],
-  "Hip Abduction Machine": ["Glutes"],
-  "Hip Adduction Machine": ["Adductors"],
-  "Seated Calf Raise": ["Calves"],
-  "Standing Calf Raise Machine": ["Calves"],
-  "Machine Shoulder Press": ["Triceps"],
-  "Machine Preacher Curl": ["Biceps"],
-  "Machine Tricep Dip": ["Triceps"],
-
-  "Cable Chest Fly": ["Chest"],
-  "Cable Crossover": ["Chest"],
-  "Cable Row": ["Lats"],
-  "Face Pull": ["Rear Delts"],
-  "Cable Lateral Raise": ["Side Delts"],
-  "Cable Front Raise": ["Front Delts"],
-  "Cable Reverse Fly": ["Rear Delts"],
-  "Cable Upright Row": ["Traps"],
-  "Cable Tricep Pushdown": ["Triceps"],
-  "Cable Overhead Tricep Extension": ["Triceps"],
-  "Cable Bicep Curl": ["Biceps"],
-  "Cable Woodchopper": ["Obliques"],
-  "Cable Crunch": ["Abs"],
-  "Cable Pallof Press": ["Obliques"],
-  "Cable Kickback": ["Glutes"],
-  "Cable Pull-Through": ["Glutes"],
-
-  "Push-Up": ["Triceps"],
-  "Pull-Up": ["Lats"],
-  "Chin-Up": ["Biceps"],
-  "Dips": ["Triceps"],
-  "Pike Push-Up": ["Triceps"],
-  "Bodyweight Squat": ["Quads"],
-  "Nordic Hamstring Curl": ["Hamstrings"],
-  "Glute Bridge": ["Glutes"],
-
-  // Cardio
-  "Treadmill Run": ["Legs"],
-  "Incline Walk": ["Glutes"],
-  "Sprint Intervals": ["Legs"],
-  "Outdoor Run": ["Legs"],
-  "Stairmaster": ["Glutes"],
-  "Stationary Bike": ["Quads"],
-  "Assault Bike": ["Full Body"],
-  "Row Machine": ["Back"],
-  "Row Sprint": ["Full Body"],
-  "Ski Erg": ["Shoulders"],
-  "Elliptical": ["Legs"],
-  "Battle Ropes": ["Shoulders"],
-  "Sled Push": ["Legs"],
-  "Sled Pull": ["Back"],
-  "Jump Rope": ["Calves"],
-
-  // Core
-  "Plank": ["Abs"],
-  "Side Plank": ["Obliques"],
-  "Weighted Sit-Up": ["Abs"],
-  "Russian Twist": ["Obliques"],
-  "Dumbbell Side Bend": ["Obliques"],
-  "Renegade Row": ["Lats"],
-  "Plank Pull-Through": ["Abs"],
-  "Hanging Leg Raise": ["Abs"],
-  "Hanging Knee Raise": ["Abs"],
-  "Weighted Leg Raise": ["Abs"],
-  "Bicycle Crunch": ["Abs"],
-  "Decline Sit-Up": ["Abs"],
-  "Ab Wheel Rollout": ["Abs"],
-  "Stability Ball Crunch": ["Abs"],
-  "Stability Ball Rollout": ["Abs"],
-  "Barbell Rollout": ["Abs"],
-  "Barbell Overhead Hold": ["Shoulders"],
-  "Landmine Rotation": ["Obliques"],
-  "V-Up": ["Abs"],
-  "Hollow Body Hold": ["Abs"],
-  "Dragon Flag": ["Abs"],
-  "Medicine Ball Slam": ["Full Body"],
-  "Medicine Ball Russian Twist": ["Obliques"]
-};
     /********************
      * 4) Exercise Library Module (Step 3)
      ********************/
@@ -2762,453 +2576,135 @@ const SECONDARY_BY_NAME = {
         const empty = (lib.weightlifting?.length||0) === 0 && (lib.cardio?.length||0) === 0 && (lib.core?.length||0) === 0;
 
         if(empty){
-lib.weightlifting = [
-  // --- Barbell ---
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Bench Press", equipment:"Barbell", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Incline Barbell Bench Press", equipment:"Barbell", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Decline Barbell Bench Press", equipment:"Barbell", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Close-Grip Bench Press", equipment:"Barbell", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Floor Press", equipment:"Barbell", primaryMuscle:"Chest", createdAt:Date.now() },
+          lib.weightlifting = [
+          // --- Barbell (Chest/Shoulders/Back/Legs) ---
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Bench Press", equipment:"Barbell", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Incline Barbell Bench Press", equipment:"Barbell", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Decline Barbell Bench Press", equipment:"Barbell", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Close-Grip Bench Press", equipment:"Barbell", primaryMuscle:"Chest / Triceps", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Overhead Press", equipment:"Barbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Upright Row", equipment:"Barbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Push Press", equipment:"Barbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Landmine Press", equipment:"Barbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Overhead Press", equipment:"Barbell", primaryMuscle:"Shoulders", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Upright Row", equipment:"Barbell", primaryMuscle:"Shoulders", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Bent Over Row", equipment:"Barbell", primaryMuscle:"Back", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Pendlay Row", equipment:"Barbell", primaryMuscle:"Back", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Incline Row", equipment:"Barbell", primaryMuscle:"Back", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Landmine Row", equipment:"Barbell", primaryMuscle:"Back", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Bent Over Row", equipment:"Barbell", primaryMuscle:"Back", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Pendlay Row", equipment:"Barbell", primaryMuscle:"Back", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Deadlift", equipment:"Barbell", primaryMuscle:"Back", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Rack Pull", equipment:"Barbell", primaryMuscle:"Back", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Deadlift", equipment:"Barbell", primaryMuscle:"Back / Glutes", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Romanian Deadlift", equipment:"Barbell", primaryMuscle:"Hamstrings", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Rack Pull", equipment:"Barbell", primaryMuscle:"Back", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Romanian Deadlift", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Good Morning", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Sumo Deadlift", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Back Squat", equipment:"Barbell", primaryMuscle:"Legs (Quads)", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Front Squat", equipment:"Barbell", primaryMuscle:"Legs (Quads)", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Sumo Deadlift", equipment:"Barbell", primaryMuscle:"Glutes / Hamstrings", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Hip Thrust", equipment:"Barbell", primaryMuscle:"Glutes", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Lunge", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Calf Raise", equipment:"Barbell", primaryMuscle:"Calves", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Back Squat", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Front Squat", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Hack Squat", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Lunge", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Reverse Lunge", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Hip Thrust", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Glute Bridge", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Calf Raise", equipment:"Barbell", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Curl", equipment:"Barbell", primaryMuscle:"Biceps", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Reverse Curl", equipment:"Barbell", primaryMuscle:"Forearms", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Skull Crusher", equipment:"Barbell", primaryMuscle:"Triceps", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Curl", equipment:"Barbell", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Reverse Curl", equipment:"Barbell", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Skull Crusher", equipment:"Barbell", primaryMuscle:"Arms", createdAt:Date.now() },
+          // --- Dumbbell (Chest/Shoulders/Back/Legs/Arms) ---
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Bench Press", equipment:"Dumbbell", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Incline Dumbbell Press", equipment:"Dumbbell", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Decline Dumbbell Press", equipment:"Dumbbell", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Fly", equipment:"Dumbbell", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Pullover", equipment:"Dumbbell", primaryMuscle:"Chest / Back", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Barbell Thruster", equipment:"Barbell", primaryMuscle:"Full Body", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Power Clean", equipment:"Barbell", primaryMuscle:"Full Body", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Hang Clean", equipment:"Barbell", primaryMuscle:"Full Body", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Shoulder Press", equipment:"Dumbbell", primaryMuscle:"Shoulders", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Arnold Press", equipment:"Dumbbell", primaryMuscle:"Shoulders", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Lateral Raise", equipment:"Dumbbell", primaryMuscle:"Shoulders", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Front Raise", equipment:"Dumbbell", primaryMuscle:"Shoulders", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Rear Delt Fly", equipment:"Dumbbell", primaryMuscle:"Shoulders", createdAt:Date.now() },
 
-  // --- Dumbbell ---
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Bench Press", equipment:"Dumbbell", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Incline Dumbbell Press", equipment:"Dumbbell", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Decline Dumbbell Press", equipment:"Dumbbell", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Fly", equipment:"Dumbbell", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Pullover", equipment:"Dumbbell", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Floor Press", equipment:"Dumbbell", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Single-Arm Dumbbell Row", equipment:"Dumbbell", primaryMuscle:"Back", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Shrug", equipment:"Dumbbell", primaryMuscle:"Traps", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Shoulder Press", equipment:"Dumbbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Arnold Press", equipment:"Dumbbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Lateral Raise", equipment:"Dumbbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Front Raise", equipment:"Dumbbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Rear Delt Fly", equipment:"Dumbbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Incline Lateral Raise", equipment:"Dumbbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Z Press", equipment:"Dumbbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell High Pull", equipment:"Dumbbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Shrug", equipment:"Dumbbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Reverse Fly", equipment:"Dumbbell", primaryMuscle:"Shoulder", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Goblet Squat", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Lunge", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Walking Lunge", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Bulgarian Split Squat", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Step-Up", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Romanian Deadlift", equipment:"Dumbbell", primaryMuscle:"Hamstrings", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Sumo Squat", equipment:"Dumbbell", primaryMuscle:"Glutes", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Hip Thrust", equipment:"Dumbbell", primaryMuscle:"Glutes", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Calf Raise", equipment:"Dumbbell", primaryMuscle:"Calves", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Single-Arm Dumbbell Row", equipment:"Dumbbell", primaryMuscle:"Back", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Chest Supported Row", equipment:"Dumbbell", primaryMuscle:"Back", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Curl", equipment:"Dumbbell", primaryMuscle:"Biceps", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Incline Dumbbell Curl", equipment:"Dumbbell", primaryMuscle:"Biceps", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Hammer Curl", equipment:"Dumbbell", primaryMuscle:"Biceps", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Concentration Curl", equipment:"Dumbbell", primaryMuscle:"Biceps", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Goblet Squat", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Lunge", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Walking Lunge", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Bulgarian Split Squat", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Reverse Lunge", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Step-Up", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Romanian Deadlift", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Sumo Squat", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Hip Thrust", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Glute Bridge", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Calf Raise", equipment:"Dumbbell", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Overhead Tricep Extension", equipment:"Dumbbell", primaryMuscle:"Triceps", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Skull Crusher", equipment:"Dumbbell", primaryMuscle:"Triceps", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Tricep Kickback", equipment:"Dumbbell", primaryMuscle:"Triceps", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Curl", equipment:"Dumbbell", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Incline Dumbbell Curl", equipment:"Dumbbell", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Hammer Curl", equipment:"Dumbbell", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Concentration Curl", equipment:"Dumbbell", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Overhead Tricep Extension", equipment:"Dumbbell", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Skull Crusher", equipment:"Dumbbell", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Tricep Kickback", equipment:"Dumbbell", primaryMuscle:"Arms", createdAt:Date.now() },
+          // --- Machines & Cable (Commercial Gym Essentials) ---
+          { id: uid("ex"), type:"weightlifting", name:"Chest Press", equipment:"Machine", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Pec Deck", equipment:"Machine", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Lat Pulldown", equipment:"Machine", primaryMuscle:"Back", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Seated Row", equipment:"Machine", primaryMuscle:"Back", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Assisted Pull-Up", equipment:"Machine", primaryMuscle:"Back", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Thruster", equipment:"Dumbbell", primaryMuscle:"Full Body", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Snatch", equipment:"Dumbbell", primaryMuscle:"Full Body", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Clean and Press", equipment:"Dumbbell", primaryMuscle:"Full Body", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Swings", equipment:"Dumbbell", primaryMuscle:"Full Body", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Farmers Carry", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dumbbell Suitcase Carry", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Leg Press", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Leg Extension", equipment:"Machine", primaryMuscle:"Quads", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Leg Curl", equipment:"Machine", primaryMuscle:"Hamstrings", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Seated Calf Raise", equipment:"Machine", primaryMuscle:"Calves", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Smith Machine Squat", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
 
-  // --- Machines ---
-  { id: uid("ex"), type:"weightlifting", name:"Chest Press", equipment:"Machine", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Pec Deck", equipment:"Machine", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Machine Chest Fly", equipment:"Machine", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Cable Chest Fly", equipment:"Cable", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Cable Crossover", equipment:"Cable", primaryMuscle:"Chest", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Cable Row", equipment:"Cable", primaryMuscle:"Back", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Face Pull", equipment:"Cable", primaryMuscle:"Shoulders", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Cable Lateral Raise", equipment:"Cable", primaryMuscle:"Shoulders", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Lat Pulldown", equipment:"Machine", primaryMuscle:"Back", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Seated Row", equipment:"Machine", primaryMuscle:"Back", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Assisted Pull-Up", equipment:"Machine", primaryMuscle:"Back", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Cable Tricep Pushdown", equipment:"Cable", primaryMuscle:"Triceps", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Cable Overhead Tricep Extension", equipment:"Cable", primaryMuscle:"Triceps", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Cable Bicep Curl", equipment:"Cable", primaryMuscle:"Biceps", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Leg Press", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Hack Squat Machine", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Smith Machine Squat", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Leg Extension", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Leg Curl", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Hip Abduction Machine", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Hip Adduction Machine", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Seated Calf Raise", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Standing Calf Raise Machine", equipment:"Machine", primaryMuscle:"Legs", createdAt:Date.now() },
+          // --- Conditioning / Full Body (moved from cardio) ---
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Thruster", equipment:"Dumbbell", primaryMuscle:"Full Body", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Snatch", equipment:"Dumbbell", primaryMuscle:"Full Body", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Clean and Press", equipment:"Dumbbell", primaryMuscle:"Full Body", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Dumbbell Swings", equipment:"Dumbbell", primaryMuscle:"Full Body", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Farmers Carry", equipment:"Dumbbell", primaryMuscle:"Full Body", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Machine Shoulder Press", equipment:"Machine", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Machine Preacher Curl", equipment:"Machine", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Machine Tricep Dip", equipment:"Machine", primaryMuscle:"Arms", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Barbell Thruster", equipment:"Barbell", primaryMuscle:"Full Body", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Power Clean", equipment:"Barbell", primaryMuscle:"Full Body", createdAt:Date.now() },
+          { id: uid("ex"), type:"weightlifting", name:"Hang Clean", equipment:"Barbell", primaryMuscle:"Full Body", createdAt:Date.now() }
+        ];
 
-  // --- Cable ---
-  { id: uid("ex"), type:"weightlifting", name:"Cable Chest Fly", equipment:"Cable", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Crossover", equipment:"Cable", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Row", equipment:"Cable", primaryMuscle:"Back", createdAt:Date.now() },
+        lib.cardio = [
+          { id: uid("ex"), type:"cardio", name:"Treadmill Run", equipment:"Treadmill", modality:"run", supportsIncline:true, createdAt:Date.now() },
+          { id: uid("ex"), type:"cardio", name:"Incline Walk", equipment:"Treadmill", modality:"walk", supportsIncline:true, createdAt:Date.now() },
+          { id: uid("ex"), type:"cardio", name:"Stairmaster", equipment:"Machine", modality:"stairs", supportsIncline:false, createdAt:Date.now() },
+          { id: uid("ex"), type:"cardio", name:"Stationary Bike", equipment:"Bike", modality:"bike", supportsIncline:false, createdAt:Date.now() },
+          { id: uid("ex"), type:"cardio", name:"Row Machine", equipment:"Rower", modality:"row", supportsIncline:false, createdAt:Date.now() },
+          { id: uid("ex"), type:"cardio", name:"Elliptical", equipment:"Machine", modality:"elliptical", supportsIncline:false, createdAt:Date.now() },
+          { id: uid("ex"), type:"cardio", name:"Jump Rope", equipment:"Bodyweight", modality:"rope", supportsIncline:false, createdAt:Date.now() }
+        ];
 
-  { id: uid("ex"), type:"weightlifting", name:"Face Pull", equipment:"Cable", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Lateral Raise", equipment:"Cable", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Front Raise", equipment:"Cable", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Reverse Fly", equipment:"Cable", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Upright Row", equipment:"Cable", primaryMuscle:"Shoulder", createdAt:Date.now() },
+        lib.core = [
+          { id: uid("ex"), type:"core", name:"Plank", equipment:"Bodyweight", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Side Plank", equipment:"Bodyweight", primaryMuscle:"Core (Obliques)", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Weighted Sit-Up", equipment:"Dumbbell", primaryMuscle:"Core (Abs)", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Russian Twist", equipment:"Dumbbell", primaryMuscle:"Core (Obliques)", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Dumbbell Side Bend", equipment:"Dumbbell", primaryMuscle:"Core (Obliques)", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Renegade Row", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Plank Pull-Through", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Cable Tricep Pushdown", equipment:"Cable", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Overhead Tricep Extension", equipment:"Cable", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Bicep Curl", equipment:"Cable", primaryMuscle:"Arms", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Hanging Leg Raise", equipment:"Bar", primaryMuscle:"Core (Lower Abs)", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Weighted Leg Raise", equipment:"Dumbbell", primaryMuscle:"Core (Lower Abs)", createdAt:Date.now() },
 
-  { id: uid("ex"), type:"weightlifting", name:"Cable Kickback", equipment:"Cable", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Cable Pull-Through", equipment:"Cable", primaryMuscle:"Legs", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Bicycle Crunch", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Decline Sit-Up", equipment:"Bench", primaryMuscle:"Core", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Ab Wheel Rollout", equipment:"Ab Wheel", primaryMuscle:"Core", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Barbell Rollout", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
+          { id: uid("ex"), type:"core", name:"Barbell Overhead Hold", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() }
+               ];
+        }
 
-  // --- Bodyweight Strength ---
-  { id: uid("ex"), type:"weightlifting", name:"Push-Up", equipment:"Bodyweight", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Pull-Up", equipment:"Bodyweight", primaryMuscle:"Back", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Chin-Up", equipment:"Bodyweight", primaryMuscle:"Arms", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Dips", equipment:"Bodyweight", primaryMuscle:"Chest", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Pike Push-Up", equipment:"Bodyweight", primaryMuscle:"Shoulder", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Bodyweight Squat", equipment:"Bodyweight", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Nordic Hamstring Curl", equipment:"Bodyweight", primaryMuscle:"Legs", createdAt:Date.now() },
-  { id: uid("ex"), type:"weightlifting", name:"Glute Bridge", equipment:"Bodyweight", primaryMuscle:"Legs", createdAt:Date.now() }
-];
-
-lib.cardio = [
-  { id: uid("ex"), type:"cardio", name:"Treadmill Run", equipment:"Treadmill", modality:"run", supportsIncline:true, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Incline Walk", equipment:"Treadmill", modality:"walk", supportsIncline:true, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Sprint Intervals", equipment:"Treadmill", modality:"run", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Outdoor Run", equipment:"Outdoor", modality:"run", supportsIncline:false, createdAt:Date.now() },
-
-  { id: uid("ex"), type:"cardio", name:"Stairmaster", equipment:"Machine", modality:"stairs", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Stationary Bike", equipment:"Bike", modality:"bike", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Assault Bike", equipment:"Bike", modality:"bike", supportsIncline:false, createdAt:Date.now() },
-
-  { id: uid("ex"), type:"cardio", name:"Row Machine", equipment:"Rower", modality:"row", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Row Sprint", equipment:"Rower", modality:"row", supportsIncline:false, createdAt:Date.now() },
-
-  { id: uid("ex"), type:"cardio", name:"Ski Erg", equipment:"Machine", modality:"ski", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Elliptical", equipment:"Machine", modality:"elliptical", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Battle Ropes", equipment:"Machine", modality:"ropes", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Sled Push", equipment:"Sled", modality:"sled", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Sled Pull", equipment:"Sled", modality:"sled", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Jump Rope", equipment:"Bodyweight", modality:"rope", supportsIncline:false, createdAt:Date.now() }
-];
-
-lib.core = [
-  { id: uid("ex"), type:"core", name:"Plank", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Side Plank", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-    // --- Cable (Core) ---
-  { id: uid("ex"), type:"core", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Cable Pallof Press", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
-
-  { id: uid("ex"), type:"core", name:"Weighted Sit-Up", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Russian Twist", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Dumbbell Side Bend", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Renegade Row", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Plank Pull-Through", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-
-  { id: uid("ex"), type:"core", name:"Hanging Leg Raise", equipment:"Bar", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Hanging Knee Raise", equipment:"Bar", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Weighted Leg Raise", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-
-  { id: uid("ex"), type:"core", name:"Bicycle Crunch", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Decline Sit-Up", equipment:"Bench", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Ab Wheel Rollout", equipment:"Ab Wheel", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Stability Ball Crunch", equipment:"Stability Ball", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Stability Ball Rollout", equipment:"Stability Ball", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Barbell Rollout", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Barbell Overhead Hold", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Landmine Rotation", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"V-Up", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Hollow Body Hold", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Dragon Flag", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Medicine Ball Slam", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Medicine Ball Russian Twist", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() },
-
-  // Cable (Core) — keep these in Core (not Weightlifting)
-  { id: uid("ex"), type:"core", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
-];
-   // ────────────────────────────
-// Seed: Secondary muscles + Cardio/Core primary normalization
-// (drives Add Exercise meta line + search + tags)
-// ────────────────────────────
-const SECONDARY_BY_NAME = {
-  // Weightlifting (sample shown — keep/extend as needed)
-  "Barbell Bench Press": ["Triceps"],
-  "Incline Barbell Bench Press": ["Shoulders"],
-  "Decline Barbell Bench Press": ["Triceps"],
-  "Close-Grip Bench Press": ["Triceps"],
-  "Barbell Floor Press": ["Triceps"],
-
-  "Barbell Overhead Press": ["Triceps"],
-  "Upright Row": ["Traps"],
-  "Barbell Push Press": ["Legs"],
-  "Barbell Landmine Press": ["Chest"],
-
-  "Barbell Bent Over Row": ["Lats"],
-  "Pendlay Row": ["Lats"],
-  "Barbell Incline Row": ["Rear Delts"],
-  "Barbell Landmine Row": ["Lats"],
-  "Barbell Deadlift": ["Glutes"],
-  "Rack Pull": ["Glutes"],
-
-  "Romanian Deadlift": ["Hamstrings"],
-  "Barbell Good Morning": ["Hamstrings"],
-  "Sumo Deadlift": ["Glutes"],
-
-  "Back Squat": ["Quads"],
-  "Front Squat": ["Quads"],
-  "Barbell Hack Squat": ["Quads"],
-  "Barbell Lunge": ["Glutes"],
-  "Barbell Reverse Lunge": ["Glutes"],
-  "Barbell Hip Thrust": ["Glutes"],
-  "Barbell Glute Bridge": ["Glutes"],
-  "Barbell Calf Raise": ["Calves"],
-
-  "Barbell Curl": ["Biceps"],
-  "Reverse Curl": ["Forearms"],
-  "Barbell Skull Crusher": ["Triceps"],
-
-  "Barbell Thruster": ["Shoulders"],
-  "Power Clean": ["Legs"],
-  "Hang Clean": ["Legs"],
-
-  "Dumbbell Bench Press": ["Triceps"],
-  "Incline Dumbbell Press": ["Shoulders"],
-  "Decline Dumbbell Press": ["Triceps"],
-  "Dumbbell Fly": ["Chest"],
-  "Dumbbell Pullover": ["Lats"],
-  "Dumbbell Floor Press": ["Triceps"],
-
-  "Dumbbell Shoulder Press": ["Triceps"],
-  "Arnold Press": ["Front Delts"],
-  "Dumbbell Lateral Raise": ["Side Delts"],
-  "Dumbbell Front Raise": ["Front Delts"],
-  "Dumbbell Rear Delt Fly": ["Rear Delts"],
-  "Dumbbell Incline Lateral Raise": ["Side Delts"],
-  "Dumbbell Z Press": ["Core"],
-  "Dumbbell High Pull": ["Traps"],
-  "Dumbbell Shrug": ["Traps"],
-  "Dumbbell Reverse Fly": ["Rear Delts"],
-
-  // IMPORTANT: your requested correction
-  "Single-Arm Dumbbell Row": ["Biceps"],
-
-  // Machines
-  "Lat Pulldown": ["Lats"],
-  "Seated Row": ["Lats"],
-  "Assisted Pull-Up": ["Lats"],
-  "Leg Extension": ["Quads"],
-  "Leg Curl": ["Hamstrings"],
-  "Hip Abduction Machine": ["Glutes"],
-  "Hip Adduction Machine": ["Adductors"],
-  "Seated Calf Raise": ["Calves"],
-  "Standing Calf Raise Machine": ["Calves"],
-
-  // Cables (Core vs Weightlifting handled by type + normalization)
-  "Cable Crunch": ["Abs"],
-  "Cable Woodchopper": ["Obliques"],
-  "Cable Pallof Press": ["Obliques"],
-
-  // Bodyweight
-  "Push-Up": ["Triceps"],
-  "Pull-Up": ["Lats"],
-  "Chin-Up": ["Biceps"],
-
-  // IMPORTANT: your requested correction (keep in Chest, secondary Triceps)
-  "Dips": ["Triceps"],
-
-  "Pike Push-Up": ["Triceps"],
-  "Bodyweight Squat": ["Quads"],
-  "Nordic Hamstring Curl": ["Hamstrings"],
-  "Glute Bridge": ["Glutes"],
-
-  // Cardio
-  "Treadmill Run": ["Legs"],
-  "Incline Walk": ["Glutes"],
-  "Sprint Intervals": ["Legs"],
-  "Outdoor Run": ["Legs"],
-  "Stairmaster": ["Glutes"],
-  "Stationary Bike": ["Quads"],
-  "Assault Bike": ["Full Body"],
-  "Row Machine": ["Back"],
-  "Row Sprint": ["Full Body"],
-  "Ski Erg": ["Shoulders"],
-  "Elliptical": ["Legs"],
-  "Battle Ropes": ["Shoulders"],
-  "Sled Push": ["Legs"],
-  "Sled Pull": ["Back"],
-  "Jump Rope": ["Calves"],
-
-  // Core
-  "Plank": ["Abs"],
-  "Side Plank": ["Obliques"],
-  "Weighted Sit-Up": ["Abs"],
-  "Russian Twist": ["Obliques"],
-  "Dumbbell Side Bend": ["Obliques"],
-  "Renegade Row": ["Lats"],
-  "Plank Pull-Through": ["Abs"],
-  "Hanging Leg Raise": ["Abs"],
-  "Hanging Knee Raise": ["Abs"],
-  "Weighted Leg Raise": ["Abs"],
-  "Bicycle Crunch": ["Abs"],
-  "Decline Sit-Up": ["Abs"],
-  "Ab Wheel Rollout": ["Abs"],
-  "Stability Ball Crunch": ["Abs"],
-  "Stability Ball Rollout": ["Abs"],
-  "Barbell Rollout": ["Abs"],
-  "Barbell Overhead Hold": ["Shoulders"],
-  "Landmine Rotation": ["Obliques"],
-  "V-Up": ["Abs"],
-  "Hollow Body Hold": ["Abs"],
-  "Dragon Flag": ["Abs"],
-  "Medicine Ball Slam": ["Full Body"],
-  "Medicine Ball Russian Twist": ["Obliques"]
-};
-
-function applySecondaryAndCardioPrimary(arr, primaryForAll=null){
-  (arr || []).forEach(ex => {
-    if(primaryForAll) ex.primaryMuscle = primaryForAll;
-    const sec = SECONDARY_BY_NAME[ex.name];
-    ex.secondaryMuscles = Array.isArray(sec) ? sec.slice() : [];
-  });
-}
-   if(empty){
-  lib.weightlifting = [ ... ];
-  lib.cardio = [ ... ];
-  lib.core = [ ... ];
-}  // ← END of seeding
-
-// ────────────────────────────
-// Backfill default Cardio/Core lists if an older saved library is missing them
-// (non-destructive: only adds missing-by-name)
-// ────────────────────────────
-function mergeByName(targetArr, defaults){
-  const seen = new Set((targetArr||[]).map(x => normName(x?.name||"")).filter(Boolean));
-  (defaults||[]).forEach(d => {
-    const k = normName(d?.name||"");
-    if(!k) return;
-    if(seen.has(k)) return;
-    targetArr.push(d);
-    seen.add(k);
-  });
-}
-
-// Ensure arrays exist (older saves)
-if(!lib.cardio) lib.cardio = [];
-if(!lib.core) lib.core = [];
-
-// Merge missing cardio defaults
-mergeByName(lib.cardio, [
-  { id: uid("ex"), type:"cardio", name:"Treadmill Run", equipment:"Treadmill", modality:"run", supportsIncline:true, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Incline Walk", equipment:"Treadmill", modality:"walk", supportsIncline:true, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Sprint Intervals", equipment:"Treadmill", modality:"run", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Outdoor Run", equipment:"Outdoor", modality:"run", supportsIncline:false, createdAt:Date.now() },
-
-  { id: uid("ex"), type:"cardio", name:"Stairmaster", equipment:"Machine", modality:"stairs", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Stationary Bike", equipment:"Bike", modality:"bike", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Assault Bike", equipment:"Bike", modality:"bike", supportsIncline:false, createdAt:Date.now() },
-
-  { id: uid("ex"), type:"cardio", name:"Row Machine", equipment:"Rower", modality:"row", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Row Sprint", equipment:"Rower", modality:"row", supportsIncline:false, createdAt:Date.now() },
-
-  { id: uid("ex"), type:"cardio", name:"Ski Erg", equipment:"Machine", modality:"ski", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Elliptical", equipment:"Machine", modality:"elliptical", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Battle Ropes", equipment:"Machine", modality:"ropes", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Sled Push", equipment:"Sled", modality:"sled", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Sled Pull", equipment:"Sled", modality:"sled", supportsIncline:false, createdAt:Date.now() },
-  { id: uid("ex"), type:"cardio", name:"Jump Rope", equipment:"Bodyweight", modality:"rope", supportsIncline:false, createdAt:Date.now() }
-]);
-
-// Merge missing core defaults
-mergeByName(lib.core, [
-  { id: uid("ex"), type:"core", name:"Plank", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Side Plank", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Weighted Sit-Up", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Russian Twist", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Dumbbell Side Bend", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Renegade Row", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Plank Pull-Through", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-
-  { id: uid("ex"), type:"core", name:"Hanging Leg Raise", equipment:"Bar", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Hanging Knee Raise", equipment:"Bar", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Weighted Leg Raise", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
-
-  { id: uid("ex"), type:"core", name:"Bicycle Crunch", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Decline Sit-Up", equipment:"Bench", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Ab Wheel Rollout", equipment:"Ab Wheel", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Stability Ball Crunch", equipment:"Stability Ball", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Stability Ball Rollout", equipment:"Stability Ball", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Barbell Rollout", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Barbell Overhead Hold", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Landmine Rotation", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"V-Up", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Hollow Body Hold", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Dragon Flag", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Medicine Ball Slam", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() },
-  { id: uid("ex"), type:"core", name:"Medicine Ball Russian Twist", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() }
-]);
-
-// Re-apply meta (makes sure these merged-in defaults get the correct primary + secondaries)
-applySecondaryAndCardioPrimary(lib.cardio, "Cardio");
-applySecondaryAndCardioPrimary(lib.core, "Core");
-
-// ────────────────────────────
-// Always hydrate secondaryMuscles + normalize primaries (even when library already exists)
-// Fixes older seeded data where secondaryMuscles were missing + prevents Core/Cardio splitting.
-// ────────────────────────────
-(function hydrateLibraryMeta(){
-  const libNow = state.exerciseLibrary || {};
-  const types = ["weightlifting","cardio","core"];
-
-  types.forEach(t => {
-    (libNow[t] || []).forEach(ex => {
-      // Force stable primaries for Cardio/Core to prevent accidental new groups (e.g., "Abs")
-      if(t === "cardio") ex.primaryMuscle = "Cardio";
-      if(t === "core") ex.primaryMuscle = "Core";
-
-      // Ensure secondaryMuscles exists and is hydrated from dictionary
-      const sec = SECONDARY_BY_NAME?.[ex.name];
-      ex.secondaryMuscles = Array.isArray(sec) ? sec.slice() : (Array.isArray(ex.secondaryMuscles) ? ex.secondaryMuscles : []);
-    });
-  });
-})();
-
-        
         // Always attempt to repair links (covers older data / edge cases)
         const repaired = repairExerciseLinks();
 
@@ -7870,7 +7366,7 @@ const addMultiBtn = el("button", {
     });
   }
 
-    function openAddExercise(routineId, dayId, opts={}){
+  function openAddExercise(routineId, dayId, opts={}){
     // Compact, phone-first "Add Exercise" modal
     // - Active day context (top)
     // - Fixed search bar
@@ -7903,78 +7399,11 @@ const addMultiBtn = el("button", {
     // Collapsed/expanded groups (session only)
     const openGroups = new Set();
 
-    // ✅ Primary muscle normalization (Option B)
-    // - If primary is "X / Y", use "X"
-    // - Bucket certain primaries into Arms / Legs / Shoulders
-    function normalizePrimaryMuscle(raw){
-      const src = String(raw || "").trim();
-      if(!src) return "Other";
-
-      // Option B: strip anything after the primary to avoid split/compound groups.
-      // Accept common separators users might type: "/", ",", "|", "•", "&", "+"
-      // Example: "Back / Biceps" -> "Back", "Chest, Shoulders, Triceps" -> "Chest"
-      const primaryPart = src
-        .replace(/[•&+|]/g, "/")
-        .split(/[\/,:]/)[0]
-        .trim();
-
-      const k = normName(primaryPart);
-
-      // Arms buckets
-      if(k === "biceps" || k === "forearms" || k === "triceps") return "Arms";
-
-      // Legs buckets (including explicit "legs (...)" variants)
-      if(
-        k === "calves" ||
-        k === "glutes" ||
-        k === "hamstrings" ||
-        k === "quads" ||
-        k === "adductors" ||
-        k === "legs (adductors)" ||
-        k === "legs (hamstrings)" ||
-        k === "legs (quads)"
-      ) return "Legs";
-
-      // Shoulders buckets
-      if(k === "traps") return "Shoulders";
-      if(k === "shoulder" || k === "shoulders") return "Shoulders";
-
-      // Core buckets (prevents "Abs/Abdominals" from creating a new group)
-      if(k === "abs" || k === "ab" || k === "abdominals" || k === "abdominal") return "Core";
-
-      // Keep as-is (but primary-only)
-      return primaryPart || "Other";
-    }
-
-    function getSecondaryList(ex){
-      const arr = Array.isArray(ex?.secondaryMuscles) ? ex.secondaryMuscles.filter(Boolean) : [];
-      // Auto-hide duplicates (secondary == primary bucket)
-      const primary = normalizePrimaryMuscle(ex?.primaryMuscle);
-      return arr.filter(s => normName(s) !== normName(primary));
-    }
-
-    function tagHue(str){
-      // deterministic tiny hash -> hue
-      const s = String(str || "");
-      let h = 0;
-      for(let i=0;i<s.length;i++) h = ((h<<5) - h) + s.charCodeAt(i);
-      h = Math.abs(h) % 360;
-      return h;
-    }
-
-    function makeTag(label){
-      const hue = tagHue(label);
-      return el("span", {
-        class:"addExTag",
-        style:`background: hsla(${hue}, 80%, 60%, .16); border-color: hsla(${hue}, 80%, 60%, .30); color: hsla(${hue}, 90%, 92%, 1);`
-      }, [label]);
-    }
-
     // If day label hints a muscle, open that group by default
     (function seedOpenGroupFromDay(){
       const hint = normName(dayLabel || "");
       const mus = (state.exerciseLibrary?.weightlifting || [])
-        .map(x => normalizePrimaryMuscle(x.primaryMuscle))
+        .map(x => String(x.primaryMuscle || "").trim())
         .filter(Boolean);
 
       const match = mus.find(m => hint && hint.includes(normName(m)));
@@ -8043,26 +7472,21 @@ const addMultiBtn = el("button", {
       const row = el("div", { class:"item addExRow" });
       const btn = el("button", { class:"mini" }, ["Add"]);
 
-      const equipment = x.equipment ? String(x.equipment) : "";
-      const typeLabel = ExerciseLibrary.typeLabel(type);
+      const metaParts = [];
+      if(type === "weightlifting"){
+        if(x.primaryMuscle) metaParts.push(String(x.primaryMuscle));
+        if(x.equipment) metaParts.push(String(x.equipment));
+      }else{
+        if(x.equipment) metaParts.push(String(x.equipment));
+      }
+      metaParts.push(ExerciseLibrary.typeLabel(type));
 
-      // Secondary muscles -> tags (mini colored)
-      const secondary = getSecondaryList(x);
-
-      // Meta line requested: Equipment • Type (secondary is shown as tags)
-      const metaTextParts = [];
-      if(equipment) metaTextParts.push(equipment);
-      metaTextParts.push(typeLabel);
-
-      const left = el("div", { class:"left" }, [
-        el("div", { class:"name", text:x.name }),
-        (secondary.length
-          ? el("div", { class:"addExTags" }, secondary.map(makeTag))
-          : null),
-        el("div", { class:"meta", text: metaTextParts.filter(Boolean).join(" • ") })
-      ].filter(Boolean));
-
-      row.appendChild(left);
+      row.appendChild(
+        el("div", { class:"left" }, [
+          el("div", { class:"name", text:x.name }),
+          el("div", { class:"meta", text: metaParts.filter(Boolean).join(" • ") })
+        ])
+      );
       row.appendChild(el("div", { class:"actions" }, [ btn ]));
 
       if(alreadyInDay){
@@ -8125,22 +7549,11 @@ const addMultiBtn = el("button", {
       const q = normName(query || "");
 
       // Search: flat list (fast + compact)
-      // ✅ Search includes: name + primary + secondary muscles + equipment + cardio modality
       if(q){
         const hits = all
-          .filter(x => {
-            const sec = Array.isArray(x.secondaryMuscles) ? x.secondaryMuscles.join(" ") : "";
-            const hay = normName([
-              x.name || "",
-              x.primaryMuscle || "",
-              sec,
-              x.equipment || "",
-              x.modality || ""
-            ].join(" "));
-            return hay.includes(q);
-          })
+          .filter(x => normName(x.name).includes(q))
           .sort((a,b) => (a.name||"").localeCompare(b.name||""))
-          .slice(0, 80);
+          .slice(0, 60);
 
         if(hits.length === 0){
           scroller.appendChild(el("div", { class:"note", text:"No matches. Try a different keyword." }));
@@ -8157,34 +7570,27 @@ const addMultiBtn = el("button", {
         return;
       }
 
-      // Weightlifting grouped by NORMALIZED primaryMuscle (Primary-only)
+      // Weightlifting grouped by primaryMuscle (tap to expand)
       const wl = libs.weightlifting
-        .map(x => ({...x, type:"weightlifting", __group: normalizePrimaryMuscle(x.primaryMuscle)}))
+        .map(x => ({...x, type:"weightlifting"}))
         .sort((a,b) =>
-          (String(a.__group||"").localeCompare(String(b.__group||"")) ||
+          (String(a.primaryMuscle||"").localeCompare(String(b.primaryMuscle||"")) ||
            (a.name||"").localeCompare(b.name||""))
         );
 
       const byMuscle = new Map();
       wl.forEach(x => {
-        const g = String(x.__group || "Other").trim() || "Other";
+        const g = String(x.primaryMuscle || "Other").trim() || "Other";
         if(!byMuscle.has(g)) byMuscle.set(g, []);
         byMuscle.get(g).push(x);
       });
 
-      // Custom group order (Option B)
-      const ORDER = ["Chest","Back","Shoulders","Arms","Legs","Full Body","Core","Other"];
-      const muscleNames = Array.from(byMuscle.keys()).sort((a,b)=>{
-        const ia = ORDER.indexOf(a);
-        const ib = ORDER.indexOf(b);
-        if(ia !== -1 || ib !== -1){
-          return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-        }
-        return a.localeCompare(b);
-      });
+      const muscleNames = Array.from(byMuscle.keys()).sort((a,b)=>a.localeCompare(b));
 
       if(muscleNames.length){
         scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Weightlifting (by muscle)" }));
+
+        // Default-open: if we seeded a match, it will already be in openGroups
         muscleNames.forEach(name => {
           const items = byMuscle.get(name) || [];
           scroller.appendChild(renderGroup(name, items, existingSet));
@@ -8198,6 +7604,7 @@ const addMultiBtn = el("button", {
       if(cardioItems.length){
         scroller.appendChild(el("div", { style:"height:10px" }));
         scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Cardio" }));
+        if(!openGroups.has("Cardio")) openGroups.add("Cardio"); // feels better to open by default
         scroller.appendChild(renderGroup("Cardio", cardioItems, existingSet));
       }
 
@@ -8208,6 +7615,7 @@ const addMultiBtn = el("button", {
       if(coreItems.length){
         scroller.appendChild(el("div", { style:"height:10px" }));
         scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Core" }));
+        if(!openGroups.has("Core")) openGroups.add("Core"); // open by default
         scroller.appendChild(renderGroup("Core", coreItems, existingSet));
       }
 
