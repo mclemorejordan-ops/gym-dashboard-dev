@@ -91,47 +91,27 @@ header{
   top: 0;
   z-index: 60;
 
-  /* Use SAME background canvas as body */
-  background:
-    radial-gradient(1200px 700px at 20% -10%, rgba(124,92,255,24), transparent 60%),
-    radial-gradient(900px 600px at 90% 10%, rgba(55,214,122,14), transparent 55%),
-    var(--bg);
-
-  /* Glass overlay will sit on top */
-  position: sticky;
-  overflow: hidden;
-
-  /* Header owns the safe-area top so the theme covers the whole iPhone app */
-  padding: calc(env(safe-area-inset-top) + 12px) 0 10px 0;
-
-  /* subtle separation */
-  border-bottom: 1px solid rgba(255,255,255,.08);
-}
-/* ✅ Glass layer on top of the header canvas (keeps gradient, adds “component” feel) */
-header::before{
-  content:"";
-  position:absolute;
-  inset:0;
-
-  /* tint + sheen */
-  background: linear-gradient(
-    to bottom,
-    rgba(16,20,30,.62) 0%,
-    rgba(16,20,30,.46) 55%,
-    rgba(16,20,30,.28) 100%
-  );
-
-  /* blur the background behind the header for true glass */
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
 
-  pointer-events:none;
-}
+  background: linear-gradient(
+    to bottom,
+    var(--glassStrong) 0%,
+    rgba(16,20,30,.62) 60%,
+    rgba(16,20,30,0) 100%
+  );
 
-/* Ensure header content sits ABOVE the overlay */
-header > *{
-  position: relative;
-  z-index: 1;
+  padding: calc(env(safe-area-inset-top) + 12px) 0 14px 0;
+  box-shadow: 0 12px 30px rgba(0,0,0,.35);
+
+  /* ✅ Rounded bottom corners */
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
+
+  /* Optional subtle separation */
+  border-bottom: 1px solid rgba(255,255,255,.08);
+
+  overflow: hidden; /* required for radius + blur to clip properly */
 }
     .topbar{
       display:flex;
