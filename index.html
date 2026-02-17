@@ -7160,210 +7160,231 @@ state.profile.hideRestDays = !!hideRestDays;
       }
     });
   }
-  function openAddEditModal(existing){
-    const isEdit = !!existing;
+function openAddEditModal(existing){
+  const isEdit = !!existing;
 
-    // Track whether the user manually changed Type (so Smart Default doesn't fight them)
-    let userChangedType = false;
+  // Keep old type (important for migrations)
+  const oldType = String(existing?.type || ui.type || "weightlifting");
 
-    // Default type:
-    // - Edit: existing.type (if present) else current ui.type
-    // - Add: current ui.type
-    const initialType = (existing?.type || ui.type || "weightlifting");
+  const name = el("input", {
+    type:"text",
+    value: existing?.name || "",
+    placeholder:"Exercise name"
+  });
 
-    const name = el("input", { type:"text", value: existing?.name || "", placeholder:"Exercise name" });
-    const equip = el("input", { type:"text", value: existing?.equipment || "", placeholder:"e.g., Dumbbell, Barbell, Machine" });
+  const equip = el("input", {
+    type:"text",
+    value: existing?.equipment || "",
+    placeholder:"e.g., Dumbbell, Barbell, Machine"
+  });
 
-    // Weightlifting-only fields
-    const primary = el("input", { type:"text", value: existing?.primaryMuscle || "", placeholder:"e.g., Chest, Back, Legs" });
-    const secondary = el("input", {
-      type:"text",
-      value: Array.isArray(existing?.secondaryMuscles) ? existing.secondaryMuscles.join(", ") : "",
-      placeholder:"e.g., Triceps, Shoulders"
+  // ────────────────────────────
+  // Glass dropdown options
+  // ────────────────────────────
+  const TYPE_OPTS = [
+    { v:"weightlifting", t:"Weightlifting" },
+    { v:"cardio",        t:"Cardio" },
+    { v:"core",          t:"Core" }
+  ];
+
+  const PRIMARY_OPTS = [
+    "Chest","Shoulders","Arms","Back","Legs","Full Body","Cardio","Core"
+  ];
+
+  const SECONDARY_OPTS = [
+    "Upper Chest",
+    "Lower Chest",
+    "Front Delts",
+    "Side Delts",
+    "Rear Delts",
+    "Traps",
+    "Biceps",
+    "Triceps",
+    "Brachialis",
+    "Forearms",
+    "Lats",
+    "Rhomboids",
+    "Erector Spinae",
+    "Quads",
+    "Hamstrings",
+    "Glutes",
+    "Calves",
+    "Adductors",
+    "Abductors",
+    "Abs",
+    "Obliques",
+    "Transverse Abdominis",
+    "Grip",
+    "Hip Flexors"
+  ];
+
+  function makeSelect(options, value){
+    const sel = el("select", {
+      style: [
+        "width:100%",
+        "border-radius:14px",
+        "padding:12px",
+        "border:1px solid rgba(255,255,255,12)",
+        "background: rgba(255,255,255,06)",
+        "color: rgba(255,255,255,92)",
+        "outline:none"
+      ].join(";")
     });
 
-    // ✅ Type dropdown (glass-style via CSS class)
-    const typeSelect = el("select", { class:"glassSelect" });
-    ExerciseLibrary.typeKeys.forEach(t => {
-      typeSelect.appendChild(el("option", { value: t, text: ExerciseLibrary.typeLabel(t) }));
-    });
-    typeSelect.value = initialType;
-
-    typeSelect.addEventListener("change", () => {
-      userChangedType = true;
-      refreshWeightliftingVisibility();
-    });
-
-    // Smart default: guess type from name
-    function guessTypeFromName(raw){
-      const s = normName(String(raw || ""));
-
-      // Core signals
-      const coreHits = [
-        "plank","crunch","sit up","sit-up","rollout","ab wheel","hollow","dead bug","leg raise","knee raise",
-        "russian twist","bicycle","pallof","side plank","hanging"
-      ];
-      for(const k of coreHits){
-        if(s.includes(normName(k))) return "core";
+    options.forEach(opt => {
+      if(typeof opt === "string"){
+        sel.appendChild(el("option", { value: opt, text: opt }));
+      }else{
+        sel.appendChild(el("option", { value: opt.v, text: opt.t }));
       }
-
-      // Cardio signals
-      const cardioHits = [
-        "treadmill","run","running","incline walk","walk","bike","cycling","row","rower","ski erg","elliptical",
-        "stairmaster","jump rope","sprint","interval","assault bike","sled"
-      ];
-      for(const k of cardioHits){
-        if(s.includes(normName(k))) return "cardio";
-      }
-
-      // Default
-      return "weightlifting";
-    }
-
-    // When typing name: auto-suggest type (ONLY if user hasn't manually changed it)
-    name.addEventListener("input", (e) => {
-      if(userChangedType) return;
-      const nm = String(e.target.value || "");
-      const suggested = guessTypeFromName(nm);
-      typeSelect.value = suggested;
-      refreshWeightliftingVisibility();
     });
 
-    // Weightlifting-only wrapper UI
-    const wlWrap = el("div", { style:"margin-top:10px; display:none;" }, [
-      el("div", { class:"row2" }, [
-        el("label", {}, [ el("span", { text:"Primary muscle" }), primary ]),
-        el("label", {}, [ el("span", { text:"Secondary muscles" }), secondary ])
-      ]),
-      el("div", { class:"note", text:"Secondary muscles: comma-separated (e.g., Triceps, Shoulders)" })
-    ]);
+    if(value != null) sel.value = String(value);
+    return sel;
+  }
 
-    function refreshWeightliftingVisibility(){
-      wlWrap.style.display = (typeSelect.value === "weightlifting") ? "block" : "none";
-    }
-    refreshWeightliftingVisibility();
+  function makeMultiSelect(options, selectedArr){
+    const sel = el("select", {
+      multiple: true,
+      style: [
+        "width:100%",
+        "border-radius:14px",
+        "padding:12px",
+        "border:1px solid rgba(255,255,255,12)",
+        "background: rgba(255,255,255,06)",
+        "color: rgba(255,255,255,92)",
+        "outline:none",
+        // multi-select needs height to be usable on phone
+        "min-height:140px"
+      ].join(";")
+    });
 
-    // If type changes on edit, we must migrate references (routine slots + logs)
-    function migrateExerciseTypeEverywhere(oldType, newType, exerciseId){
-      if(!oldType || !newType || oldType === newType) return;
+    const selected = new Set((selectedArr || []).map(String));
+    options.forEach(v => {
+      const opt = el("option", { value: v, text: v });
+      if(selected.has(String(v))) opt.selected = true;
+      sel.appendChild(opt);
+    });
 
-      // Routine slots
-      (state.routines || []).forEach(r => {
-        (r.days || []).forEach(d => {
-          (d.exercises || []).forEach(rx => {
-            if(rx && rx.exerciseId === exerciseId && rx.type === oldType){
-              rx.type = newType;
-            }
-          });
+    return sel;
+  }
+
+  // Type dropdown (NEW)
+  const typeSel = makeSelect(TYPE_OPTS, oldType);
+
+  // Primary + Secondary dropdowns (NEW)
+  const primarySel = makeSelect(PRIMARY_OPTS, existing?.primaryMuscle || "");
+  const secondarySel = makeMultiSelect(SECONDARY_OPTS, existing?.secondaryMuscles || []);
+
+  // If they change Type, auto-suggest Primary for cardio/core (non-destructive)
+  typeSel.addEventListener("change", () => {
+    const t = String(typeSel.value || "");
+    if(t === "cardio" && (!primarySel.value || primarySel.value === "")) primarySel.value = "Cardio";
+    if(t === "core" && (!primarySel.value || primarySel.value === "")) primarySel.value = "Core";
+  });
+
+  function migrateReferences(exId, fromType, toType){
+    if(!exId || fromType === toType) return;
+
+    // Update routine slots
+    (state.routines || []).forEach(r => {
+      (r.days || []).forEach(d => {
+        (d.exercises || []).forEach(rx => {
+          if(rx.exerciseId === exId && rx.type === fromType){
+            rx.type = toType;
+          }
         });
       });
+    });
 
-      // Workout logs
-      (state.logs?.workouts || []).forEach(e => {
-        if(e && e.exerciseId === exerciseId && e.type === oldType){
-          e.type = newType;
-        }
-      });
-    }
-
-    Modal.open({
-      title: isEdit ? "Edit exercise" : "Add exercise",
-      bodyNode: el("div", {}, [
-        el("label", {}, [ el("span", { text:"Type" }), typeSelect ]),
-        el("div", { style:"height:10px" }),
-
-        el("div", { class:"row2" }, [
-          el("label", {}, [ el("span", { text:"Name" }), name ]),
-          el("label", {}, [ el("span", { text:"Equipment" }), equip ])
-        ]),
-
-        wlWrap,
-
-        el("div", { style:"height:12px" }),
-        el("div", { class:"btnrow" }, [
-          el("button", {
-            class:"btn primary",
-            onClick: () => {
-              const nm = (name.value || "").trim();
-              if(!nm) return showToast("Name is required");
-
-              const chosenType = (typeSelect.value || "weightlifting");
-              const oldType = (existing?.type || ui.type || "weightlifting");
-
-              // Parse secondary muscles
-              const secArr = (secondary.value || "")
-                .split(",")
-                .map(x => x.trim())
-                .filter(Boolean);
-
-              // Build patch/data
-              const patch = {
-                name: nm,
-                equipment: (equip.value || "").trim()
-              };
-
-              if(chosenType === "weightlifting"){
-                patch.primaryMuscle = (primary.value || "").trim();
-                patch.secondaryMuscles = secArr;
-              }else{
-                // Keep non-weightlifting clean
-                patch.primaryMuscle = undefined;
-                patch.secondaryMuscles = [];
-              }
-
-              try{
-                if(isEdit){
-                  // If Type changed: remove from old bucket, add to new bucket preserving id
-                  if(chosenType !== oldType){
-                    // GLOBAL duplicate check (exclude self)
-                    if(ExerciseLibrary.existsByNameGlobal(nm, existing.id)){
-                      return showToast("Another exercise with that name already exists.");
-                    }
-
-                    // Remove from old
-                    ExerciseLibrary.remove(oldType, existing.id);
-
-                    // Add to new (preserve id + createdAt)
-                    ExerciseLibrary.addWithId(chosenType, {
-                      id: existing.id,
-                      createdAt: existing.createdAt || Date.now(),
-                      ...patch
-                    });
-
-                    // Update routines + logs
-                    migrateExerciseTypeEverywhere(oldType, chosenType, existing.id);
-
-                    // Update current filter so user sees it immediately
-                    ui.type = chosenType;
-                    ui.equipment = "all";
-                  }else{
-                    // Normal edit in-place
-                    ExerciseLibrary.update(oldType, existing.id, patch);
-                  }
-                }else{
-                  // Add new (GLOBAL duplicate prevention happens inside ExerciseLibrary.add)
-                  ExerciseLibrary.add(chosenType, patch);
-
-                  // Optional UX: jump filter to the chosen type
-                  ui.type = chosenType;
-                  ui.equipment = "all";
-                }
-
-                Storage.save(state);
-                Modal.close();
-                showToast(isEdit ? "Updated" : "Added");
-                renderView();
-              }catch(e){
-                showToast(e?.message || "Could not save exercise");
-              }
-            }
-          }, [isEdit ? "Save" : "Add"]),
-
-          el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
-        ])
-      ])
+    // Update workout logs
+    (state.logs?.workouts || []).forEach(e => {
+      if(e.exerciseId === exId && e.type === fromType){
+        e.type = toType;
+      }
     });
   }
+
+  Modal.open({
+    title: isEdit ? "Edit exercise" : "Add exercise",
+    bodyNode: el("div", {}, [
+      el("label", {}, [ el("span", { text:"Name" }), name ]),
+      el("div", { style:"height:10px" }),
+
+      // NEW: Type selector
+      el("label", {}, [ el("span", { text:"Type" }), typeSel ]),
+      el("div", { style:"height:10px" }),
+
+      el("label", {}, [ el("span", { text:"Equipment" }), equip ]),
+      el("div", { style:"height:10px" }),
+
+      // NEW: Primary/Secondary selectors
+      el("label", {}, [ el("span", { text:"Primary muscle" }), primarySel ]),
+      el("div", { style:"height:10px" }),
+
+      el("label", {}, [
+        el("span", { text:"Secondary muscles (multi-select)" }),
+        secondarySel
+      ]),
+      el("div", { class:"note", text:"Tip: iPhone — you can tap multiple options. (This saves to secondaryMuscles[] and won’t break existing logic.)" }),
+
+      el("div", { style:"height:12px" }),
+      el("div", { class:"btnrow" }, [
+        el("button", {
+          class:"btn primary",
+          onClick: () => {
+            const nm = (name.value || "").trim();
+            if(!nm) return showToast("Name is required");
+
+            const newType = String(typeSel.value || ui.type || "weightlifting");
+            const exId = existing?.id || uid("ex");
+
+            const selectedSecondary = Array.from(secondarySel.selectedOptions || [])
+              .map(o => String(o.value || "").trim())
+              .filter(Boolean);
+
+            // Preserve existing fields to avoid wiping cardio/core-specific properties
+            const payload = {
+              ...(existing || {}),
+              id: exId,
+              type: newType,
+              name: nm,
+              equipment: (equip.value || "").trim(),
+              primaryMuscle: String(primarySel.value || "").trim(),
+              secondaryMuscles: selectedSecondary
+            };
+
+            // If editing AND type changes: migrate library bucket + update routine/log refs
+            if(isEdit){
+              if(oldType !== newType){
+                // Move exercise to new library type
+                ExerciseLibrary.remove(oldType, exId);
+                ExerciseLibrary.add(newType, payload);
+
+                // Keep routines/logs consistent
+                migrateReferences(exId, oldType, newType);
+
+                // Keep UI on the new type so the user sees it immediately
+                ui.type = newType;
+              }else{
+                ExerciseLibrary.update(newType, payload);
+              }
+            }else{
+              ExerciseLibrary.add(newType, payload);
+              ui.type = newType;
+            }
+
+            Storage.save(state);
+            Modal.close();
+            showToast(isEdit ? "Updated" : "Added");
+            renderView();
+          }
+        }, [isEdit ? "Save" : "Add"]),
+        el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+      ])
+    ])
+  });
+}
 
   return root;
 };
