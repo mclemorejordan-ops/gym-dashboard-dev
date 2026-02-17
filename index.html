@@ -7070,7 +7070,7 @@ state.profile.hideRestDays = !!hideRestDays;
   });
 
   const search = el("input", { type:"text", placeholder:"Search exercises…", value: ui.q || "" });
-  search.addEventListener("input", (e) => { ui.q = e.target.value || ""; renderView(); });
+  search.addEventListener("input", (e) => { ui.q = e.target.value || ""; renderList(); });
 
   const equipSelect = el("select", {});
   equipSelect.appendChild(el("option", { value:"all", text:"All equipment" }));
@@ -7078,7 +7078,7 @@ state.profile.hideRestDays = !!hideRestDays;
   ExerciseLibrary.list(ui.type).forEach(x => { if(x.equipment) equipSet.add(x.equipment); });
   Array.from(equipSet).sort().forEach(eq => equipSelect.appendChild(el("option", { value:eq, text:eq })));
   equipSelect.value = ui.equipment || "all";
-  equipSelect.addEventListener("change", (e) => { ui.equipment = e.target.value || "all"; renderView(); });
+  equipSelect.addEventListener("change", (e) => { ui.equipment = e.target.value || "all"; renderList(); });
 
   controls.appendChild(el("div", { class:"note", text:"Type" }));
   controls.appendChild(typeChips);
@@ -7095,8 +7095,10 @@ state.profile.hideRestDays = !!hideRestDays;
     el("h2", { text:"Exercises" }),
     el("div", { class:"note", text:"Tip: Deleting an exercise will not erase old logs (they use the saved name snapshot)." })
   ]);
+const listHost = el("div", { style:"display:flex; flex-direction:column; gap:10px; margin-top:10px;" });
 
-  const listHost = el("div", { style:"display:flex; flex-direction:column; gap:10px; margin-top:10px;" });
+function renderList(){
+  listHost.innerHTML = "";
 
   const q = (ui.q || "").trim().toLowerCase();
   const eq = ui.equipment || "all";
@@ -7140,9 +7142,13 @@ state.profile.hideRestDays = !!hideRestDays;
       ]));
     });
   }
+}
 
-  listCard.appendChild(listHost);
-  root.appendChild(listCard);
+// ✅ initial paint
+renderList();
+
+listCard.appendChild(listHost);
+root.appendChild(listCard);
 
   function countRoutineRefs(type, exerciseId){
     let count = 0;
