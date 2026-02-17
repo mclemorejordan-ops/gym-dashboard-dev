@@ -1,127 +1,143 @@
-Gym Dashboard (Offline Tracker)
+# 🏋️ Gym Dashboard (PWA)
 
-A minimalist, iOS-style gym tracking dashboard that runs entirely in the browser
-(no login, no backend).
+A fully client-side, production-ready Progressive Web App (PWA) for
+tracking:
 
-Tracks weight, protein, attendance, routines, and lift progress with PR history.
+-   🏋️ Workouts & Routines\
+-   📊 Progress & Exercise History\
+-   ⚖️ Weight Tracking\
+-   🍗 Protein Intake\
+-   📅 Attendance\
+-   💾 Backup & Restore
 
+Built as a single-file SPA powered by localStorage, service workers, and
+version-controlled updates.
 
-FEATURES
---------
+------------------------------------------------------------------------
 
-ONBOARDING
-- Create profile (name, protein goal, week starts on, hide rest days)
-- Create routine from templates:
-  - PPL
-  - Upper / Lower
-  - Full Body (3-day)
-  - Body Part Split
-  - Blank
+# 🚀 Architecture Overview
 
-HOME DASHBOARD
-- Today’s workout (auto based on day of week)
-- Weekly attendance dots + quick “Check In”
-- Protein “grams left” ring + focus text
+## Core Files
 
-ROUTINE
-- Multiple routines (create / edit / duplicate / delete)
-- Template routines converted into saved routines
-- Mark days as rest days (hidden if enabled)
+  File                     Purpose
+  ------------------------ -------------------------------------------------------
+  `index.html`             Main application (UI, routing, logic, state engine)
+  `sw.js`                  Service Worker (offline caching + controlled updates)
+  `version.json`           Single source of truth for version + release notes
+  `manifest.webmanifest`   PWA install configuration
+  `icon.svg`               App icon
 
-LOG SETS
-- Log sets per exercise (weight + reps)
-- Automatically calculates lifetime max and PR flags
-- Exercise history modal
+------------------------------------------------------------------------
 
-PROGRESS
-- Table view + graph view (Chart.js)
-- Graph metrics:
-  - Top Weight
-  - Estimated 1RM (Epley)
-  - Volume
-- Download current graph as PNG
+# 🧠 Application Architecture
 
-WEIGHT
-- Table view + graph view (Chart.js)
-- Latest entry, delta, and 7-day average
+## State Engine
 
-ATTENDANCE
-- Tap calendar days trained
-- Monthly count + clear month
+All data is stored locally using:
 
-PROTEIN
-- Daily meal breakdown + remaining goal
-- Home ring updates live while typing (today)
+``` js
+const STORAGE_KEY = "gymdash:v1";
+```
 
-BACKUP / IMPORT
-- Export full app data as JSON
-- Import backup JSON (overwrites current browser data)
+The app uses:
 
+-   DefaultState() → base schema
+-   migrateState() → safe schema upgrades
+-   SCHEMA_VERSION → migration guard
+-   Storage.load() / Storage.save() → controlled persistence
 
-DATA STORAGE (IMPORTANT)
-------------------------
-This app stores data using localStorage on the device/browser you use.
+### Schema Structure
 
-That means:
-- Clearing browser data clears your gym data
-- Using a different browser/device starts fresh unless you import a backup
+``` js
+{
+  schemaVersion,
+  profile,
+  routines,
+  activeRoutineId,
+  exerciseLibrary,
+  logs: {
+    workouts,
+    weight,
+    protein
+  },
+  attendance
+}
+```
 
-Recommended:
-Use Settings → Backup Now regularly.
+------------------------------------------------------------------------
 
+# 📱 PWA & Offline Architecture
 
-RUN LOCALLY
------------
+## Service Worker Strategy
 
-OPTION 1: OPEN DIRECTLY
-Open index.html in your browser.
+-   Network-first for navigation
+-   Offline shell fallback
+-   Versioned cache derived from `version.json`
+-   Controlled update activation via `SKIP_WAITING`
 
-Note:
-Some browsers block features when running from file://
-If anything behaves oddly, use a local server.
+When `version.json` changes: - New cache is created - Old caches are
+deleted - User taps "Reload to Update"
 
+No user data is cleared during updates.
 
-OPTION 2: SIMPLE LOCAL SERVER (RECOMMENDED)
+------------------------------------------------------------------------
 
-macOS / Linux:
-cd <repo-folder>
-python3 -m http.server 8000
+# 🔄 Versioning System
 
-Windows (PowerShell):
-cd <repo-folder>
-python -m http.server 8000
+`version.json` is the single source of truth.
 
-Then open:
-http://localhost:8000
+Example:
 
+``` json
+{
+  "version": "2.0",
+  "buildDate": "2026-02-16",
+  "notes": ["App has officially completed build"]
+}
+```
 
-PROJECT STRUCTURE
------------------
-index.html
-assets/
-  css/
-    styles.css
-  js/
-    storage.js   (localStorage helper + keys)
-    dom.js       (DOM helpers / shared selectors)
-    utils.js     (general helpers: dates, formatting, normalization)
-    app.js       (main app logic, router, features)
+Rules:
 
+-   Do NOT hardcode version in `index.html`
+-   Update only `version.json`
+-   Deploy
+-   User taps "Reload to Update"
 
-TROUBLESHOOTING
----------------
+------------------------------------------------------------------------
 
-BLANK SCREEN
-- Open DevTools Console
-- Check for errors
-- Confirm script order in index.html:
-  1. Chart.js
-  2. storage.js
-  3. dom.js
-  4. utils.js
-  5. app.js
+# 🔐 Data Safety
 
-DATA MISSING
-- You may be on a different browser/device
-- Check Settings → Storage info
-- Restore using Import if you have a backup JSON
+## Backup / Restore
+
+Users can:
+
+-   Export full JSON snapshot
+-   Import validated backup
+-   Reset local data safely
+
+Import validation ensures: - schemaVersion exists - required keys
+exist - state is migrated before applying
+
+------------------------------------------------------------------------
+
+# 🛠 Development Model
+
+-   No frameworks
+-   No build tools
+-   No backend
+-   Fully static deployment
+-   Fully client-side
+
+Ready for: - GitHub Pages - Netlify - Vercel (static) - Any HTTPS host
+
+------------------------------------------------------------------------
+
+# 🏁 Current Release
+
+Version: **2.0**\
+Build Date: **2026-02-16**
+
+------------------------------------------------------------------------
+
+Built with precision, performance, and long-term maintainability in
+mind.
