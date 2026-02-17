@@ -1,143 +1,178 @@
-# 🏋️ Gym Dashboard (PWA)
+# Gym Dashboard (PWA)
 
-A fully client-side, production-ready Progressive Web App (PWA) for
+A production-hardened, fully client-side Progressive Web App for
 tracking:
 
--   🏋️ Workouts & Routines\
--   📊 Progress & Exercise History\
--   ⚖️ Weight Tracking\
--   🍗 Protein Intake\
--   📅 Attendance\
--   💾 Backup & Restore
+-   Workouts & Routines
+-   Exercise Progress
+-   Weight Tracking
+-   Protein Intake
+-   Attendance
+-   Backup & Restore
 
-Built as a single-file SPA powered by localStorage, service workers, and
-version-controlled updates.
+Built as a single-file SPA with deterministic service worker updates,
+schema migration safety, and zero data loss guarantees.
 
 ------------------------------------------------------------------------
 
-# 🚀 Architecture Overview
+# Architecture Overview
 
 ## Core Files
 
-  File                     Purpose
-  ------------------------ -------------------------------------------------------
-  `index.html`             Main application (UI, routing, logic, state engine)
-  `sw.js`                  Service Worker (offline caching + controlled updates)
-  `version.json`           Single source of truth for version + release notes
-  `manifest.webmanifest`   PWA install configuration
-  `icon.svg`               App icon
+  File                   Purpose
+  ---------------------- ------------------------------------------------------------
+  index.html             Main application (UI, routing, state engine)
+  sw.js                  Versioned service worker (offline + deterministic updates)
+  version.json           Single source of truth for version + release notes
+  manifest.webmanifest   PWA install configuration
 
 ------------------------------------------------------------------------
 
-# 🧠 Application Architecture
+# State & Schema System
 
-## State Engine
-
-All data is stored locally using:
+The application uses a schema‑guarded local storage model.
 
 ``` js
-const STORAGE_KEY = "gymdash:v1";
+const SCHEMA_VERSION = 1;
 ```
 
-The app uses:
+## Migration Strategy
 
--   DefaultState() → base schema
--   migrateState() → safe schema upgrades
--   SCHEMA_VERSION → migration guard
--   Storage.load() / Storage.save() → controlled persistence
-
-### Schema Structure
+All loaded state passes through:
 
 ``` js
-{
-  schemaVersion,
-  profile,
-  routines,
-  activeRoutineId,
-  exerciseLibrary,
-  logs: {
-    workouts,
-    weight,
-    protein
-  },
-  attendance
-}
+migrateState(saved)
 ```
 
+Guarantees:
+
+-   Always merges into DefaultState()
+-   Ensures required containers exist
+-   Normalizes arrays/objects
+-   Prevents runtime crashes from corrupted data
+-   Automatically stamps latest schemaVersion
+
+Critical containers guarded:
+
+-   routines\[\]
+-   exerciseLibrary.{weightlifting, cardio, core}\[\]
+-   logs.{workouts, weight, protein}\[\]
+-   attendance\[\]
+
+No state is ever used without migration repair.
+
 ------------------------------------------------------------------------
 
-# 📱 PWA & Offline Architecture
-
-## Service Worker Strategy
-
--   Network-first for navigation
--   Offline shell fallback
--   Versioned cache derived from `version.json`
--   Controlled update activation via `SKIP_WAITING`
-
-When `version.json` changes: - New cache is created - Old caches are
-deleted - User taps "Reload to Update"
-
-No user data is cleared during updates.
-
-------------------------------------------------------------------------
-
-# 🔄 Versioning System
+# Versioning System (Deterministic Updates)
 
 `version.json` is the single source of truth.
 
-Example:
+When version.json changes:
 
-``` json
-{
-  "version": "2.6",
-  "buildDate": "2026-02-16",
-  "notes": ["App has officially completed build"]
-}
+1.  The app detects a new version.
+2.  Service worker URL becomes:
+
+```{=html}
+<!-- -->
+```
+    ./sw.js?v=<version>
+
+3.  Browser installs new service worker.
+4.  Old caches are deterministically removed.
+5.  User taps "Reload to update".
+6.  Controller switches once.
+7.  App reloads safely without clearing localStorage.
+
+User data is never wiped during updates.
+
+------------------------------------------------------------------------
+
+# Version Metadata Isolation
+
+Version data is stored separately from user state:
+
+-   gymdash:latestVersion
+-   gymdash:appliedVersion
+-   gymdash:latestNotes
+-   gymdash:latestBuildDate
+
+This ensures:
+
+-   Updates do not modify profile data
+-   Version tracking is device-specific
+-   Safe reload under new build
+
+------------------------------------------------------------------------
+
+# Update Activation Safety
+
+Before applying an update:
+
+``` js
+Storage.flush(state)
 ```
 
-Rules:
+This guarantees:
 
--   Do NOT hardcode version in `index.html`
--   Update only `version.json`
--   Deploy
--   User taps "Reload to Update"
+-   No pending debounced writes are lost
+-   No partial state corruption
+-   Clean transition to new build
 
-------------------------------------------------------------------------
+If a service worker is waiting:
 
-# 🔐 Data Safety
+    SKIP_WAITING
 
-## Backup / Restore
-
-Users can:
-
--   Export full JSON snapshot
--   Import validated backup
--   Reset local data safely
-
-Import validation ensures: - schemaVersion exists - required keys
-exist - state is migrated before applying
+Otherwise, normal reload.
 
 ------------------------------------------------------------------------
 
-# 🛠 Development Model
+# Backup & Import System
 
--   No frameworks
--   No build tools
--   No backend
--   Fully static deployment
--   Fully client-side
+Export:
 
-Ready for: - GitHub Pages - Netlify - Vercel (static) - Any HTTPS host
+-   Full state snapshot
+-   Wrapped payload with metadata
+
+Import validation ensures:
+
+-   Valid JSON
+-   schemaVersion present
+-   Required containers exist
+-   Automatic migration before applying
+
+Imported data fully replaces local state only after validation succeeds.
 
 ------------------------------------------------------------------------
 
-# 🏁 Current Release
+# UI Architecture
 
-Version: **2.6**\
-Build Date: **2026-02-16**
+-   Mobile-first (100dvh layout)
+-   Sticky header + bottom navigation
+-   Scroll-locked modals
+-   Compact 3D carousel routine system
+-   Compact log set modal with sticky header
+-   Glass design system with deterministic layering
+
+Optimized for: - iPhone PWA install - Offline resilience - Touch
+performance
 
 ------------------------------------------------------------------------
 
-Built with precision, performance, and long-term maintainability in
-mind.
+# Deployment
+
+1.  Update version.json
+2.  Commit & deploy
+3.  User taps "Reload to update"
+
+No build tools required. No backend required. Static hosting ready.
+
+------------------------------------------------------------------------
+
+# Current Release
+
+Version: 2.0 Build Date: 2026-02-16
+
+------------------------------------------------------------------------
+
+Built with production-level update control, schema safety, and
+deterministic cache management.
