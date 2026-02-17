@@ -7434,7 +7434,7 @@ const addMultiBtn = el("button", {
     });
   }
 
-  function openAddExercise(routineId, dayId, opts={}){
+function openAddExercise(routineId, dayId, opts={}){
     // Compact, phone-first "Add Exercise" modal
     // - Active day context (top)
     // - Fixed search bar
@@ -7467,14 +7467,26 @@ const addMultiBtn = el("button", {
     // Collapsed/expanded groups (session only)
     const openGroups = new Set();
 
+    // Normalize primary muscle labels so we don't create split groups like "Back / Biceps"
+    // (we'll handle true secondary-muscle grouping later).
+    function primaryGroupLabel(raw){
+      const s = String(raw || "").trim();
+      if(!s) return "Other";
+      // Take the first segment before common separators
+      // e.g. "Back / Biceps" -> "Back", "Biceps / Forearms" -> "Biceps"
+      return s.split("/")[0].split(",")[0].trim() || "Other";
+    }
+
     // If day label hints a muscle, open that group by default
     (function seedOpenGroupFromDay(){
       const hint = normName(dayLabel || "");
       const mus = (state.exerciseLibrary?.weightlifting || [])
-        .map(x => String(x.primaryMuscle || "").trim())
+        .map(x => primaryGroupLabel(x.primaryMuscle))
         .filter(Boolean);
 
-      const match = mus.find(m => hint && hint.includes(normName(m)));
+      // Deduplicate while preserving order
+      const uniq = Array.from(new Set(mus));
+      const match = uniq.find(m => hint && hint.includes(normName(m)));
       if(match) openGroups.add(match);
     })();
 
@@ -7542,7 +7554,7 @@ const addMultiBtn = el("button", {
 
       const metaParts = [];
       if(type === "weightlifting"){
-        if(x.primaryMuscle) metaParts.push(String(x.primaryMuscle));
+        if(x.primaryMuscle) metaParts.push(primaryGroupLabel(x.primaryMuscle));
         if(x.equipment) metaParts.push(String(x.equipment));
       }else{
         if(x.equipment) metaParts.push(String(x.equipment));
@@ -7638,17 +7650,17 @@ const addMultiBtn = el("button", {
         return;
       }
 
-      // Weightlifting grouped by primaryMuscle (tap to expand)
+      // Weightlifting grouped by PRIMARY muscle only (tap to expand)
       const wl = libs.weightlifting
         .map(x => ({...x, type:"weightlifting"}))
         .sort((a,b) =>
-          (String(a.primaryMuscle||"").localeCompare(String(b.primaryMuscle||"")) ||
+          (primaryGroupLabel(a.primaryMuscle).localeCompare(primaryGroupLabel(b.primaryMuscle)) ||
            (a.name||"").localeCompare(b.name||""))
         );
 
       const byMuscle = new Map();
       wl.forEach(x => {
-        const g = String(x.primaryMuscle || "Other").trim() || "Other";
+        const g = primaryGroupLabel(x.primaryMuscle);
         if(!byMuscle.has(g)) byMuscle.set(g, []);
         byMuscle.get(g).push(x);
       });
