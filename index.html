@@ -945,7 +945,65 @@ input, select, textarea{
 
   transform: translateY(-.5px);
 }
+/* Base secondary muscle pill */
+.addExRow .meta .secMuscle{
+  display:inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  border: 1px solid transparent;
+  transform: translateY(-.5px);
+}
 
+/* Chest */
+.sec-chest{
+  color:#ff6b6b;
+  background:rgba(255,107,107,.12);
+  border-color:rgba(255,107,107,.35);
+}
+
+/* Shoulders */
+.sec-shoulders{
+  color:#ff9f43;
+  background:rgba(255,159,67,.12);
+  border-color:rgba(255,159,67,.35);
+}
+
+/* Arms */
+.sec-arms{
+  color:#9b59ff;
+  background:rgba(155,89,255,.12);
+  border-color:rgba(155,89,255,.35);
+}
+
+/* Back */
+.sec-back{
+  color:#4dabf7;
+  background:rgba(77,171,247,.12);
+  border-color:rgba(77,171,247,.35);
+}
+
+/* Legs */
+.sec-legs{
+  color:#51cf66;
+  background:rgba(81,207,102,.12);
+  border-color:rgba(81,207,102,.35);
+}
+
+/* Full Body */
+.sec-fullbody{
+  color:#20c997;
+  background:rgba(32,201,151,.12);
+  border-color:rgba(32,201,151,.35);
+}
+
+/* Fallback */
+.sec-other{
+  color:#adb5bd;
+  background:rgba(173,181,189,.12);
+  border-color:rgba(173,181,189,.25);
+}
 
     .addExBottom{
       display:flex;
@@ -7561,11 +7619,14 @@ const addMultiBtn = el("button", {
         pushSep();
         metaNodes.push(document.createTextNode(s));
       };
-      const pushSecondary = (t) => {
+        const pushSecondary = (t) => {
         const s = String(t || "").trim();
         if(!s) return;
         pushSep();
-        metaNodes.push(el("span", { class:"secMuscle", text: s }));
+        const bucket = normalizeBucket(x.primaryMuscle);
+        metaNodes.push(
+          el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: s })
+        );
       };
 
       if(type === "weightlifting"){
@@ -7583,7 +7644,11 @@ const addMultiBtn = el("button", {
           // Fallback: parse legacy "Primary / Secondary" format
           if(rawPrimary.includes("/")){
             const parsed = rawPrimary.split("/").slice(1).join("/").trim();
-            if(parsed) pushSecondary(parsed);
+            if(parsed) const bucket = normalizeBucket(x.primaryMuscle);
+metaNodes.push(
+  el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: parsed })
+);
+
           }
         }
 
