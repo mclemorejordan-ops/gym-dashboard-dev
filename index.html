@@ -7573,21 +7573,19 @@ const addMultiBtn = el("button", {
       // Weightlifting grouped by primaryMuscle (tap to expand)
       const wl = libs.weightlifting
         .map(x => ({...x, type:"weightlifting"}))
-        .sort((a,b) =>
-          (String(a.primaryMuscle||"").localeCompare(String(b.primaryMuscle||"")) ||
-           (a.name||"").localeCompare(b.name||""))
-        );
+        .sort((a,b) => (a.name||"").localeCompare(b.name||""));
 
-      // ✅ Bucket muscles into your clean, fixed order
+      // ✅ Fixed display order (your requirement)
       const MUSCLE_ORDER = ["Chest", "Shoulders", "Arms", "Back", "Legs", "Full Body"];
 
+      // ✅ Normalize messy primaryMuscle labels into our 6 buckets
       function normalizeBucket(primaryMuscle){
         const raw = String(primaryMuscle || "").trim();
         const m = raw.toLowerCase();
 
         if(!m) return "Other";
 
-        // Full Body (explicit)
+        // Full Body
         if(m.includes("full body")) return "Full Body";
 
         // Chest
@@ -7596,13 +7594,13 @@ const addMultiBtn = el("button", {
         // Shoulders
         if(m.includes("shoulder") || m.includes("delt")) return "Shoulders";
 
-        // Arms
+        // Arms (also catches biceps/triceps/forearms)
         if(m.includes("arm") || m.includes("bicep") || m.includes("tricep") || m.includes("forearm")) return "Arms";
 
-        // Back
+        // Back (also catches lats/traps)
         if(m.includes("back") || m.includes("lat") || m.includes("trap")) return "Back";
 
-        // Legs
+        // Legs (also catches quads/hamstrings/glutes/calves)
         if(
           m.includes("leg") || m.includes("quad") || m.includes("hamstring") ||
           m.includes("glute") || m.includes("calf")
@@ -7618,19 +7616,22 @@ const addMultiBtn = el("button", {
         byMuscle.get(bucket).push(x);
       });
 
-      // ✅ Render in your requested order (only render buckets that have items)
+      // ✅ Only render buckets that actually have exercises
       const orderedBuckets = MUSCLE_ORDER.filter(k => (byMuscle.get(k) || []).length);
 
-      // If anything doesn't match our buckets, show it last as "Other" (only if needed)
+      // Safety bucket (only shows if needed)
       const otherItems = byMuscle.get("Other") || [];
       if(otherItems.length) orderedBuckets.push("Other");
 
-      if(orderedBuckets.length){
+      // Used later for the empty-state check (prevents "muscleNames" crashes)
+      const hasWeightliftingGroups = orderedBuckets.length > 0;
+
+      if(hasWeightliftingGroups){
         scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Weightlifting (by muscle)" }));
 
         orderedBuckets.forEach(name => {
           const items = byMuscle.get(name) || [];
-          // Keep alphabetical inside each bucket (clean scanning)
+          // Keep alphabetical inside each muscle bucket (clean scanning)
           items.sort((a,b)=>(a.name||"").localeCompare(b.name||""));
           scroller.appendChild(renderGroup(name, items, existingSet));
         });
@@ -7661,7 +7662,7 @@ if(coreItems.length){
 }
 
 
-      if(!muscleNames.length && !cardioItems.length && !coreItems.length){
+       if(!hasWeightliftingGroups && !cardioItems.length && !coreItems.length){
         scroller.appendChild(el("div", { class:"note", text:"No exercises yet. Seed the library or add exercises in Settings." }));
       }
 
