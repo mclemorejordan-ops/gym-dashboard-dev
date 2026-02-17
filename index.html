@@ -7597,27 +7597,30 @@ const addMultiBtn = el("button", {
         });
       }
 
-      // Cardio collapsible group
-      const cardioItems = libs.cardio.map(x => ({...x, type:"cardio"}))
-        .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+        // Cardio collapsible group
+  const cardioItems = libs.cardio.map(x => ({...x, type:"cardio"}))
+    .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  
+  if(cardioItems.length){
+    scroller.appendChild(el("div", { style:"height:10px" }));
+    scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Cardio" }));
+    // Default state: collapsed (do NOT auto-open)
+    scroller.appendChild(renderGroup("Cardio", cardioItems, existingSet));
+  }
 
-      if(cardioItems.length){
-        scroller.appendChild(el("div", { style:"height:10px" }));
-        scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Cardio" }));
-        if(!openGroups.has("Cardio")) openGroups.add("Cardio"); // feels better to open by default
-        scroller.appendChild(renderGroup("Cardio", cardioItems, existingSet));
-      }
 
-      // Core collapsible group
-      const coreItems = libs.core.map(x => ({...x, type:"core"}))
-        .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
 
-      if(coreItems.length){
-        scroller.appendChild(el("div", { style:"height:10px" }));
-        scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Core" }));
-        if(!openGroups.has("Core")) openGroups.add("Core"); // open by default
-        scroller.appendChild(renderGroup("Core", coreItems, existingSet));
-      }
+// Core collapsible group
+const coreItems = libs.core.map(x => ({...x, type:"core"}))
+  .sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+
+if(coreItems.length){
+  scroller.appendChild(el("div", { style:"height:10px" }));
+  scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Core" }));
+  // Default state: collapsed (do NOT auto-open)
+  scroller.appendChild(renderGroup("Core", coreItems, existingSet));
+}
+
 
       if(!muscleNames.length && !cardioItems.length && !coreItems.length){
         scroller.appendChild(el("div", { class:"note", text:"No exercises yet. Seed the library or add exercises in Settings." }));
