@@ -134,7 +134,7 @@ Ready for: - GitHub Pages - Netlify - Vercel (static) - Any HTTPS host
 
 # 🏁 Current Release
 
-Version: **2.0**\
+Version: **2.6**\
 Build Date: **2026-02-16**
 
 ------------------------------------------------------------------------
