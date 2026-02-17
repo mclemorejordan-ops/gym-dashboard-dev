@@ -7605,85 +7605,90 @@ const addMultiBtn = el("button", {
     }
 
         function renderRow(type, x, existingSet){
-      const key = `${type}:${x.id}`;
-      const alreadyInDay = existingSet.has(key);
+          const key = `${type}:${x.id}`;
+          const alreadyInDay = existingSet.has(key);
 
-      const row = el("div", { class:"item addExRow" });
-      const btn = el("button", { class:"mini" }, ["Add"]);
+          const row = el("div", { class:"item addExRow" });
+          const btn = el("button", { class:"mini" }, ["Add"]);
 
-      // Build meta as DOM nodes so we can highlight secondary muscles
-      const metaNodes = [];
+          // Build meta as DOM nodes so we can highlight secondary muscles
+          const metaNodes = [];
 
-      // Helpers
-      const pushSep = () => metaNodes.length ? metaNodes.push(document.createTextNode(" • ")) : null;
-      const pushText = (t) => {
-        const s = String(t || "").trim();
-        if(!s) return;
-        pushSep();
-        metaNodes.push(document.createTextNode(s));
-      };
-        const pushSecondary = (t) => {
-        const s = String(t || "").trim();
-        if(!s) return;
-        pushSep();
-        const bucket = normalizeBucket(x.primaryMuscle);
-        metaNodes.push(
-          el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: s })
-        );
-      };
+          // Helpers
+          const pushSep = () => metaNodes.length ? metaNodes.push(document.createTextNode(" • ")) : null;
 
-      if(type === "weightlifting"){
-        // Primary muscle (support legacy "Chest / Triceps" formatting)
-        const rawPrimary = String(x.primaryMuscle || "").trim();
-        const primaryOnly = rawPrimary.includes("/") ? rawPrimary.split("/")[0].trim() : rawPrimary;
-        if(primaryOnly) pushText(primaryOnly);
+          const pushText = (t) => {
+            const s = String(t || "").trim();
+            if(!s) return;
+            pushSep();
+            metaNodes.push(document.createTextNode(s));
+          };
 
-        // Secondary muscles (preferred: array)
-        const secs = Array.isArray(x.secondaryMuscles) ? x.secondaryMuscles.filter(Boolean) : [];
-        if(secs.length){
-          // Highlight each secondary muscle
-          secs.forEach(sm => pushSecondary(sm));
-        }else{
-         // Fallback: parse legacy "Primary / Secondary" format
-if(rawPrimary.includes("/")){
-  const parsed = rawPrimary.split("/").slice(1).join("/").trim();
-  if(parsed){
-    const bucket = normalizeBucket(x.primaryMuscle);
-    metaNodes.push(
-      el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: parsed })
-    );
-  }
-}
+          const pushSecondary = (t) => {
+            const s = String(t || "").trim();
+            if(!s) return;
+            pushSep();
+            const bucket = normalizeBucket(x.primaryMuscle);
+            metaNodes.push(
+              el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: s })
+            );
+          };
 
+          if(type === "weightlifting"){
+            // Primary muscle (support legacy "Chest / Triceps" formatting)
+            const rawPrimary = String(x.primaryMuscle || "").trim();
+            const primaryOnly = rawPrimary.includes("/") ? rawPrimary.split("/")[0].trim() : rawPrimary;
+            if(primaryOnly) pushText(primaryOnly);
 
-        // Equipment
-        if(x.equipment) pushText(x.equipment);
-      }else{
-        // Cardio/Core keep current meta style
-        if(x.equipment) pushText(x.equipment);
-      }
+            // Secondary muscles (preferred: array)
+            const secs = Array.isArray(x.secondaryMuscles) ? x.secondaryMuscles.filter(Boolean) : [];
 
-      // Type label always last
-      pushText(ExerciseLibrary.typeLabel(type));
+            if(secs.length){
+              // Highlight each secondary muscle
+              secs.forEach(sm => pushSecondary(sm));
+            } else {
+              // Fallback: parse legacy "Primary / Secondary" format
+              if(rawPrimary.includes("/")){
+                const parsed = rawPrimary.split("/").slice(1).join("/").trim();
+                if(parsed){
+                  const bucket = normalizeBucket(x.primaryMuscle);
+                  metaNodes.push(
+                    el("span", { class:`secMuscle sec-${bucket.replace(/\s+/g,'').toLowerCase()}`, text: parsed })
+                  );
+                }
+              }
+            }
 
-      row.appendChild(
-        el("div", { class:"left" }, [
-          el("div", { class:"name", text:x.name }),
-          el("div", { class:"meta" }, metaNodes.length ? metaNodes : [document.createTextNode("")])
-        ])
-      );
-      row.appendChild(el("div", { class:"actions" }, [ btn ]));
+            // Equipment
+            if(x.equipment) pushText(x.equipment);
 
-      if(alreadyInDay){
-        row.classList.add("selected", "disabledRow");
-        btn.classList.add("added", "disabledBtn");
-        btn.textContent = "Added ✓";
-        btn.disabled = true;
-      }
+          } else {
+            // Cardio/Core keep current meta style
+            if(x.equipment) pushText(x.equipment);
+          }
 
-      btn.addEventListener("click", () => addExercise(type, x.id, key, btn, row));
-      return row;
-    }
+          // Type label always last
+          pushText(ExerciseLibrary.typeLabel(type));
+
+          row.appendChild(
+            el("div", { class:"left" }, [
+              el("div", { class:"name", text:x.name }),
+              el("div", { class:"meta" }, metaNodes.length ? metaNodes : [document.createTextNode("")])
+            ])
+          );
+
+          row.appendChild(el("div", { class:"actions" }, [ btn ]));
+
+          if(alreadyInDay){
+            row.classList.add("selected", "disabledRow");
+            btn.classList.add("added", "disabledBtn");
+            btn.textContent = "Added ✓";
+            btn.disabled = true;
+          }
+
+          btn.addEventListener("click", () => addExercise(type, x.id, key, btn, row));
+          return row;
+        }
 
     function toggleGroup(name){
       if(openGroups.has(name)) openGroups.delete(name);
