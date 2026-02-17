@@ -7578,21 +7578,60 @@ const addMultiBtn = el("button", {
            (a.name||"").localeCompare(b.name||""))
         );
 
+      // ✅ Bucket muscles into your clean, fixed order
+      const MUSCLE_ORDER = ["Chest", "Shoulders", "Arms", "Back", "Legs", "Full Body"];
+
+      function normalizeBucket(primaryMuscle){
+        const raw = String(primaryMuscle || "").trim();
+        const m = raw.toLowerCase();
+
+        if(!m) return "Other";
+
+        // Full Body (explicit)
+        if(m.includes("full body")) return "Full Body";
+
+        // Chest
+        if(m.includes("chest") || m.includes("pec")) return "Chest";
+
+        // Shoulders
+        if(m.includes("shoulder") || m.includes("delt")) return "Shoulders";
+
+        // Arms
+        if(m.includes("arm") || m.includes("bicep") || m.includes("tricep") || m.includes("forearm")) return "Arms";
+
+        // Back
+        if(m.includes("back") || m.includes("lat") || m.includes("trap")) return "Back";
+
+        // Legs
+        if(
+          m.includes("leg") || m.includes("quad") || m.includes("hamstring") ||
+          m.includes("glute") || m.includes("calf")
+        ) return "Legs";
+
+        return "Other";
+      }
+
       const byMuscle = new Map();
       wl.forEach(x => {
-        const g = String(x.primaryMuscle || "Other").trim() || "Other";
-        if(!byMuscle.has(g)) byMuscle.set(g, []);
-        byMuscle.get(g).push(x);
+        const bucket = normalizeBucket(x.primaryMuscle);
+        if(!byMuscle.has(bucket)) byMuscle.set(bucket, []);
+        byMuscle.get(bucket).push(x);
       });
 
-      const muscleNames = Array.from(byMuscle.keys()).sort((a,b)=>a.localeCompare(b));
+      // ✅ Render in your requested order (only render buckets that have items)
+      const orderedBuckets = MUSCLE_ORDER.filter(k => (byMuscle.get(k) || []).length);
 
-      if(muscleNames.length){
+      // If anything doesn't match our buckets, show it last as "Other" (only if needed)
+      const otherItems = byMuscle.get("Other") || [];
+      if(otherItems.length) orderedBuckets.push("Other");
+
+      if(orderedBuckets.length){
         scroller.appendChild(el("div", { class:"addExSectionLabel", text:"Weightlifting (by muscle)" }));
 
-        // Default-open: if we seeded a match, it will already be in openGroups
-        muscleNames.forEach(name => {
+        orderedBuckets.forEach(name => {
           const items = byMuscle.get(name) || [];
+          // Keep alphabetical inside each bucket (clean scanning)
+          items.sort((a,b)=>(a.name||"").localeCompare(b.name||""));
           scroller.appendChild(renderGroup(name, items, existingSet));
         });
       }
