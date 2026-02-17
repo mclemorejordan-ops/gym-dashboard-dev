@@ -7516,31 +7516,74 @@ const addMultiBtn = el("button", {
     function updateCount(){
       countPill.textContent = `${addedThisSession.size} added`;
     }
+    // Helper: find the routineExerciseId (rx.id) for a given library exercise on this day
+    function findRxIdOnDay(type, exId){
+      // Always re-fetch the latest day object (in case state changed while modal is open)
+      const latestDay = Routines.getDay(routineId, dayId) || day;
+      const rx = (latestDay?.exercises || []).find(e => e.type === type && e.exerciseId === exId);
+      return rx?.id || null;
+    }
+
+    // Helper: set button/row UI state
+    function setRowState({ row, btn, mode }){
+      // mode: "add" | "remove"
+      if(!row || !btn) return;
+
+      row.classList.remove("selected", "disabledRow");
+      btn.classList.remove("added", "disabledBtn", "danger");
+
+      if(mode === "remove"){
+        row.classList.add("selected");
+        btn.classList.add("danger");
+        btn.textContent = "Remove";
+        btn.disabled = false;
+      }else{
+        btn.textContent = "Add";
+        btn.disabled = false;
+      }
+    }
 
     function addExercise(type, exId, key, rowBtn, rowEl){
-      if(rowBtn?.disabled) return;
+      // Toggle behavior:
+      // - If already in day: remove
+      // - If not: add
+      const existingSet = getExistingSetForDay();
+      const alreadyInDay = existingSet.has(key);
 
-      // ✅ Keep original behavior: tap "Add" instantly adds (no checkbox flow)
+      if(alreadyInDay){
+        const rxId = findRxIdOnDay(type, exId);
+        if(rxId){
+          Routines.removeExerciseFromDay(routineId, dayId, rxId);
+        }
+
+        // If it was added during THIS modal session, reduce the counter
+        if(addedThisSession.has(key)) addedThisSession.delete(key);
+        updateCount();
+
+        // Refresh Routine + modal list states
+        repaintDays();
+        repaint();
+
+        // For single-add modal, keep it open on remove (less annoying)
+        return;
+      }
+
+      // Add path (original behavior preserved)
       Routines.addExerciseToDay(routineId, dayId, type, exId);
       repaintDays();
 
       if(opts.keepOpen){
         addedThisSession.add(key);
-
-        if(rowEl) rowEl.classList.add("selected", "disabledRow");
-        if(rowBtn){
-          rowBtn.classList.add("added", "disabledBtn");
-          rowBtn.textContent = "Added ✓";
-          rowBtn.disabled = true;
-        }
-
         updateCount();
+
+        // Keep open and flip the row into "Remove" state
+        setRowState({ row: rowEl, btn: rowBtn, mode: "remove" });
       }else{
         Modal.close();
       }
     }
 
-        function renderRow(type, x, existingSet){
+    function renderRow(type, x, existingSet){
       const key = `${type}:${x.id}`;
       const alreadyInDay = existingSet.has(key);
 
@@ -7574,7 +7617,6 @@ const addMultiBtn = el("button", {
         // Secondary muscles (preferred: array)
         const secs = Array.isArray(x.secondaryMuscles) ? x.secondaryMuscles.filter(Boolean) : [];
         if(secs.length){
-          // Highlight each secondary muscle
           secs.forEach(sm => pushSecondary(sm));
         }else{
           // Fallback: parse legacy "Primary / Secondary" format
@@ -7602,11 +7644,11 @@ const addMultiBtn = el("button", {
       );
       row.appendChild(el("div", { class:"actions" }, [ btn ]));
 
+      // ✅ NEW: if it’s already in the day, show a removable state (not disabled)
       if(alreadyInDay){
-        row.classList.add("selected", "disabledRow");
-        btn.classList.add("added", "disabledBtn");
-        btn.textContent = "Added ✓";
-        btn.disabled = true;
+        setRowState({ row, btn, mode: "remove" });
+      }else{
+        setRowState({ row, btn, mode: "add" });
       }
 
       btn.addEventListener("click", () => addExercise(type, x.id, key, btn, row));
