@@ -3114,8 +3114,8 @@ function applySecondaryAndCardioPrimary(arr, primaryForAll=null){
 }  // ← END of seeding
 
 // ────────────────────────────
-// Backfill default Cardio/Core lists if missing
-// (non-destructive merge by name)
+// Backfill default Cardio/Core lists if an older saved library is missing them
+// (non-destructive: only adds missing-by-name)
 // ────────────────────────────
 function mergeByName(targetArr, defaults){
   const seen = new Set((targetArr||[]).map(x => normName(x?.name||"")).filter(Boolean));
@@ -3128,45 +3128,65 @@ function mergeByName(targetArr, defaults){
   });
 }
 
-// Ensure arrays exist
+// Ensure arrays exist (older saves)
 if(!lib.cardio) lib.cardio = [];
 if(!lib.core) lib.core = [];
 
-// Merge missing cardio
-mergeByName(lib.cardio, [ /* your cardio defaults here */ ]);
+// Merge missing cardio defaults
+mergeByName(lib.cardio, [
+  { id: uid("ex"), type:"cardio", name:"Treadmill Run", equipment:"Treadmill", modality:"run", supportsIncline:true, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Incline Walk", equipment:"Treadmill", modality:"walk", supportsIncline:true, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Sprint Intervals", equipment:"Treadmill", modality:"run", supportsIncline:false, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Outdoor Run", equipment:"Outdoor", modality:"run", supportsIncline:false, createdAt:Date.now() },
 
-// Merge missing core
-mergeByName(lib.core, [ /* your core defaults here */ ]);
+  { id: uid("ex"), type:"cardio", name:"Stairmaster", equipment:"Machine", modality:"stairs", supportsIncline:false, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Stationary Bike", equipment:"Bike", modality:"bike", supportsIncline:false, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Assault Bike", equipment:"Bike", modality:"bike", supportsIncline:false, createdAt:Date.now() },
 
-// Re-apply meta
+  { id: uid("ex"), type:"cardio", name:"Row Machine", equipment:"Rower", modality:"row", supportsIncline:false, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Row Sprint", equipment:"Rower", modality:"row", supportsIncline:false, createdAt:Date.now() },
+
+  { id: uid("ex"), type:"cardio", name:"Ski Erg", equipment:"Machine", modality:"ski", supportsIncline:false, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Elliptical", equipment:"Machine", modality:"elliptical", supportsIncline:false, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Battle Ropes", equipment:"Machine", modality:"ropes", supportsIncline:false, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Sled Push", equipment:"Sled", modality:"sled", supportsIncline:false, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Sled Pull", equipment:"Sled", modality:"sled", supportsIncline:false, createdAt:Date.now() },
+  { id: uid("ex"), type:"cardio", name:"Jump Rope", equipment:"Bodyweight", modality:"rope", supportsIncline:false, createdAt:Date.now() }
+]);
+
+// Merge missing core defaults
+mergeByName(lib.core, [
+  { id: uid("ex"), type:"core", name:"Plank", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Side Plank", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Weighted Sit-Up", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Russian Twist", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Dumbbell Side Bend", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Renegade Row", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Plank Pull-Through", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
+
+  { id: uid("ex"), type:"core", name:"Hanging Leg Raise", equipment:"Bar", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Hanging Knee Raise", equipment:"Bar", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Weighted Leg Raise", equipment:"Dumbbell", primaryMuscle:"Core", createdAt:Date.now() },
+
+  { id: uid("ex"), type:"core", name:"Bicycle Crunch", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Decline Sit-Up", equipment:"Bench", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Ab Wheel Rollout", equipment:"Ab Wheel", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Stability Ball Crunch", equipment:"Stability Ball", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Stability Ball Rollout", equipment:"Stability Ball", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Barbell Rollout", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Barbell Overhead Hold", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Landmine Rotation", equipment:"Barbell", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"V-Up", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Hollow Body Hold", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Dragon Flag", equipment:"Bodyweight", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Medicine Ball Slam", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() },
+  { id: uid("ex"), type:"core", name:"Medicine Ball Russian Twist", equipment:"Medicine Ball", primaryMuscle:"Core", createdAt:Date.now() }
+]);
+
+// Re-apply meta (makes sure these merged-in defaults get the correct primary + secondaries)
 applySecondaryAndCardioPrimary(lib.cardio, "Cardio");
 applySecondaryAndCardioPrimary(lib.core, "Core");
 
-
-// ────────────────────────────
-// Hydration block (this should already exist below)
-// ────────────────────────────
-(function hydrateLibraryMeta(){       
-
-// Apply across seeded defaults
-applySecondaryAndCardioPrimary(lib.weightlifting);
-applySecondaryAndCardioPrimary(lib.cardio, "Cardio");
-applySecondaryAndCardioPrimary(lib.core, "Core");
-       
-
-function applySecondaryAndCardioPrimary(arr, primaryForAll=null){
-  (arr || []).forEach(ex => {
-    if(primaryForAll) ex.primaryMuscle = primaryForAll;
-    const sec = SECONDARY_BY_NAME[ex.name];
-    ex.secondaryMuscles = Array.isArray(sec) ? sec.slice() : [];
-  });
-}
-
-applySecondaryAndCardioPrimary(lib.weightlifting);
-applySecondaryAndCardioPrimary(lib.cardio, "Cardio");
-applySecondaryAndCardioPrimary(lib.core, "Core");
-
-        }
 // ────────────────────────────
 // Always hydrate secondaryMuscles + normalize primaries (even when library already exists)
 // Fixes older seeded data where secondaryMuscles were missing + prevents Core/Cardio splitting.
