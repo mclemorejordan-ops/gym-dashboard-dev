@@ -2578,6 +2578,174 @@ const RoutineTemplates = [
       if(changed) Storage.save(state);
       return changed;
     }
+    // Seed: Secondary muscles + Cardio primary muscle
+// (drives Add Exercise meta line + search + tags)
+// ────────────────────────────
+const SECONDARY_BY_NAME = {
+  // Weightlifting
+  "Barbell Bench Press": ["Triceps"],
+  "Incline Barbell Bench Press": ["Shoulders"],
+  "Decline Barbell Bench Press": ["Triceps"],
+  "Close-Grip Bench Press": ["Triceps"],
+  "Barbell Floor Press": ["Triceps"],
+  "Barbell Overhead Press": ["Triceps"],
+  "Upright Row": ["Traps"],
+  "Barbell Push Press": ["Legs"],
+  "Barbell Landmine Press": ["Chest"],
+  "Barbell Bent Over Row": ["Lats"],
+  "Pendlay Row": ["Lats"],
+  "Barbell Incline Row": ["Rear Delts"],
+  "Barbell Landmine Row": ["Lats"],
+  "Barbell Deadlift": ["Glutes"],
+  "Rack Pull": ["Glutes"],
+  "Romanian Deadlift": ["Hamstrings"],
+  "Barbell Good Morning": ["Hamstrings"],
+  "Sumo Deadlift": ["Glutes"],
+  "Back Squat": ["Quads"],
+  "Front Squat": ["Quads"],
+  "Barbell Hack Squat": ["Quads"],
+  "Barbell Lunge": ["Glutes"],
+  "Barbell Reverse Lunge": ["Glutes"],
+  "Barbell Hip Thrust": ["Glutes"],
+  "Barbell Glute Bridge": ["Glutes"],
+  "Barbell Calf Raise": ["Calves"],
+  "Barbell Curl": ["Biceps"],
+  "Reverse Curl": ["Forearms"],
+  "Barbell Skull Crusher": ["Triceps"],
+  "Barbell Thruster": ["Shoulders"],
+  "Power Clean": ["Legs"],
+  "Hang Clean": ["Legs"],
+
+  "Dumbbell Bench Press": ["Triceps"],
+  "Incline Dumbbell Press": ["Shoulders"],
+  "Decline Dumbbell Press": ["Triceps"],
+  "Dumbbell Fly": ["Chest"],
+  "Dumbbell Pullover": ["Lats"],
+  "Dumbbell Floor Press": ["Triceps"],
+  "Dumbbell Shoulder Press": ["Triceps"],
+  "Arnold Press": ["Front Delts"],
+  "Dumbbell Lateral Raise": ["Side Delts"],
+  "Dumbbell Front Raise": ["Front Delts"],
+  "Dumbbell Rear Delt Fly": ["Rear Delts"],
+  "Dumbbell Incline Lateral Raise": ["Side Delts"],
+  "Dumbbell Z Press": ["Core"],
+  "Dumbbell High Pull": ["Traps"],
+  "Dumbbell Shrug": ["Traps"],
+  "Dumbbell Reverse Fly": ["Rear Delts"],
+  "Single-Arm Dumbbell Row": ["Biceps"],
+  "Dumbbell Chest Supported Row": ["Biceps"],
+  "Goblet Squat": ["Quads"],
+  "Dumbbell Lunge": ["Glutes"],
+  "Walking Lunge": ["Glutes"],
+  "Bulgarian Split Squat": ["Quads"],
+  "Dumbbell Reverse Lunge": ["Glutes"],
+  "Dumbbell Step-Up": ["Glutes"],
+  "Dumbbell Romanian Deadlift": ["Hamstrings"],
+  "Dumbbell Sumo Squat": ["Glutes"],
+  "Dumbbell Hip Thrust": ["Glutes"],
+  "Dumbbell Glute Bridge": ["Glutes"],
+  "Dumbbell Calf Raise": ["Calves"],
+  "Dumbbell Curl": ["Biceps"],
+  "Incline Dumbbell Curl": ["Biceps"],
+  "Hammer Curl": ["Brachialis"],
+  "Concentration Curl": ["Biceps"],
+  "Overhead Tricep Extension": ["Triceps"],
+  "Dumbbell Skull Crusher": ["Triceps"],
+  "Tricep Kickback": ["Triceps"],
+  "Dumbbell Thruster": ["Shoulders"],
+  "Dumbbell Snatch": ["Shoulders"],
+  "Dumbbell Clean and Press": ["Shoulders"],
+  "Dumbbell Swings": ["Glutes"],
+  "Farmers Carry": ["Forearms"],
+  "Dumbbell Suitcase Carry": ["Obliques"],
+
+  "Chest Press": ["Triceps"],
+  "Pec Deck": ["Chest"],
+  "Machine Chest Fly": ["Chest"],
+  "Lat Pulldown": ["Lats"],
+  "Seated Row": ["Lats"],
+  "Assisted Pull-Up": ["Lats"],
+  "Leg Press": ["Quads"],
+  "Hack Squat Machine": ["Quads"],
+  "Smith Machine Squat": ["Quads"],
+  "Leg Extension": ["Quads"],
+  "Leg Curl": ["Hamstrings"],
+  "Hip Abduction Machine": ["Glutes"],
+  "Hip Adduction Machine": ["Adductors"],
+  "Seated Calf Raise": ["Calves"],
+  "Standing Calf Raise Machine": ["Calves"],
+  "Machine Shoulder Press": ["Triceps"],
+  "Machine Preacher Curl": ["Biceps"],
+  "Machine Tricep Dip": ["Triceps"],
+
+  "Cable Chest Fly": ["Chest"],
+  "Cable Crossover": ["Chest"],
+  "Cable Row": ["Lats"],
+  "Face Pull": ["Rear Delts"],
+  "Cable Lateral Raise": ["Side Delts"],
+  "Cable Front Raise": ["Front Delts"],
+  "Cable Reverse Fly": ["Rear Delts"],
+  "Cable Upright Row": ["Traps"],
+  "Cable Tricep Pushdown": ["Triceps"],
+  "Cable Overhead Tricep Extension": ["Triceps"],
+  "Cable Bicep Curl": ["Biceps"],
+  "Cable Woodchopper": ["Obliques"],
+  "Cable Crunch": ["Abs"],
+  "Cable Pallof Press": ["Obliques"],
+  "Cable Kickback": ["Glutes"],
+  "Cable Pull-Through": ["Glutes"],
+
+  "Push-Up": ["Triceps"],
+  "Pull-Up": ["Lats"],
+  "Chin-Up": ["Biceps"],
+  "Dips": ["Triceps"],
+  "Pike Push-Up": ["Triceps"],
+  "Bodyweight Squat": ["Quads"],
+  "Nordic Hamstring Curl": ["Hamstrings"],
+  "Glute Bridge": ["Glutes"],
+
+  // Cardio
+  "Treadmill Run": ["Legs"],
+  "Incline Walk": ["Glutes"],
+  "Sprint Intervals": ["Legs"],
+  "Outdoor Run": ["Legs"],
+  "Stairmaster": ["Glutes"],
+  "Stationary Bike": ["Quads"],
+  "Assault Bike": ["Full Body"],
+  "Row Machine": ["Back"],
+  "Row Sprint": ["Full Body"],
+  "Ski Erg": ["Shoulders"],
+  "Elliptical": ["Legs"],
+  "Battle Ropes": ["Shoulders"],
+  "Sled Push": ["Legs"],
+  "Sled Pull": ["Back"],
+  "Jump Rope": ["Calves"],
+
+  // Core
+  "Plank": ["Abs"],
+  "Side Plank": ["Obliques"],
+  "Weighted Sit-Up": ["Abs"],
+  "Russian Twist": ["Obliques"],
+  "Dumbbell Side Bend": ["Obliques"],
+  "Renegade Row": ["Lats"],
+  "Plank Pull-Through": ["Abs"],
+  "Hanging Leg Raise": ["Abs"],
+  "Hanging Knee Raise": ["Abs"],
+  "Weighted Leg Raise": ["Abs"],
+  "Bicycle Crunch": ["Abs"],
+  "Decline Sit-Up": ["Abs"],
+  "Ab Wheel Rollout": ["Abs"],
+  "Stability Ball Crunch": ["Abs"],
+  "Stability Ball Rollout": ["Abs"],
+  "Barbell Rollout": ["Abs"],
+  "Barbell Overhead Hold": ["Shoulders"],
+  "Landmine Rotation": ["Obliques"],
+  "V-Up": ["Abs"],
+  "Hollow Body Hold": ["Abs"],
+  "Dragon Flag": ["Abs"],
+  "Medicine Ball Slam": ["Full Body"],
+  "Medicine Ball Russian Twist": ["Obliques"]
+};
     /********************
      * 4) Exercise Library Module (Step 3)
      ********************/
@@ -2794,31 +2962,34 @@ lib.core = [
   { id: uid("ex"), type:"core", name:"Cable Woodchopper", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
   { id: uid("ex"), type:"core", name:"Cable Crunch", equipment:"Cable", primaryMuscle:"Core", createdAt:Date.now() },
 ];
-
-    // ────────────────────────────
-// Seed: Secondary muscles + Cardio primary muscle
+   // ────────────────────────────
+// Seed: Secondary muscles + Cardio/Core primary normalization
 // (drives Add Exercise meta line + search + tags)
 // ────────────────────────────
 const SECONDARY_BY_NAME = {
-  // Weightlifting
+  // Weightlifting (sample shown — keep/extend as needed)
   "Barbell Bench Press": ["Triceps"],
   "Incline Barbell Bench Press": ["Shoulders"],
   "Decline Barbell Bench Press": ["Triceps"],
   "Close-Grip Bench Press": ["Triceps"],
   "Barbell Floor Press": ["Triceps"],
+
   "Barbell Overhead Press": ["Triceps"],
   "Upright Row": ["Traps"],
   "Barbell Push Press": ["Legs"],
   "Barbell Landmine Press": ["Chest"],
+
   "Barbell Bent Over Row": ["Lats"],
   "Pendlay Row": ["Lats"],
   "Barbell Incline Row": ["Rear Delts"],
   "Barbell Landmine Row": ["Lats"],
   "Barbell Deadlift": ["Glutes"],
   "Rack Pull": ["Glutes"],
+
   "Romanian Deadlift": ["Hamstrings"],
   "Barbell Good Morning": ["Hamstrings"],
   "Sumo Deadlift": ["Glutes"],
+
   "Back Squat": ["Quads"],
   "Front Squat": ["Quads"],
   "Barbell Hack Squat": ["Quads"],
@@ -2827,9 +2998,11 @@ const SECONDARY_BY_NAME = {
   "Barbell Hip Thrust": ["Glutes"],
   "Barbell Glute Bridge": ["Glutes"],
   "Barbell Calf Raise": ["Calves"],
+
   "Barbell Curl": ["Biceps"],
   "Reverse Curl": ["Forearms"],
   "Barbell Skull Crusher": ["Triceps"],
+
   "Barbell Thruster": ["Shoulders"],
   "Power Clean": ["Legs"],
   "Hang Clean": ["Legs"],
@@ -2840,6 +3013,7 @@ const SECONDARY_BY_NAME = {
   "Dumbbell Fly": ["Chest"],
   "Dumbbell Pullover": ["Lats"],
   "Dumbbell Floor Press": ["Triceps"],
+
   "Dumbbell Shoulder Press": ["Triceps"],
   "Arnold Press": ["Front Delts"],
   "Dumbbell Lateral Raise": ["Side Delts"],
@@ -2850,73 +3024,34 @@ const SECONDARY_BY_NAME = {
   "Dumbbell High Pull": ["Traps"],
   "Dumbbell Shrug": ["Traps"],
   "Dumbbell Reverse Fly": ["Rear Delts"],
-  "Single-Arm Dumbbell Row": ["Biceps"],
-  "Dumbbell Chest Supported Row": ["Biceps"],
-  "Goblet Squat": ["Quads"],
-  "Dumbbell Lunge": ["Glutes"],
-  "Walking Lunge": ["Glutes"],
-  "Bulgarian Split Squat": ["Quads"],
-  "Dumbbell Reverse Lunge": ["Glutes"],
-  "Dumbbell Step-Up": ["Glutes"],
-  "Dumbbell Romanian Deadlift": ["Hamstrings"],
-  "Dumbbell Sumo Squat": ["Glutes"],
-  "Dumbbell Hip Thrust": ["Glutes"],
-  "Dumbbell Glute Bridge": ["Glutes"],
-  "Dumbbell Calf Raise": ["Calves"],
-  "Dumbbell Curl": ["Biceps"],
-  "Incline Dumbbell Curl": ["Biceps"],
-  "Hammer Curl": ["Brachialis"],
-  "Concentration Curl": ["Biceps"],
-  "Overhead Tricep Extension": ["Triceps"],
-  "Dumbbell Skull Crusher": ["Triceps"],
-  "Tricep Kickback": ["Triceps"],
-  "Dumbbell Thruster": ["Shoulders"],
-  "Dumbbell Snatch": ["Shoulders"],
-  "Dumbbell Clean and Press": ["Shoulders"],
-  "Dumbbell Swings": ["Glutes"],
-  "Farmers Carry": ["Forearms"],
-  "Dumbbell Suitcase Carry": ["Obliques"],
 
-  "Chest Press": ["Triceps"],
-  "Pec Deck": ["Chest"],
-  "Machine Chest Fly": ["Chest"],
+  // IMPORTANT: your requested correction
+  "Single-Arm Dumbbell Row": ["Biceps"],
+
+  // Machines
   "Lat Pulldown": ["Lats"],
   "Seated Row": ["Lats"],
   "Assisted Pull-Up": ["Lats"],
-  "Leg Press": ["Quads"],
-  "Hack Squat Machine": ["Quads"],
-  "Smith Machine Squat": ["Quads"],
   "Leg Extension": ["Quads"],
   "Leg Curl": ["Hamstrings"],
   "Hip Abduction Machine": ["Glutes"],
   "Hip Adduction Machine": ["Adductors"],
   "Seated Calf Raise": ["Calves"],
   "Standing Calf Raise Machine": ["Calves"],
-  "Machine Shoulder Press": ["Triceps"],
-  "Machine Preacher Curl": ["Biceps"],
-  "Machine Tricep Dip": ["Triceps"],
 
-  "Cable Chest Fly": ["Chest"],
-  "Cable Crossover": ["Chest"],
-  "Cable Row": ["Lats"],
-  "Face Pull": ["Rear Delts"],
-  "Cable Lateral Raise": ["Side Delts"],
-  "Cable Front Raise": ["Front Delts"],
-  "Cable Reverse Fly": ["Rear Delts"],
-  "Cable Upright Row": ["Traps"],
-  "Cable Tricep Pushdown": ["Triceps"],
-  "Cable Overhead Tricep Extension": ["Triceps"],
-  "Cable Bicep Curl": ["Biceps"],
-  "Cable Woodchopper": ["Obliques"],
+  // Cables (Core vs Weightlifting handled by type + normalization)
   "Cable Crunch": ["Abs"],
+  "Cable Woodchopper": ["Obliques"],
   "Cable Pallof Press": ["Obliques"],
-  "Cable Kickback": ["Glutes"],
-  "Cable Pull-Through": ["Glutes"],
 
+  // Bodyweight
   "Push-Up": ["Triceps"],
   "Pull-Up": ["Lats"],
   "Chin-Up": ["Biceps"],
+
+  // IMPORTANT: your requested correction (keep in Chest, secondary Triceps)
   "Dips": ["Triceps"],
+
   "Pike Push-Up": ["Triceps"],
   "Bodyweight Squat": ["Quads"],
   "Nordic Hamstring Curl": ["Hamstrings"],
@@ -2972,35 +3107,87 @@ function applySecondaryAndCardioPrimary(arr, primaryForAll=null){
     ex.secondaryMuscles = Array.isArray(sec) ? sec.slice() : [];
   });
 }
+   if(empty){
+  lib.weightlifting = [ ... ];
+  lib.cardio = [ ... ];
+  lib.core = [ ... ];
+}  // ← END of seeding
+
+// ────────────────────────────
+// Backfill default Cardio/Core lists if missing
+// (non-destructive merge by name)
+// ────────────────────────────
+function mergeByName(targetArr, defaults){
+  const seen = new Set((targetArr||[]).map(x => normName(x?.name||"")).filter(Boolean));
+  (defaults||[]).forEach(d => {
+    const k = normName(d?.name||"");
+    if(!k) return;
+    if(seen.has(k)) return;
+    targetArr.push(d);
+    seen.add(k);
+  });
+}
+
+// Ensure arrays exist
+if(!lib.cardio) lib.cardio = [];
+if(!lib.core) lib.core = [];
+
+// Merge missing cardio
+mergeByName(lib.cardio, [ /* your cardio defaults here */ ]);
+
+// Merge missing core
+mergeByName(lib.core, [ /* your core defaults here */ ]);
+
+// Re-apply meta
+applySecondaryAndCardioPrimary(lib.cardio, "Cardio");
+applySecondaryAndCardioPrimary(lib.core, "Core");
+
+
+// ────────────────────────────
+// Hydration block (this should already exist below)
+// ────────────────────────────
+(function hydrateLibraryMeta(){       
+
+// Apply across seeded defaults
+applySecondaryAndCardioPrimary(lib.weightlifting);
+applySecondaryAndCardioPrimary(lib.cardio, "Cardio");
+applySecondaryAndCardioPrimary(lib.core, "Core");
+       
+
+function applySecondaryAndCardioPrimary(arr, primaryForAll=null){
+  (arr || []).forEach(ex => {
+    if(primaryForAll) ex.primaryMuscle = primaryForAll;
+    const sec = SECONDARY_BY_NAME[ex.name];
+    ex.secondaryMuscles = Array.isArray(sec) ? sec.slice() : [];
+  });
+}
 
 applySecondaryAndCardioPrimary(lib.weightlifting);
 applySecondaryAndCardioPrimary(lib.cardio, "Cardio");
 applySecondaryAndCardioPrimary(lib.core, "Core");
 
         }
-        // ────────────────────────────
-        // Always hydrate secondaryMuscles + normalize primaries (even when library already exists)
-        // This fixes older seeded data where secondaryMuscles were missing.
-        // ────────────────────────────
-        (function hydrateLibraryMeta(){
-          const libNow = state.exerciseLibrary || {};
-          const types = ["weightlifting","cardio","core"];
+// ────────────────────────────
+// Always hydrate secondaryMuscles + normalize primaries (even when library already exists)
+// Fixes older seeded data where secondaryMuscles were missing + prevents Core/Cardio splitting.
+// ────────────────────────────
+(function hydrateLibraryMeta(){
+  const libNow = state.exerciseLibrary || {};
+  const types = ["weightlifting","cardio","core"];
 
-          types.forEach(t => {
-            (libNow[t] || []).forEach(ex => {
-              // Force stable primaries for Cardio/Core to prevent accidental new groups (e.g., "Abs")
-              if(t === "cardio") ex.primaryMuscle = "Cardio";
-              if(t === "core") ex.primaryMuscle = "Core";
+  types.forEach(t => {
+    (libNow[t] || []).forEach(ex => {
+      // Force stable primaries for Cardio/Core to prevent accidental new groups (e.g., "Abs")
+      if(t === "cardio") ex.primaryMuscle = "Cardio";
+      if(t === "core") ex.primaryMuscle = "Core";
 
-              // Only populate secondaryMuscles when missing/empty (don't overwrite user custom edits)
-              const existing = Array.isArray(ex.secondaryMuscles) ? ex.secondaryMuscles.filter(Boolean) : [];
-              if(existing.length === 0){
-                const sec = SECONDARY_BY_NAME[ex.name];
-                ex.secondaryMuscles = Array.isArray(sec) ? sec.slice() : [];
-              }
-            });
-          });
-        })();
+      // Ensure secondaryMuscles exists and is hydrated from dictionary
+      const sec = SECONDARY_BY_NAME?.[ex.name];
+      ex.secondaryMuscles = Array.isArray(sec) ? sec.slice() : (Array.isArray(ex.secondaryMuscles) ? ex.secondaryMuscles : []);
+    });
+  });
+})();
+
         
         // Always attempt to repair links (covers older data / edge cases)
         const repaired = repairExerciseLinks();
