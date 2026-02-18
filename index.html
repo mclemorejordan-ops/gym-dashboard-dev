@@ -2431,29 +2431,56 @@ const UIState = window.__GymDashUIState || (window.__GymDashUIState = {
 
         const pad2 = (n) => String(n).padStart(2, "0");
 
-    const Dates = {
-      todayISO(){
-        const d = new Date();
-        return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-      },
-      // weekStartsOn: "mon" | "sun"
-      startOfWeekISO(dateISO, weekStartsOn){
-        const d = new Date(dateISO + "T00:00:00");
-        const dow = d.getDay(); // 0=Sun..6=Sat
-        const weekStart = (weekStartsOn === "sun") ? 0 : 1;
-        // how many days to subtract to get week start
-        let diff = dow - weekStart;
-        if(diff < 0) diff += 7;
-        d.setDate(d.getDate() - diff);
-        return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-      },
-      addDaysISO(dateISO, days){
-        const d = new Date(dateISO + "T00:00:00");
-        d.setDate(d.getDate() + days);
-        return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-      },
-      sameISO(a,b){ return String(a) === String(b); }
-    };
+const Dates = {
+  // strict YYYY-MM-DD check
+  isISO(dateISO){
+    return typeof dateISO === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateISO);
+  },
+
+  // returns a Date at local midnight, or null if invalid
+  parseISO(dateISO){
+    if(!this.isISO(dateISO)) return null;
+    const d = new Date(dateISO + "T00:00:00");
+    return Number.isFinite(d.getTime()) ? d : null;
+  },
+
+  todayISO(){
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  },
+
+  // weekStartsOn: "mon" | "sun"
+  startOfWeekISO(dateISO, weekStartsOn){
+    // ✅ guard: if we ever get garbage, fall back to today (prevents NaN/Invalid Date cascades)
+    const baseISO = this.isISO(dateISO) ? dateISO : this.todayISO();
+    const d = new Date(baseISO + "T00:00:00");
+
+    const dow = d.getDay(); // 0=Sun..6=Sat
+    const weekStart = (weekStartsOn === "sun") ? 0 : 1;
+
+    let diff = dow - weekStart;
+    if(diff < 0) diff += 7;
+
+    d.setDate(d.getDate() - diff);
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  },
+
+  addDaysISO(dateISO, days){
+    const baseISO = this.isISO(dateISO) ? dateISO : this.todayISO();
+    const d = new Date(baseISO + "T00:00:00");
+    d.setDate(d.getDate() + (Number(days) || 0));
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  },
+
+  sameISO(a,b){ return String(a) === String(b); },
+
+  // convenience: "Feb 15"
+  formatShort(dateISO){
+    const d = this.parseISO(dateISO);
+    if(!d) return "—";
+    return d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
+  }
+};
         /********************
      * Settings helpers (added)
      ********************/
@@ -5297,13 +5324,15 @@ const root = el("div", { class:"routinePage" });
     return Dates.addDaysISO(weekStartISO, offset);
   }
   // Label date as Today / Tomorrow / "Feb 15"
-  function prettyDayTag(dateISO){
-    if(dateISO === todayISO) return "Today";
-    if(dateISO === Dates.addDaysISO(todayISO, 1)) return "Tomorrow";
+function prettyDayTag(dateISO){
+  // ✅ hard guard
+  if(!Dates.isISO(dateISO)) return "—";
 
-    const d = new Date(dateISO + "T00:00:00");
-    return d.toLocaleDateString("en-US", { month:"short", day:"numeric" }); // e.g., "Feb 15"
-  }
+  if(dateISO === todayISO) return "Today";
+  if(dateISO === Dates.addDaysISO(todayISO, 1)) return "Tomorrow";
+
+  return Dates.formatShort(dateISO); // "Feb 15" (never "Invalid Date")
+}
 
   function getDay(index){
     routine = Routines.getActive(); // ✅ always refresh active routine
