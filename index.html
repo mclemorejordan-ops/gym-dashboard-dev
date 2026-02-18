@@ -4949,183 +4949,7 @@ el("div", { class:"card" }, [
   el("div", { style:"height:10px" }),
   el("div", { class:"note", text:`This week: ${trainedThisWeek.filter(x => x.trained).length} sessions` })
 ]),
-                ProteinHistory(){
-        const root = el("div", {}, []);
-
-        const todayISO = Dates.todayISO();
-        const goal = Math.max(0, Math.round(Number(state?.profile?.proteinGoal || 0)));
-
-        // Sticky header should sit BELOW your global <header>
-        const globalHeaderH = document.querySelector("header")?.offsetHeight || 0;
-
-        function proteinTotalForDate(dateISO){
-          const entry = (state?.logs?.protein || []).find(x => x.dateISO === dateISO);
-          if(!entry || !Array.isArray(entry.meals)) return 0;
-          return entry.meals.reduce((sum, m) => sum + (Number(m?.grams) || 0), 0);
-        }
-
-        function statusFor(total, goal){
-          if(goal <= 0) return "No goal set";
-          const pct = total / goal;
-          if(pct >= 1.10) return "Exceeded Goal";
-          if(pct >= 1.00) return "Goal Met";
-          if(pct >= 0.75) return "Almost There";
-          return "Under Goal";
-        }
-
-        function remainingFor(total, goal){
-          if(goal <= 0) return 0;
-          return Math.max(0, goal - total);
-        }
-
-        function shortLabel(dateISO){
-          if(dateISO === todayISO) return "Today";
-          if(dateISO === Dates.addDaysISO(todayISO, -1)) return "Yesterday";
-          return Dates.formatShort(dateISO); // "Feb 14"
-        }
-
-        function openProteinDate(dateISO){
-          // Store focus date so the protein screen opens on that day if needed
-          UIState.protein = UIState.protein || {};
-          UIState.protein.dateISO = dateISO;
-          navigate("home"); // we keep protein modal access from home
-          // After navigation, open the modal (next tick)
-          setTimeout(() => {
-            try{
-              // Home defines openProteinModal(todayISO default). We call global helper if present:
-              if(typeof openProteinModal === "function") openProteinModal(dateISO);
-              else{
-                // fallback: open modal directly
-                Modal.open({ title:"Protein", bodyNode: buildProteinTodayModal(dateISO, goal) });
-              }
-            }catch(_){}
-          }, 0);
-        }
-
-        // --- Gather dates ---
-        state.logs = state.logs || { workouts: [], weight: [], protein: [] };
-        state.logs.protein = state.logs.protein || [];
-
-        const allDates = state.logs.protein
-          .map(x => x?.dateISO)
-          .filter(d => Dates.isISO(d))
-          .sort((a,b) => (a < b ? 1 : -1)); // newest first
-
-        // --- Week grouping ---
-        const weekStartsOn = state?.profile?.weekStartsOn || "mon";
-        const thisWeekStart = Dates.startOfWeekISO(todayISO, weekStartsOn);
-        const lastWeekStart = Dates.addDaysISO(thisWeekStart, -7);
-        const lastWeekEnd   = Dates.addDaysISO(thisWeekStart, -1);
-
-        function inRange(d, a, b){ return (d >= a && d <= b); }
-
-        const thisWeekDates = allDates.filter(d => inRange(d, thisWeekStart, todayISO));
-        const lastWeekDates = allDates.filter(d => inRange(d, lastWeekStart, lastWeekEnd));
-        const olderDates    = allDates.filter(d => d < lastWeekStart);
-
-        // --- Weekly summary (This Week only) ---
-        // Build a 7-day window from thisWeekStart → thisWeekStart+6
-        const weekDays = Array.from({length: 7}, (_,i) => Dates.addDaysISO(thisWeekStart, i));
-        const totalsByDay = weekDays.map(d => ({ d, total: proteinTotalForDate(d) }));
-        const loggedDays = totalsByDay.filter(x => x.total > 0);
-
-        const loggedCount = loggedDays.length;
-        const avg = loggedCount ? Math.round(loggedDays.reduce((s,x)=>s+x.total,0) / loggedCount) : 0;
-        const best = loggedCount ? Math.max(...loggedDays.map(x => x.total)) : 0;
-        const goalMetDays = loggedCount && goal > 0 ? loggedDays.filter(x => x.total >= goal).length : 0;
-
-        // --- UI: Sticky sub-header (fixed) ---
-        const headerRow = el("div", {
-          style: `
-            position: sticky;
-            top: ${globalHeaderH}px;
-            z-index: 40;
-            padding: 10px 0 10px 0;
-            background: rgba(0,0,0,0.35);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-          `
-        }, [
-          el("div", { style:"display:flex; align-items:center; justify-content:space-between; gap:10px;" }, [
-            el("button", { class:"btn", onClick: () => navigate("home") }, ["← Back"]),
-            el("div", { style:"font-weight:900; font-size:16px;", text:"Protein History" }),
-            el("button", { class:"btn", onClick: () => openProteinDate(todayISO) }, ["Today"])
-          ])
-        ]);
-
-        // --- UI: Summary card ---
-        const summaryCard = el("div", { class:"card" }, [
-          el("div", { style:"font-weight:900; margin-bottom:6px;", text:"This Week" }),
-          el("div", { class:"note", text: `${loggedCount}/7 days logged • Avg: ${avg}g` }),
-          el("div", { class:"note", text: `Best: ${best}g • Goal Met Days: ${goalMetDays}` })
-        ]);
-
-        // --- Card builder (Option B style) ---
-        function historyCard(dateISO){
-          const total = Math.round(proteinTotalForDate(dateISO));
-          const rem = remainingFor(total, goal);
-          const st = statusFor(total, goal);
-
-          const pct = (goal > 0) ? Math.max(0, Math.min(1, total / goal)) : 0;
-          const fillPct = Math.round(pct * 100);
-
-          const bar = el("div", { class:"proteinBar" }, [
-            el("div", { class:"proteinBarFill", style:`width:${fillPct}%;` })
-          ]);
-
-          return el("div", {
-            class:"card",
-            style:"cursor:pointer;",
-            onClick: () => openProteinDate(dateISO)
-          }, [
-            el("div", { style:"display:flex; justify-content:space-between; align-items:flex-end; gap:10px;" }, [
-              el("div", { style:"font-weight:900;", text:`${Dates.formatShort(dateISO)} (${shortLabel(dateISO)})` }),
-              el("div", { style:"font-weight:900;", text:`${total}g` })
-            ]),
-            el("div", { style:"height:8px" }),
-            el("div", { class:"note", text: `${rem}g remaining • ${st}` }),
-            el("div", { style:"height:8px" }),
-            bar
-          ]);
-        }
-
-        function section(title, dates){
-          if(!dates.length) return null;
-          return el("div", {}, [
-            el("div", { style:"height:12px" }),
-            el("div", { class:"note", text:title }),
-            el("div", { style:"height:8px" }),
-            ...dates.map(d => historyCard(d))
-          ]);
-        }
-
-        // --- Empty state ---
-        if(allDates.length === 0){
-          root.appendChild(headerRow);
-          root.appendChild(el("div", { class:"card" }, [
-            el("h2", { text:"Protein History" }),
-            el("div", { class:"note", text:"No protein logged yet." }),
-            el("div", { style:"height:12px" }),
-            el("button", { class:"btn primary", onClick: () => openProteinDate(todayISO) }, ["Start today"])
-          ]));
-          return root;
-        }
-
-        // --- Compose ---
-        root.appendChild(headerRow);
-        root.appendChild(summaryCard);
-
-        const thisWeekNode = section("This Week", thisWeekDates);
-        const lastWeekNode = section("Last Week", lastWeekDates);
-        const olderNode    = section("Older", olderDates);
-
-        if(thisWeekNode) root.appendChild(thisWeekNode);
-        if(lastWeekNode) root.appendChild(lastWeekNode);
-        if(olderNode) root.appendChild(olderNode);
-
-        return root;
-      },
-
+              
 // ✅ NEW: Weight card (Weight tab replacement)
           el("div", { class:"card" }, [
             el("h2", { text:"Weight" }),
@@ -5429,6 +5253,180 @@ const actions = el("div", { class:"btnrow" }, [ saveBtn, historyBtn, closeBtn ])
   repaintProgress();
   return container;
 }
+      },
+      ProteinHistory(){
+        const root = el("div", { class:"grid" });
+
+        // Read-only totals (do NOT call totalProtein() here because it can auto-create entries)
+        function proteinTotalForDateRO(dateISO){
+          const entry = (state?.logs?.protein || []).find(x => x.dateISO === dateISO);
+          if(!entry || !Array.isArray(entry.meals)) return 0;
+          return entry.meals.reduce((sum, m) => sum + (Number(m?.grams) || 0), 0);
+        }
+
+        function statusFor(total, goal){
+          if(goal <= 0) return "No goal set";
+          if(total >= goal) return "Goal Met";
+          if(total >= (goal * 0.8)) return "Almost There";
+          return "Under Goal";
+        }
+
+        function fmtDateLabel(dateISO){
+          const d = new Date(String(dateISO) + "T00:00:00");
+          if(isNaN(d.getTime())) return String(dateISO || "—");
+          return d.toLocaleDateString(undefined, { month:"short", day:"numeric" });
+        }
+
+        const todayISO = Dates.todayISO();
+        const weekStartsOn = state.profile?.weekStartsOn || "mon";
+        const goal = Math.max(0, Math.round(Number(state?.profile?.proteinGoal || 0)));
+
+        const startThisWeekISO = Dates.startOfWeekISO(todayISO, weekStartsOn);
+        const startLastWeekISO = Dates.addDaysISO(startThisWeekISO, -7);
+
+        // Collect logged days (from actual stored entries)
+        const entries = Array.isArray(state?.logs?.protein) ? state.logs.protein.slice() : [];
+        // keep only valid ISO-ish dates
+        const cleaned = entries
+          .filter(e => e && typeof e.dateISO === "string" && e.dateISO.length >= 10)
+          .sort((a,b) => String(b.dateISO).localeCompare(String(a.dateISO)));
+
+        // Week stats (this week)
+        let weekLoggedDays = 0;
+        let weekSum = 0;
+        let weekBest = 0;
+        let weekGoalMet = 0;
+
+        for(let i=0;i<7;i++){
+          const dISO = Dates.addDaysISO(startThisWeekISO, i);
+          const total = proteinTotalForDateRO(dISO);
+          const hasEntry = cleaned.some(x => x.dateISO === dISO && Array.isArray(x.meals) && x.meals.length);
+          if(hasEntry){
+            weekLoggedDays++;
+            weekSum += total;
+            weekBest = Math.max(weekBest, total);
+            if(goal > 0 && total >= goal) weekGoalMet++;
+          }
+        }
+
+        const weekAvg = (weekLoggedDays > 0) ? Math.round(weekSum / weekLoggedDays) : 0;
+
+        // Sticky in-view header (global header is already fixed)
+        const headerRow = el("div", {
+          style:[
+            "position:sticky",
+            "top:0",
+            "z-index:5",
+            "padding:6px 0 10px",
+            "background: rgba(0,0,0,.18)",
+            "backdrop-filter: blur(10px)"
+          ].join(";")
+        }, [
+          el("div", { class:"homeRow" }, [
+            el("button", { class:"btn", onClick: () => navigate("home") }, ["← Back"]),
+            el("div", { style:"font-weight:900; letter-spacing:.2px;" , text:"Protein History" }),
+            el("div", { style:"width:72px" }) // spacer to balance
+          ])
+        ]);
+
+        function progressBar(total, goal){
+          const pct = (goal > 0) ? Math.max(0, Math.min(1, total / goal)) : 0;
+          return el("div", { class:"proteinBarTrack", style:"height:12px; border-radius:999px; overflow:hidden;" }, [
+            el("div", { class:"proteinBarFill", style:`width:${Math.round(pct*100)}%; height:100%;` })
+          ]);
+        }
+
+        const summaryCard = el("div", { class:"card" }, [
+          el("h2", { text:"This Week" }),
+          el("div", { class:"note", text:`${weekLoggedDays}/7 days logged • Avg: ${weekAvg}g` }),
+          el("div", { class:"note", text:`Best: ${weekBest}g • Goal Met Days: ${weekGoalMet}` })
+        ]);
+
+        function dayCard(dateISO){
+          const total = proteinTotalForDateRO(dateISO);
+          const left = Math.max(0, goal - total);
+          const st = statusFor(total, goal);
+
+          const title = Dates.sameISO(dateISO, todayISO)
+            ? `${fmtDateLabel(dateISO)} (Today)`
+            : fmtDateLabel(dateISO);
+
+          return el("div", { class:"card", style:"cursor:pointer;" , onClick: () => {
+            // open the existing protein modal for that date
+            UIState.protein = UIState.protein || {};
+            UIState.protein.dateISO = dateISO;
+            Modal.open({ title:"Protein", bodyNode: buildProteinTodayModal(dateISO, goal) });
+          }}, [
+            el("div", { class:"homeRow" }, [
+              el("div", {}, [
+                el("div", { style:"font-weight:900;", text: title }),
+                el("div", { class:"note", text: `${left}g remaining • ${st}` })
+              ]),
+              el("div", { style:"font-weight:900;", text: `${total}g` })
+            ]),
+            el("div", { style:"height:10px" }),
+            progressBar(total, goal)
+          ]);
+        }
+
+        // Build sections
+        const thisWeekDates = [];
+        const lastWeekDates = [];
+
+        for(let i=0;i<7;i++){
+          thisWeekDates.push(Dates.addDaysISO(startThisWeekISO, i));
+          lastWeekDates.push(Dates.addDaysISO(startLastWeekISO, i));
+        }
+
+        // Older: anything before last week start
+        const olderDates = cleaned
+          .map(x => x.dateISO)
+          .filter(dISO => dISO < startLastWeekISO);
+
+        function section(title, dateList){
+          // show only days that actually have entries (plus today for “This Week” visibility)
+          const cards = [];
+          for(const dISO of dateList){
+            const hasEntry = cleaned.some(x => x.dateISO === dISO && Array.isArray(x.meals) && x.meals.length);
+            if(hasEntry || (title === "This Week" && Dates.sameISO(dISO, todayISO))){
+              cards.push(dayCard(dISO));
+            }
+          }
+          if(cards.length === 0) return null;
+
+          return el("div", {}, [
+            el("div", { class:"addExSectionLabel", text:title }),
+            el("div", { style:"display:grid; gap:10px;" }, cards)
+          ]);
+        }
+
+        // Compose
+        root.appendChild(headerRow);
+        root.appendChild(summaryCard);
+
+        const a = section("This Week", thisWeekDates);
+        const b = section("Last Week", lastWeekDates);
+        const c = section("Older", olderDates);
+
+        if(a) root.appendChild(a);
+        if(b) root.appendChild(b);
+        if(c) root.appendChild(c);
+
+        // Empty state
+        if(!a && !b && !c){
+          root.appendChild(el("div", { class:"card" }, [
+            el("h2", { text:"Protein History" }),
+            el("div", { class:"note", text:"No protein logged yet." }),
+            el("div", { style:"height:12px" }),
+            el("button", { class:"btn primary", onClick: () => {
+              UIState.protein = UIState.protein || {};
+              UIState.protein.dateISO = todayISO;
+              Modal.open({ title:"Protein", bodyNode: buildProteinTodayModal(todayISO, goal) });
+            } }, ["Start today"])
+          ]));
+        }
+
+        return root;
       },
 
 Routine(){
