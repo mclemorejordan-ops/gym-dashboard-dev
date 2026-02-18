@@ -4991,7 +4991,7 @@ el("div", { class:"card" }, [
               el("button", { class:"btn primary", onClick: () => navigate("weight") }, ["Log weight"])
             ])
           ])
-        ]);function buildProteinTodayModal(dateISO, goal){
+        ]);window.buildProteinTodayModal = function(dateISO, goal){
   const container = el("div", { class:"grid" });
 
   // ---- helpers ----
