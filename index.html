@@ -7887,7 +7887,123 @@ state.profile.hideRestDays = !!hideRestDays;
 
                   Modal.open({
                     title: "Restore from Auto Backup",
-                    bodyNode: el("div", {}, [
+                    bodyNode: (() => {
+
+  const container = el("div", {
+    style: "max-height:70vh; overflow-y:auto; padding-right:6px;"
+  });
+
+  const headerBanner = el("div", {
+    style: [
+      "position:sticky",
+      "top:0",
+      "z-index:5",
+      "padding:10px 0",
+      "background:rgba(20,20,30,.65)",
+      "backdrop-filter:blur(8px)",
+      "-webkit-backdrop-filter:blur(8px)",
+      "border-bottom:1px solid rgba(255,255,255,.08)"
+    ].join(";")
+  }, [
+    el("div", { style:"display:flex; align-items:center; gap:8px;" }, [
+      el("div", { style:"width:8px;height:8px;border-radius:50%;background:#4CAF50;" }),
+      el("div", { style:"font-weight:800;", text:"Auto Backups Active" })
+    ]),
+    el("div", { class:"note", text:`Keeping: ${BackupVault.KEEP} snapshots` })
+  ]);
+
+  container.appendChild(headerBanner);
+  container.appendChild(el("div", { style:"height:12px" }));
+
+  BackupVault.list(BackupVault.KEEP).then(snaps => {
+
+    if(!snaps || snaps.length === 0){
+      container.appendChild(el("div", { class:"card" }, [
+        el("h2", { text:"No Auto Backups Found" }),
+        el("div", { class:"note", text:"Snapshots will appear here automatically." })
+      ]));
+      return;
+    }
+
+    snaps.forEach(snap => {
+
+      const created = new Date(snap.createdAt);
+      const formatted = created.toLocaleDateString(undefined, { month:"short", day:"numeric" }) +
+                        " • " +
+                        created.toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit" });
+
+      const reason = String(snap.reason || "auto");
+
+      function badgeColor(reason){
+        if(reason.includes("pre-import")) return "#FFC107";
+        if(reason.includes("pre-reset")) return "#F44336";
+        if(reason.includes("manual")) return "#2196F3";
+        return "#4CAF50";
+      }
+
+      const card = el("div", {
+        class:"card",
+        style:"cursor:pointer; transition:transform .15s ease;"
+      }, [
+        el("div", { style:"display:flex; justify-content:space-between; align-items:center;" }, [
+          el("div", { style:"font-weight:900;", text: formatted }),
+          el("div", {
+            style: `
+              padding:4px 10px;
+              border-radius:999px;
+              font-size:11px;
+              font-weight:700;
+              background:${badgeColor(reason)}22;
+              color:${badgeColor(reason)};
+              border:1px solid ${badgeColor(reason)}55;
+            `
+          }, [reason.replace("pre-","").replace("-"," ")])
+        ]),
+        el("div", { style:"height:8px" }),
+        el("div", { class:"note", text:`${snap.counts?.routines||0} Routines • ${snap.counts?.workouts||0} Workouts` }),
+        el("div", { class:"note", text:`${snap.counts?.protein||0} Protein Days • ${snap.counts?.attendance||0} Attendance` })
+      ]);
+
+      card.onclick = () => {
+        Modal.open({
+          title:"Restore Snapshot?",
+          center:true,
+          bodyNode: el("div", {}, [
+            el("div", { class:"note", text:`Created: ${formatted}` }),
+            el("div", { class:"note", text:`Reason: ${reason}` }),
+            el("div", { style:"height:12px" }),
+            el("div", { class:"note", text:`This will restore:` }),
+            el("div", { class:"note", text:`• ${snap.counts?.routines||0} Routines` }),
+            el("div", { class:"note", text:`• ${snap.counts?.workouts||0} Workout Logs` }),
+            el("div", { class:"note", text:`• ${snap.counts?.protein||0} Protein Days` }),
+            el("div", { class:"note", text:`• ${snap.counts?.attendance||0} Attendance Records` }),
+            el("div", { style:"height:16px" }),
+            el("div", { class:"btnrow" }, [
+              el("button", {
+                class:"btn primary",
+                onClick: () => {
+                  state = migrateState(snap.state);
+                  Storage.save(state);
+                  showToast("Snapshot Restored");
+                  Modal.close();
+                  renderView();
+                }
+              }, ["Restore Snapshot"]),
+              el("button", { class:"btn", onClick: Modal.close }, ["Cancel"])
+            ])
+          ])
+        });
+      };
+
+      container.appendChild(card);
+      container.appendChild(el("div", { style:"height:10px" }));
+    });
+
+  });
+
+  return container;
+})()
+
                       el("div", { class:"note", text:"Pick a snapshot to restore. This is a safety net for bad imports, bugs, or accidental clears." }),
                       el("div", { style:"height:10px" }),
                       listNode,
