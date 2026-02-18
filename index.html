@@ -14,14 +14,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f17" />
 
-      <!-- 🔒 Production Content Security Policy -->
+        <!-- 🔒 Production Content Security Policy -->
   <meta http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
-        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com;
         style-src 'self' 'unsafe-inline';
-        img-src 'self' data:;
-        connect-src 'self' https://cdn.jsdelivr.net https://formspree.io;
+        img-src 'self' data: https://www.google-analytics.com;
+        connect-src 'self' https://cdn.jsdelivr.net https://formspree.io https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com;
         font-src 'self';
         object-src 'none';
         base-uri 'self';
@@ -5011,15 +5011,34 @@ function bindHeaderPills(){
 
 
     function navigate(routeKey){
-      destroyProgressChart();
-      destroyWeightChart();
-      currentRoute = routeKey;
-      renderNav();
-      renderView();
-      bindHeaderPills();
-      checkForUpdates();
+  destroyProgressChart();
+  destroyWeightChart();
 
+  currentRoute = routeKey;
+
+  renderNav();
+  renderView();
+  bindHeaderPills();
+  checkForUpdates();
+
+  // ─────────────────────────────
+  // GA4: SPA route tracking (page_view)
+  // ─────────────────────────────
+  try{
+    if(typeof gtag === "function"){
+      const label = (Routes?.[routeKey]?.label) || routeKey || "unknown";
+      const pagePath = "/" + String(routeKey || "unknown");
+
+      gtag("event", "page_view", {
+        page_title: label,
+        page_path: pagePath,
+        page_location: (location?.origin || "") + pagePath
+      });
     }
+  }catch(e){
+    // never let analytics break navigation
+  }
+}
 
 
     function renderView(){
