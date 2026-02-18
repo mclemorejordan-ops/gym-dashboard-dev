@@ -4973,14 +4973,12 @@ el("div", { class:"card" }, [
     return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : Dates.todayISO();
   }
 
-  function fmtPretty(dateISO){
-    try{
-      const d = new Date(String(dateISO) + "T00:00:00");
-      return d.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
-    }catch(e){
-      return String(dateISO);
-    }
-  }
+function fmtPretty(dateISO){
+  // ✅ Only format valid ISO strings (YYYY-MM-DD). Anything else becomes "—"
+  const d = Dates.parseISO(dateISO);
+  if(!d) return "—";
+  return d.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+}
 
   function statusFor(done, goal){
     if(goal <= 0) return "No goal set";
