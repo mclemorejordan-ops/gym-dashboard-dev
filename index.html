@@ -2214,38 +2214,66 @@ const BackupVault = (() => {
   }
 
   // public
-  async function maybeSnapshot(s, reason="save"){
-    try{
-      const db = await _openDB();
-      const last = Number(await _getMeta(db, "lastSnapshotAt") || 0) || 0;
-      const now = Date.now();
-      if(now - last < THROTTLE_MS) return false;
+  // public
+  // Prevent duplicate snapshots if multiple saves happen at the same time
+  let __snapshotInFlight = null;
 
-      const snap = await _createSnapshot(s, reason);
-      const ok = await _putSnapshot(db, snap);
-      if(ok){
-        await _setMeta(db, "lastSnapshotAt", now);
-        await _prune(db);
+  async function maybeSnapshot(s, reason="save"){
+    // If a snapshot is already being created, do NOT create another.
+    // This stops duplicate rows (same timestamp) from ever being written.
+    if(__snapshotInFlight) return false;
+
+    __snapshotInFlight = (async () => {
+      try{
+        const db = await _openDB();
+
+        const last = Number(await _getMeta(db, "lastSnapshotAt") || 0) || 0;
+        const now = Date.now();
+
+        // Throttle snapshots (your existing safety rule)
+        if(now - last < THROTTLE_MS) return false;
+
+        const snap = await _createSnapshot(s, reason);
+        const ok = await _putSnapshot(db, snap);
+
+        if(ok){
+          await _setMeta(db, "lastSnapshotAt", now);
+          await _prune(db);
+        }
+        return ok;
+      }catch(_){
+        return false;
+      }finally{
+        __snapshotInFlight = null;
       }
-      return ok;
-    }catch(_){
-      return false;
-    }
+    })();
+
+    return await __snapshotInFlight;
   }
 
   async function forceSnapshot(s, reason="force"){
-    try{
-      const db = await _openDB();
-      const snap = await _createSnapshot(s, reason);
-      const ok = await _putSnapshot(db, snap);
-      if(ok){
-        await _setMeta(db, "lastSnapshotAt", Date.now());
-        await _prune(db);
+    // Force snapshot should also respect the lock to avoid duplicates.
+    if(__snapshotInFlight) return false;
+
+    __snapshotInFlight = (async () => {
+      try{
+        const db = await _openDB();
+        const snap = await _createSnapshot(s, reason);
+        const ok = await _putSnapshot(db, snap);
+
+        if(ok){
+          await _setMeta(db, "lastSnapshotAt", Date.now());
+          await _prune(db);
+        }
+        return ok;
+      }catch(_){
+        return false;
+      }finally{
+        __snapshotInFlight = null;
       }
-      return ok;
-    }catch(_){
-      return false;
-    }
+    })();
+
+    return await __snapshotInFlight;
   }
 
   async function list(limit=KEEP){
@@ -7846,56 +7874,49 @@ el("div", { class:"btnrow" }, [
           return;
         }
 
-        const snaps = await BackupVault.list(BackupVault.KEEP || 20);
+        const snapsRaw = await BackupVault.list(BackupVault.KEEP || 20);
 
-        const container = el("div", {
-          style:"max-height:70vh; overflow-y:auto; padding-right:6px;"
-        });
+        // Option B: UI dedupe (safety-net)
+        // Some browsers/saves can produce visually identical timestamps.
+        // We remove duplicates by (time-to-second + counts + reason) so the list is clean.
+        const snaps = (() => {
+          const seen = new Set();
+          const out = [];
+          (snapsRaw || []).forEach(snap => {
+            const createdAt = Number(snap?.createdAt || 0) || 0;
+            const dtKey = new Date(createdAt || Date.now()).toLocaleString(); // seconds-level in most locales
+            const c = snap?.counts || {};
+            const reason = String(snap?.reason || "auto");
+            const key = [
+              dtKey,
+              reason,
+              c.routines||0, c.workouts||0, c.weight||0, c.protein||0, c.attendance||0
+            ].join("|");
 
-        // Sticky Banner
-        container.appendChild(
-          el("div", {
-            style:[
-              "position:sticky",
-              "top:0",
-              "z-index:5",
-              "padding:10px 0",
-              "background:rgba(20,20,30,.65)",
-              "backdrop-filter:blur(8px)",
-              "-webkit-backdrop-filter:blur(8px)",
-              "border-bottom:1px solid rgba(255,255,255,.08)"
-            ].join(";")
-          }, [
-            el("div", { style:"display:flex; align-items:center; gap:8px;" }, [
-              el("div", { style:"width:8px;height:8px;border-radius:50%;background:#4CAF50;" }),
-              el("div", { style:"font-weight:800;", text:"Auto Backups Active" })
-            ]),
-            el("div", { class:"note", text:`Keeping: ${BackupVault.KEEP || 20} snapshots` })
-          ])
-        );
+            if(!seen.has(key)){
+              seen.add(key);
+              out.push(snap);
+            }
+          });
+          return out;
+        })();
 
-        container.appendChild(el("div", { style:"height:12px" }));
 
-        function badgeColor(reason){
-          const r = String(reason || "");
-          if(r.includes("pre-import")) return "#FFC107";
-          if(r.includes("pre-reset")) return "#F44336";
-          if(r.includes("manual")) return "#2196F3";
-          return "#4CAF50";
-        }
-
-        if(!snaps || snaps.length === 0){
-          container.appendChild(
-            el("div", { class:"card" }, [
-              el("div", { class:"note", text:"No auto backups found yet." })
-            ])
-          );
-        }else{
-          snaps.forEach(snap => {
-
-            const dt = new Date(Number(snap.createdAt || Date.now())).toLocaleString();
+const dObj = new Date(Number(snap.createdAt || Date.now()));
+const dt = dObj.toLocaleDateString(undefined, { month:"short", day:"numeric" }) +
+           " • " +
+           dObj.toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit" });
             const c = snap.counts || {};
-            const reason = snap.reason || "auto";
+            function normalizeReason(r){
+              const reason = String(r || "").toLowerCase();
+              if(reason.includes("pre-import")) return "Pre-Import";
+              if(reason.includes("pre-reset")) return "Pre-Reset";
+              if(reason.includes("manual")) return "Manual";
+              if(reason.includes("save")) return "Auto";
+              return "Auto";
+            }
+            
+            const reason = normalizeReason(snap.reason);
 
             const card = el("div", {
               class:"card",
