@@ -4966,19 +4966,39 @@ el("div", { class:"card" }, [
 
   // ---- helpers ----
   const MEAL_LABELS = ["Morning", "Lunch", "Pre-Gym", "Dinner", "Bedtime"];
+  dateISO = clampISO(dateISO); // ✅ ensures the modal always opens on a real day (defaults to today)
+
 
   function clampISO(s){
-    // simple guard: expect YYYY-MM-DD
+    // ✅ Accept YYYY-M-D or YYYY-MM-DD and normalize to YYYY-MM-DD
     const v = String(s || "").trim();
-    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : Dates.todayISO();
+    const m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if(!m) return Dates.todayISO();
+
+    const y  = m[1];
+    const mo = String(m[2]).padStart(2, "0");
+    const d  = String(m[3]).padStart(2, "0");
+
+    const iso = `${y}-${mo}-${d}`;
+    return Dates.isISO(iso) ? iso : Dates.todayISO();
   }
 
-function fmtPretty(dateISO){
-  // ✅ Only format valid ISO strings (YYYY-MM-DD). Anything else becomes "—"
-  const d = Dates.parseISO(dateISO);
-  if(!d) return "—";
-  return d.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
-}
+
+  function fmtPretty(dateISO){
+    // ✅ Safari-safe: parse ISO manually and build Date(y, m-1, d)
+    const iso = clampISO(dateISO);
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m) return "—";
+
+    const y  = Number(m[1]);
+    const mo = Number(m[2]);
+    const d  = Number(m[3]);
+
+    const dt = new Date(y, mo - 1, d);
+    if(Number.isNaN(dt.getTime())) return "—";
+
+    return dt.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  }
 
   function statusFor(done, goal){
     if(goal <= 0) return "No goal set";
