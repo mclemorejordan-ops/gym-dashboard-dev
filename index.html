@@ -3817,12 +3817,29 @@ function maybeShowNextNudge(dateISO, day){
 
 function showToast(message){
   try{
+    // ✅ Guard: if showToast is used as an event handler, it will receive a PointerEvent/MouseEvent
+    if(message && typeof message === "object"){
+      // Event / PointerEvent / MouseEvent
+      if(message instanceof Event) message = "";
+      else if(message && typeof message.message === "string") message = message.message; // Error-like
+      else {
+        try{ message = JSON.stringify(message); }
+        catch(e){ message = String(message); }
+      }
+    }
+
+    // Normalize to a clean string
+    message = String(message || "").trim();
+    if(!message) message = "Saved"; // safe default
+
     const existing = document.getElementById("toastTemp");
     if(existing) existing.remove();
+
     const t = el("div", {
       id:"toastTemp",
-      style:"position:fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 90; padding: 10px 12px; border-radius: 999px; background: rgba(16,20,30,.92); border: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.92); font-size: 12.5px; box-shadow: 0 18px 44px rgba(0,0,0,.55);"
+      style:"position:fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 90; padding: 10px 12px; border-radius: 999px; background: rgba(16,20,30,92); border: 1px solid rgba(255,255,255,12); color: rgba(255,255,255,92); font-size: 12.5px; box-shadow: 0 18px 44px rgba(0,0,0,55);"
     }, [message]);
+
     document.body.appendChild(t);
     setTimeout(() => { try{ t.remove(); }catch(e){} }, 1100);
   }catch(e){}
