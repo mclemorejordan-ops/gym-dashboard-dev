@@ -1396,6 +1396,24 @@ body.modalOpen{
   gap: 12px;
   padding-bottom: 6px;
 }
+/* ✅ Routine header: lock button positions */
+.routineHeaderCard{
+  position: relative;
+}
+
+/* Start Today = top-right */
+.routineStartBtn{
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+/* 3D Preview toggle = bottom-right */
+.routine3DToggle{
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+}    
 .manageLink{
   margin-top: 10px;
   font-weight: 750;
@@ -1540,33 +1558,74 @@ body.modalOpen{
   box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
 }
 
-/* Day strip (fixed under carousel) */
+/* ✅ Day strip: day + date number + label (Compact Hybrid) */
 .routineDayStrip{
   display:flex;
   gap: 8px;
   justify-content:space-between;
-  margin-top: 20px; 
+  margin-top: 20px;
 }
 
 .routineDayBtn{
   flex: 1 1 0;
   min-width: 0;
-  height: 58px;                  /* ✅ more compact */
+
+  /* ✅ Taller so the label line can be seen */
+  height: 74px;
+
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.03);
+
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap: 8px;
+
+  /* ✅ Tight spacing so 3 lines + dot fit cleanly */
+  gap: 3px;
+
   color: rgba(255,255,255,.60);
   font-weight: 950;
   letter-spacing: .6px;
+
+  padding: 10px 8px;
+}
+
+.routineDayBtn .dow{
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .6px;
+  opacity: .85;
+  line-height: 1;
+}
+
+.routineDayBtn .num{
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.routineDayBtn .lbl{
+  font-size: 11px;
+  font-weight: 850;
+  opacity: .78;
+  line-height: 1;
+
+  max-width: 70px;
+  overflow:hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.routineDayBtn.rest .lbl{
+  opacity: .92;
 }
 
 .routineDayBtn .dot{
-  width: 8px; height: 8px; border-radius: 999px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
   background: rgba(255,255,255,.22);
 }
 
@@ -5127,11 +5186,15 @@ else root.appendChild(el("div", { class:"card" }, [
           }
 
           const profile = {
-            name: cleanName,
-            proteinGoal: Math.round(cleanProtein),
-            weekStartsOn,
-            hideRestDays: !!hideRestDays
-          };
+          name: cleanName,
+          proteinGoal: Math.round(cleanProtein),
+          weekStartsOn,
+          hideRestDays: !!hideRestDays,
+        
+          // ✅ NEW: 3D Preview default (ON)
+          show3DPreview: true
+        };
+
 
           // Seed library FIRST so template exercises can resolve to real exerciseIds
           ExerciseLibrary.ensureSeeded();
@@ -6377,40 +6440,58 @@ function openExerciseHistoryModal(type, exerciseId, exNameOverride=null){
     // ────────────────────────────
     // Header Card (locked layout)
     // ────────────────────────────
-fixedHost.appendChild(el("div", { class:"card" }, [
-      el("h2", { text:"Routine" }),
-      el("div", { class:"note", text:`${routine.name} • ${weekStartsOn === "sun" ? "Sun–Sat" : "Mon–Sun"}` }),
+// ✅ NEW: persisted preference (default ON)
+const show3DPreview = (state.profile?.show3DPreview !== false);
 
-      el("div", { style:"height:10px" }),
+function setShow3DPreview(v){
+  state.profile = state.profile || {};
+  state.profile.show3DPreview = !!v;
+  Storage.save(state);
+  renderView(); // re-render Routine cleanly
+}
+    fixedHost.appendChild(el("div", { class:"card routineHeaderCard" }, [
+  el("h2", { text:"Routine" }),
+  el("div", { class:"note", text:`${routine.name} • ${weekStartsOn === "sun" ? "Sun–Sat" : "Mon–Sun"}` }),
 
-      el("div", { class:"rHdrRow" }, [
-        el("button", {
-          class:"btn ghost",
-          onClick: (e) => openRoutinePicker(e.currentTarget)
-        }, [`${routine.name} ▼`]),
+  // ✅ Start Today (top-right)
+  el("button", {
+    class:"btn primary routineStartBtn",
+    onClick: () => {
+      selectedIndex = todayIndex;
+      repaint();
+      setTimeout(()=>{
+        const first = scrollHost.querySelector("[data-unlogged='true']");
+        if(first){
+          first.scrollIntoView({ behavior:"smooth", block:"center" });
+          first.classList.add("pulse");
+          setTimeout(()=>first.classList.remove("pulse"),1200);
+        }
+      },0);
+    }
+  }, ["▶ Start Today"]),
 
-        el("button", {
-          class:"btn primary",
-          onClick: () => {
-            selectedIndex = todayIndex;
-            repaint();
-            setTimeout(()=>{
-              const first = scrollHost.querySelector("[data-unlogged='true']");
-              if(first){
-                first.scrollIntoView({ behavior:"smooth", block:"center" });
-                first.classList.add("pulse");
-                setTimeout(()=>first.classList.remove("pulse"),1200);
-              }
-            },0);
-          }
-        }, ["▶ Start Today"])
-      ]),
+  // ✅ 3D Preview toggle (bottom-right)
+  el("button", {
+    class:"btn mini routine3DToggle",
+    onClick: () => setShow3DPreview(!show3DPreview)
+  }, [`3D Preview: ${show3DPreview ? "ON" : "OFF"} 👁`]),
 
-      el("div", {
-        class:"manageLink",
-        onClick: () => navigate("routine_editor")
-      }, ["Manage Routine ▾"])
-    ]));
+  el("div", { style:"height:10px" }),
+
+  // Left-side: routine picker only
+  el("div", { class:"rHdrRow" }, [
+    el("button", {
+      class:"btn ghost",
+      onClick: (e) => openRoutinePicker(e.currentTarget)
+    }, [`${routine.name} ▼`])
+  ]),
+
+  el("div", {
+    class:"manageLink",
+    onClick: () => navigate("routine_editor")
+  }, ["Manage Routine ▾"])
+]));
+
 
     if(!day){
       scrollHost.appendChild(el("div", { class:"card note" }, ["No day found."]));
@@ -6420,100 +6501,112 @@ fixedHost.appendChild(el("div", { class:"card" }, [
     // ────────────────────────────
     // 3D Card Carousel (visual container)
     // ────────────────────────────
-fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
-  (() => {
-    let down = false;
-    let startX = 0;
-    let dx = 0;
-    const THRESH = 55;
+// ✅ Only render the 3D carousel when enabled
+if(show3DPreview){
+  fixedHost.appendChild(el("div", { class:"card carouselCard" }, [
+    (() => {
+      let down = false;
+      let startX = 0;
+      let dx = 0;
+      const THRESH = 55;
 
-    function onDown(e){
-      down = true;
-      startX = e.clientX;
-      dx = 0;
-      try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
-    }
-    function onMove(e){
-      if(!down) return;
-      dx = e.clientX - startX;
-      // (visual-only: we keep drag simple; snap happens on release)
-    }
-    function onEnd(){
-      if(!down) return;
-      down = false;
+      function onDown(e){
+        down = true;
+        startX = e.clientX;
+        dx = 0;
+        try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){}
+      }
+      function onMove(e){
+        if(!down) return;
+        dx = e.clientX - startX;
+      }
+      function onEnd(){
+        if(!down) return;
+        down = false;
 
-      if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
-      else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
+        if(dx <= -THRESH) selectedIndex = (selectedIndex + 1) % 7;
+        else if(dx >= THRESH) selectedIndex = (selectedIndex + 6) % 7;
 
-      repaint();
-    }
-
-    const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-    const c3d = el("div", {
-      class:"c3d",
-      onPointerDown: onDown,
-      onPointerMove: onMove,
-      onPointerUp: onEnd,
-      onPointerCancel: onEnd,
-      onLostPointerCapture: onEnd
-    }, []);
-
-    // Show selected ±2
-    const offsets = [-2,-1,0,1,2];
-    offsets.forEach(off => {
-      const idx = (selectedIndex + off + 7) % 7;
-      const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
-
-      const abs = Math.abs(off);
-      const scale = (off === 0) ? 1 : (1 - abs * 0.10);
-      const x = off * 92;              // ✅ tighter spacing (more compact)
-      const z = -(abs * 95);           // ✅ less depth than before
-      const y = abs * 6;
-      const rot = off * -22;           // ✅ slightly tighter rotation
-      const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
-
-      const chips = [];
-      chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
-      if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
-
-      const card = el("div", {
-        class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
-        style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
-      }, [
-        el("div", {}, [
-          el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
-          el("div", { class:"c3dLabel", text: d.label || "Day" }),
-          el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
-        ]),
-        el("div", { class:"c3dChips" }, chips)
-      ]);
-
-      // Tap any card to jump (visual-only)
-      card.addEventListener("click", () => {
-        selectedIndex = idx;
         repaint();
+      }
+
+      const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+      const c3d = el("div", {
+        class:"c3d",
+        onPointerDown: onDown,
+        onPointerMove: onMove,
+        onPointerUp: onEnd,
+        onPointerCancel: onEnd,
+        onLostPointerCapture: onEnd
+      }, []);
+
+      const offsets = [-2,-1,0,1,2];
+      offsets.forEach(off => {
+        const idx = (selectedIndex + off + 7) % 7;
+        const d = getDay(idx) || { label:"Day", isRest:false, exercises:[] };
+
+        const abs = Math.abs(off);
+        const scale = (off === 0) ? 1 : (1 - abs * 0.10);
+        const x = off * 92;
+        const z = -(abs * 95);
+        const y = abs * 6;
+        const rot = off * -22;
+        const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
+
+        const chips = [];
+        chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
+        if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
+
+        const card = el("div", {
+          class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
+          style: `transform: translateX(${x}px) translateY(${y}px) translateZ(${z}px) rotateY(${rot}deg) scale(${scale}); opacity:${op};`
+        }, [
+          el("div", {}, [
+            el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
+            el("div", { class:"c3dLabel", text: d.label || "Day" }),
+            el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
+          ]),
+          el("div", { class:"c3dChips" }, chips)
+        ]);
+
+        card.addEventListener("click", () => {
+          selectedIndex = idx;
+          repaint();
+        });
+
+        c3d.appendChild(card);
       });
 
-      c3d.appendChild(card);
-    });
+      return c3d;
+    })()
+  ]));
+}
 
-    return c3d;
-  })(),
+fixedHost.appendChild(el("div", { class:"routineDayStrip" }, [
+  ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
+    const d = getDay(i) || { label:"", isRest:false, exercises:[] };
 
-  // Fixed day strip under carousel (tap to jump)
-  el("div", { class:"routineDayStrip" }, [
-    ...(weekStartsOn === "sun" ? [0,1,2,3,4,5,6] : [1,2,3,4,5,6,0]).map(i => {
-      const label = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
-      return el("button", {
-        class: "routineDayBtn" + (i === selectedIndex ? " sel" : ""),
-        onClick: () => { selectedIndex = i; repaint(); }
-      }, [
-        el("div", { text: label }),
-        el("div", { class:"dot" })
-      ]);
-    })
-  ])
+    // date number for the week (uses your already-defined weekStartISO)
+    const dateISO = Dates.addDaysISO(weekStartISO, (i - (weekStartsOn === "sun" ? 0 : 1) + 7) % 7);
+    const dayNum = (() => {
+      try{ return new Date(dateISO + "T00:00:00").getDate(); }
+      catch(_){ return ""; }
+    })();
+
+    const dow = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][i].toUpperCase();
+    const dayLabel = d.isRest ? "Rest" : (d.label || "Training");
+
+    return el("button", {
+      class: "routineDayBtn" + (i === selectedIndex ? " sel" : "") + (d.isRest ? " rest" : ""),
+      onClick: () => { selectedIndex = i; repaint(); }
+    }, [
+      el("div", { class:"dow", text: dow }),
+      el("div", { class:"num", text: String(dayNum || "") }),
+      el("div", { class:"lbl", text: dayLabel }),
+      el("div", { class:"dot" })
+    ]);
+  })
 ]));
 
 
@@ -7568,22 +7661,33 @@ if(Object.keys(ui.open).length === 0) ui.open.profile = true;
 
 
         let hideRestDays = !!state.profile?.hideRestDays;
+        let show3DPreview = (state.profile?.show3DPreview !== false); // default ON
 
-const hideRestSwitch = el("div", {
-  class: "switch" + (hideRestDays ? " on" : ""),
-  onClick: () => {
-    hideRestDays = !hideRestDays;
-    hideRestSwitch.classList.toggle("on", hideRestDays);
-  }
-});
 
+        const hideRestSwitch = el("div", {
+          class: "switch" + (hideRestDays ? " on" : ""),
+          onClick: () => {
+            hideRestDays = !hideRestDays;
+            hideRestSwitch.classList.toggle("on", hideRestDays);
+          }
+        });
+
+           // ✅ NEW: 3D Preview switch (persisted)
+        const show3DSwitch = el("div", {
+          class: "switch" + (show3DPreview ? " on" : ""),
+          onClick: () => {
+            show3DPreview = !show3DPreview;
+            show3DSwitch.classList.toggle("on", show3DPreview);
+          }
+        });
 
         function saveProfile(){
           state.profile = state.profile || {};
           state.profile.name = (nameInput.value || "").trim();
           state.profile.proteinGoal = Math.max(0, Number(proteinInput.value || 0));
           state.profile.weekStartsOn = (weekSelect.value === "sun") ? "sun" : "mon";
-state.profile.hideRestDays = !!hideRestDays;
+          state.profile.hideRestDays = !!hideRestDays;
+          state.profile.show3DPreview = !!show3DPreview;
           Storage.save(state);
           showToast("Saved");
           renderView();
@@ -7692,6 +7796,13 @@ state.profile.hideRestDays = !!hideRestDays;
               el("div", { class:"meta", text:"Keep Home focused on training days" })
             ]),
             hideRestSwitch
+          ]),
+          el("div", { class:"setRow" }, [
+            el("div", {}, [
+              el("div", { style:"font-weight:820;", text:"3D Preview" }),
+              el("div", { class:"meta", text:"Show/hide the 3D routine card preview on the Routine page" })
+            ]),
+            show3DSwitch
           ]),
           el("div", { style:"height:12px" }),
           el("div", { class:"btnrow" }, [
