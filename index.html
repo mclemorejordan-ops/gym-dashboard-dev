@@ -1455,28 +1455,26 @@ body.modalOpen{
 }
 
 /* Square “3D” card */
+/* Square “3D” card */
 .c3dCard{
   position:absolute;
-  width: min(58vw, 190px);
+  width: min(58vw, 190px);       /* ✅ smaller cards */
   aspect-ratio: 1 / 1;
   border-radius: 18px;
 
-  /* ✅ Black transparent glass (not white) */
+  /* Base glass (non-selected) */
   background: linear-gradient(180deg,
-    rgba(0,0,0,.36),
-    rgba(0,0,0,.22)
+    rgba(18,22,30,.35),
+    rgba(12,14,20,.22)
   );
-
-  /* ✅ Neutral outline */
   border: 1px solid rgba(255,255,255,.14);
-
   box-shadow: 0 18px 55px rgba(0,0,0,.55);
   padding: 12px;
   display:flex;
   flex-direction:column;
   justify-content:space-between;
   will-change: transform, opacity, filter;
-  overflow: hidden;
+  overflow: hidden; /* important for overlay */
 }
 
 /* Dim non-selected cards */
@@ -1484,65 +1482,65 @@ body.modalOpen{
   filter: saturate(.70) brightness(.60);
 }
 
-/* ✅ Selected card: still neutral outline, just clearer */
+/* Dark-glass active card that blocks anything behind it */
 .c3dCard.sel{
-  border-color: rgba(255,255,255,.16);
+  border-color: rgba(55,214,122,.45); /* subtle neon accent */
 
-  /* ✅ darker + slightly less transparent (still “black glass”) */
+  /* ✅ opaque dark glass gradient (prevents seeing other cards through it) */
   background: linear-gradient(180deg,
-    rgba(0,0,0,.62),
-    rgba(0,0,0,.42)
+    rgba(12,14,18,.92),
+    rgba(10,12,16,.86)
   );
 
-  box-shadow: 0 22px 70px rgba(0,0,0,.70);
+  box-shadow:
+    0 22px 70px rgba(0,0,0,.70),
+    0 0 0 1px rgba(55,214,122,.18) inset;
 
   filter: none;
   opacity: 1 !important;
 }
 
-/* ✅ Reduce white sheen so it never looks “white” */
+/* Subtle glass sheen layer (keeps "glassy" feel without transparency) */
 .c3dCard::before{
   content:"";
   position:absolute;
   inset:0;
   background: linear-gradient(135deg,
-    rgba(255,255,255,.06),
-    rgba(255,255,255,.01) 45%,
+    rgba(255,255,255,.10),
+    rgba(255,255,255,.02) 45%,
     rgba(255,255,255,0)
   );
   pointer-events:none;
 }
 
 .c3dCard.sel::before{
+  /* Slightly stronger sheen on active card */
   background: linear-gradient(135deg,
-    rgba(255,255,255,.07),
-    rgba(255,255,255,.015) 45%,
+    rgba(255,255,255,.12),
+    rgba(255,255,255,.03) 45%,
     rgba(255,255,255,0)
   );
 }
-
-/* ✅ Text styles aligned to your app vibe */
 .c3dDay{
-  font-size: 20px;
-  font-weight: 900;
-  letter-spacing: .6px;
+  font-size: 22px;
+  font-weight: 950;
+  letter-spacing: .8px;
 }
 
 .c3dLabel{
-  font-size: 14px;
-  font-weight: 820;
-  color: rgba(255,255,255,.82);
+  font-size: 15px;
+  font-weight: 850;
+  color: rgba(255,255,255,.78);
   margin-top: 4px;
 }
 
 .c3dMeta{
   font-size: 12px;
-  color: rgba(255,255,255,.66);
-  font-weight: 800;
+  color: rgba(255,255,255,.60);
+  font-weight: 750;
   margin-top: 8px;
 }
 
-/* Badges */
 .c3dChips{
   display:flex;
   gap: 8px;
@@ -1552,35 +1550,21 @@ body.modalOpen{
 .c3dChip{
   padding: 8px 10px;
   border-radius: 999px;
-
-  /* ✅ neutral outline always */
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.05);
-  color: rgba(255,255,255,.86);
-
+  color: rgba(255,255,255,.82);
   font-weight: 850;
   font-size: 12px;
   letter-spacing: .2px;
   white-space: nowrap;
 }
 
-/* ✅ Only badge color changes (outline stays neutral) */
-.c3dChip.statusDone{
-  background: rgba(55,214,122,.16);
-  color: rgba(255,255,255,.92);
+.c3dChip.active{
+  border-color: rgba(55,214,122,.45);
+  box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
 }
 
-.c3dChip.statusProg{
-  background: rgba(255,209,102,.18); /* ✅ Amber/Yellow */
-  color: rgba(255,255,255,.92);
-}
-
-.c3dChip.statusPend{
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.80);
-}
-
-/* ✅ Day strip */
+/* ✅ Day strip: day + date number + label (Compact Hybrid) */
 .routineDayStrip{
   display:flex;
   gap: 8px;
@@ -1591,11 +1575,11 @@ body.modalOpen{
 .routineDayBtn{
   flex: 1 1 0;
   min-width: 0;
+
+  /* ✅ Taller so the label line can be seen */
   height: 74px;
 
   border-radius: 16px;
-
-  /* ✅ Neutral outline (always) */
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.03);
 
@@ -1603,6 +1587,8 @@ body.modalOpen{
   flex-direction:column;
   align-items:center;
   justify-content:center;
+
+  /* ✅ Tight spacing so 3 lines + dot fit cleanly */
   gap: 3px;
 
   color: rgba(255,255,255,.60);
@@ -1646,41 +1632,19 @@ body.modalOpen{
   width: 7px;
   height: 7px;
   border-radius: 999px;
-
-  /* ✅ default neutral dot */
   background: rgba(255,255,255,.22);
 }
 
-/* ✅ Selected: still neutral outline (no green border) */
 .routineDayBtn.sel{
-  border-color: rgba(255,255,255,.16);
-  box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset;
+  border-color: rgba(55,214,122,.45);
+  box-shadow: 0 0 0 1px rgba(55,214,122,.18) inset;
   color: rgba(255,255,255,.92);
 }
 
-/* ✅ Dot color is driven by status classes */
-.routineDayBtn.statusDone .dot{
+.routineDayBtn.sel .dot{
   background: rgba(55,214,122,1);
   box-shadow: 0 0 0 3px rgba(55,214,122,.12);
 }
-
-.routineDayBtn.statusProg .dot{
-  background: rgba(255,209,102,1); /* ✅ Amber/Yellow */
-  box-shadow: 0 0 0 3px rgba(255,209,102,.12);
-}
-
-.routineDayBtn.statusPend .dot{
-  background: rgba(255,255,255,.30);
-  box-shadow: 0 0 0 3px rgba(255,255,255,.08);
-}
-
-/* If you want rest to be neutral, leave it alone.
-   If you want rest slightly different, uncomment this:
-
-.routineDayBtn.statusRest .dot{
-  background: rgba(255,255,255,.20);
-}
-*/
   /* Add Multiple visual feedback */
 .item.selected{
   border-color: rgba(124,92,255,.55);
@@ -6574,35 +6538,6 @@ if(show3DPreview){
 
       const names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-            function dayStatus(dateISO, dayObj){
-        // Rest day = special case
-        if(dayObj?.isRest) return "rest";
-
-        // Completed = all exercises logged
-        if(isDayComplete(dateISO, dayObj)) return "done";
-
-        // In progress = at least 1 exercise has a log
-        const anyLogged = (dayObj?.exercises || []).some(rx => hasRoutineExerciseLog(dateISO, rx.id));
-        if(anyLogged) return "progress";
-
-        // Pending = none logged yet
-        return "pending";
-      }
-
-      function statusLabel(s){
-        if(s === "done") return "Completed";
-        if(s === "progress") return "In Progress";
-        if(s === "pending") return "Pending";
-        return "Recovery"; // rest
-      }
-
-      function statusChipClass(s){
-        if(s === "done") return "statusDone";
-        if(s === "progress") return "statusProg";
-        if(s === "pending") return "statusPend";
-        return "statusPend";
-      }
-
       const c3d = el("div", {
         class:"c3d",
         onPointerDown: onDown,
@@ -6625,25 +6560,9 @@ if(show3DPreview){
         const rot = off * -22;
         const op = (off === 0) ? 1 : (abs === 1 ? .65 : .30);
 
-                const chips = [];
-
-        // Badge 1 stays the same name
-        chips.push(el("div", {
-          class:"c3dChip",
-          text: d.isRest ? "Rest Day" : "Training Day"
-        }));
-
-        // Badge 2 = status (Completed / In Progress / Pending)
-        const dateISOForIdx = Dates.addDaysISO(
-          weekStartISO,
-          (idx - (weekStartsOn === "sun" ? 0 : 1) + 7) % 7
-        );
-        const s = dayStatus(dateISOForIdx, d);
-
-        chips.push(el("div", {
-          class:"c3dChip " + statusChipClass(s),
-          text: statusLabel(s)
-        }));
+        const chips = [];
+        chips.push(el("div", { class:"c3dChip", text: d.isRest ? "Rest Day" : "Training Day" }));
+        if(idx === selectedIndex) chips.push(el("div", { class:"c3dChip active", text:"Active" }));
 
         const card = el("div", {
           class: "c3dCard" + (idx === selectedIndex ? " sel" : ""),
@@ -6652,10 +6571,7 @@ if(show3DPreview){
           el("div", {}, [
             el("div", { class:"c3dDay", text: names[idx].toUpperCase() }),
             el("div", { class:"c3dLabel", text: d.label || "Day" }),
-            el("div", {
-              class:"c3dMeta",
-              text: d.isRest ? "Rest" : `${(d.exercises||[]).length}\u00A0Exercises`
-            })
+            el("div", { class:"c3dMeta", text: d.isRest ? "Rest" : `${(d.exercises||[]).length} exercises` })
           ]),
           el("div", { class:"c3dChips" }, chips)
         ]);
@@ -6688,20 +6604,7 @@ fixedHost.appendChild(el("div", { class:"routineDayStrip" }, [
     const dayLabel = d.isRest ? "Rest" : (d.label || "Training");
 
     return el("button", {
-            const s2 = dayStatus(dateISO, d);
-      const statusClass =
-        (s2 === "done") ? " statusDone" :
-        (s2 === "progress") ? " statusProg" :
-        (s2 === "pending") ? " statusPend" :
-        " statusRest";
-
-      return el("button", {
-        class: "routineDayBtn"
-          + (i === selectedIndex ? " sel" : "")
-          + (d.isRest ? " rest" : "")
-          + statusClass,
-        onClick: () => { selectedIndex = i; repaint(); }
-      }, [
+      class: "routineDayBtn" + (i === selectedIndex ? " sel" : "") + (d.isRest ? " rest" : ""),
       onClick: () => { selectedIndex = i; repaint(); }
     }, [
       el("div", { class:"dow", text: dow }),
